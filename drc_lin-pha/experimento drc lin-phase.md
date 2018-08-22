@@ -30,7 +30,7 @@ El principal problema de esta solución es el alto retardo inherente a usar FIRs
 
 ## El procedimiento:
  
-**Herramienta: REW Room EQ Wizard**
+Herramienta: **REW Room EQ Wizard**
  
 1. Tomar varias medidas de IR en distintos puntos de la sala.
  
@@ -44,11 +44,11 @@ El principal problema de esta solución es el alto retardo inherente a usar FIRs
  
 4. Exportar los parámetros de los filtros EQ finales.
  
-**Herramienta: [audiotools/docs/DRC/peq2fir.py](https://github.com/Rsantct/audiotools/blob/testing/docs/DRC/peq2fir.py)**
+Herramienta: **[audiotools/docs/DRC/peq2fir.py](https://github.com/Rsantct/audiotools/blob/testing/docs/DRC/peq2fir.py)**
  
 5. Generar FIRs linear-phase con los parámetros de los filtros obtenidos con REW.
  
-**Herramienta: FIRtro**
+Herramienta: **FIRtro**
  
 6. Cargar el FIR de arriba en la etapa drc_fir de FIRtro
  
