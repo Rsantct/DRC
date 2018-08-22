@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    Genera FIRs para DRC a partir de filtros paramétricos
+    Genera FIRs para DRC a partir de los filtros paramétricos
     de archivos .txt provinientes de Room EQ Wizard.
     
     Experimental: Además de FIR min-phase, también genera
