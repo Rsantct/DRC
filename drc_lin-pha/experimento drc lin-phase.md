@@ -44,7 +44,7 @@ El principal problema de esta solución es el alto retardo inherente a usar FIRs
  
 4. Exportar los parámetros de los filtros EQ finales.
  
-**[Herramienta: audiotools/docs/DRC/peq2fir.py](https://github.com/Rsantct/audiotools/blob/testing/docs/DRC/peq2fir.py)**
+**[Herramienta: rew2fir.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/rew2fir.py)**
  
 5. Generar FIRs linear-phase con los parámetros de los filtros obtenidos con REW.
  
