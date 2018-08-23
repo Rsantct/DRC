@@ -1,6 +1,8 @@
 # Experimento: DRC usando filtros linear-phase
  
-## https://www.roomeqwizard.com/help/help_en-GB/html/minimumphase.html
+## Intro
+
+https://www.roomeqwizard.com/help/help_en-GB/html/minimumphase.html
  
 Las reflexiones producen regiones phase-excess NO reversibles con EQ min-phase.
  
