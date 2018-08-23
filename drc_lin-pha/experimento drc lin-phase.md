@@ -50,7 +50,7 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
  
 **[Herramienta: rew2fir.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/rew2fir.py)**
  
-5. Generar FIRs linear-phase con los parámetros de los filtros obtenidos con REW.
+5. Generar FIRs linear-phase con los parámetros de los filtros obtenidos con REW. Nota: rew2fir.py proporciona ambas versiones minimum-phase y linear-phase.
  
 **Herramienta: FIRtro**
  
