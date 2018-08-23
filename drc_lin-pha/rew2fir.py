@@ -57,18 +57,19 @@ for channel in "L", "R":
         imp = signal.lfilter(b, a, imp)
 
     # 4. Guardamos el resultado minimum phase
-    utils.savePCM32(imp, "biquads_" + channel + ".pcm")
+    fpcm = rewfname.replace('.txt', '.pcm')
+    utils.savePCM32(imp, fpcm)
 
     # 5. Convertimos a LP linear phase :-| ejem...
     imp = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 
     # 6. Guardamos el resultado LP
-    utils.savePCM32(imp, "biquads_lp_" + channel + ".pcm")
+    utils.savePCM32(imp, "lp-" + fpcm)
 
+print
 print "(i) Observar los resultados haciendo zoom con"
-print "    'IRs_viewer.py biquads_R.pcm biquads_lp_R.pcm 44100'"
+print "    'IRs_viewer.py  rew_R.pcm  lp-rew_R.pcm  44100'"
 print
 print "    Es interesante probar distintas fs, betas de kaiser..."
 print "    Si aumentamos beta disminuyen los microartifactos del GD del filtro, ¿audibles?,"
 print "    pero a costa de menos resolución en la curva de filtrado en graves."
-
