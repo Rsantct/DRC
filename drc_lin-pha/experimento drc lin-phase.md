@@ -30,15 +30,15 @@ En este experimento elegimos una EQ linear-phase, simplemente queremos atenuar a
  
 El resultado esperado es que al no usar una EQ que modifica la phase en graves, además de librarnos de los "booms" de la sala, deberíamos percibir un grave más coherente.
 
-El principal problema de esta solución es el alto retardo inherente de los FIRs lin-phase y de alta resolución (largos), no apto para la escucha de material audiovisual. Entonces conviene aplicar EQ convenvional min-phase. Puede ser FIR en un convolver como Brutefir (FIRtro). O puede ser IIR, entonces consumiremos menos CPU (un host como Ecasound con plugins DSP).
+El principal problema de esta solución es el alto retardo inherente de los FIRs lin-phase y de alta resolución (largos), no apto para la escucha de material audiovisual. Entonces conviene aplicar EQ convenvional min-phase. Puede ser FIR en un convolver como Brutefir (FIRtro). O puede ser IIR, entonces consumiremos menos CPU (un host como Ecasound con plugins DSP también disponible en FIRtro).
 
 ## El procedimiento:
  
 **Herramienta: REW Room EQ Wizard**
  
-1. Tomar varias medidas de IR en distintos puntos de la sala.
- 
-    Anotar los modos detectados por REW en casa IR.
+1. Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
+    Veremos que los picos modales y los dips de cancelaciones varían mucho. 
+    Anotar los modos detectados por REW en cada IR medido.
  
 2. Obtener la FR_avg promedio de las medidas anteriores.
  
