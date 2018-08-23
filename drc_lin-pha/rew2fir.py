@@ -32,6 +32,8 @@ m  = 2**15  # Longitud del impulso FIR
             #     usar m >= 16K para un FIR largo.
 
 for channel in "L", "R":
+    
+    print channel + ":"
 
     # 0. Partimos de una delta (espectro plano)
     imp = pydsd.delta(m)
@@ -55,6 +57,12 @@ for channel in "L", "R":
                            ) 
 
         imp = signal.lfilter(b, a, imp)
+
+        # Printado de paramétricos:
+        print  ("  fc: "    + str(   int(params['fc']      ) ) ).ljust(12) + "   " + \
+                 ("Q: "     + str( round(params['Q'], 2    ) ) ).ljust(12) + "   " + \
+                 ("dB: "    + str( round(params['gain'], 1 ) ) ).ljust(12) + "   " + \
+                 "(BWoct: " + str( round(params['BW'], 3 ) )               + ")"
 
     # 4. Guardamos el resultado minimum phase
     pcmname = "mp-" + rewfname.replace('.txt', '.pcm')
