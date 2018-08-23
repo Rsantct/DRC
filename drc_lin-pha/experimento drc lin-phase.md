@@ -10,7 +10,7 @@ Por ejemplo, las reflexiones producen regiones phase-excess NO reversibles con E
  
 ¿Cómo identificar regiones min-phase ecualizables?.
 
-Dada una curva de una medida de FR no plana, deberemos comparar la phase de medida con la minimum phase teórica que corresponde a la FR medida, o sea extraer el excess phase. Entonces podremos analizar el GD del exceso de phase 'EGD' y podremos identificar las zonas con EGD constante como zonas minumum phase de nuestro sistema.
+Dada una curva de una medida de FR no plana, deberemos comparar la phase de medida con la minimum phase teórica que corresponde a la FR medida, o sea: extraer el excess phase. Entonces podremos analizar el GD del exceso de phase 'EGD' y podremos identificar las zonas con EGD constante como zonas minumum phase de nuestro sistema.
  
 Aquellas regiones de graves en las que vemos discontinuidades en EGD se corresponderán con DIPS por cancelaciones. NO SON ECUALIZABLES.
  
@@ -30,7 +30,7 @@ En este experimento elegimos una EQ linear-phase, simplemente queremos atenuar a
  
 El resultado esperado es que al no usar una EQ que modifica la phase en graves, además de librarnos de los "booms" de la sala, deberíamos percibir un grave más coherente.
 
-El principal problema de esta solución es el alto retardo inherente de los FIRs largos lin-phase y de de alta resolución, no apto para la escucha de material audiovisual. Entonces conviene aplicar EQ convenvional min-phase. Puede ser FIR en un convolver como Brutefir (FIRtro). O puede ser IIR, entonces consumiremos menos CPU (un host como Ecasound con plugins DSP).
+El principal problema de esta solución es el alto retardo inherente de los FIRs lin-phase y de de alta resolución (largos), no apto para la escucha de material audiovisual. Entonces conviene aplicar EQ convenvional min-phase. Puede ser FIR en un convolver como Brutefir (FIRtro). O puede ser IIR, entonces consumiremos menos CPU (un host como Ecasound con plugins DSP).
 
 ## El procedimiento:
  
