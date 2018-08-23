@@ -4,19 +4,21 @@
 
 https://www.roomeqwizard.com/help/help_en-GB/html/minimumphase.html
  
-Las reflexiones producen regiones phase-excess NO reversibles con EQ min-phase.
- 
 La FR de la una respuesta in room es mixed-phase, hay regiones min-ph y otras que no. En general, las regiones min-ph tienden a mantenerse en las frecuencias inferiores, pero no siempre es así.
  
+Por ejemplo, las reflexiones producen regiones phase-excess NO reversibles con EQ min-phase.
+ 
+¿Cómo identificar regiones min-phase ecualizables?.
+
 Dada una curva de una medida de FR no plana, deberemos comparar la phase de medida con la minimum phase teórica que corresponde a la FR medida, o sea extraer el excess phase. Entonces podremos analizar el GD del exceso de phase 'EGD' y podremos identificar las zonas con EGD constante como zonas minumum phase de nuestro sistema.
  
 Aquellas regiones de graves en las que vemos discontinuidades en EGD se corresponderán con DIPS por cancelaciones. NO SON ECUALIZABLES.
  
 Las regiones de los graves con picos magnitud, normalmente se corresponden con room modes y son min-ph con EGD constante. En general los picos de magnitud en una FR, son debidos a polos de la función de transferencia del sistema y por tanto pueden cancelarse añadiendo zeros con un EQ.
  
-También encontraremos regiones en frecuencias medias con EGD constante por tanto son min-pha, como de 300 - 500 Hz, a pesar de las fuertes variaciones de magnitud que pueda haber. Peeeero ya estamos en unas medidas de magnitud muy dependientes de la posición del micrófono ya que las semilongitudes de onda aquí ya son de pocos centímetros.
- 
 Como norma general NO debe emplearse narrow BW EQ fuera del rango modal. Al subir la frecuencia, debemos incrementar el BW de la EQ.
+ 
+También encontraremos regiones en frecuencias medias con EGD constante por tanto son min-pha, como de 300 - 500 Hz, a pesar de las fuertes variaciones de magnitud que pueda haber. Peeeero ya estamos en unas medidas de magnitud muy dependientes de la posición del micrófono ya que las semilongitudes de onda aquí ya son de pocos centímetros.
  
 ## El experimento:
  
