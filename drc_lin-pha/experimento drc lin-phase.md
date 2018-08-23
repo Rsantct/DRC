@@ -62,11 +62,13 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
 En una primera prueba los nuevos filtros FIR construidos a partir de paramétricos funcionan correctamente, no se observan artifactos.
 
-FIRtro permite conmutar entre DRC_FIR con estos filtros mp/lp .pcm y DRC_IIR (plugins ecasound) con los parámetricos. Se observa que el resultado "matamodos" es equivalente.
+FIRtro permite elegir entre:
+- DRC_FIR con estos filtros mp/lp .pcm
+- DRC_IIR (plugins ecasound) con los parámetricos. Se observa que el resultado "matamodos" es equivalente.
 
 La variante lp introduce un retardo de unos 370ms respecto de la mp, como era de esperar con 32Ktaps@44100.
 
-Los graves ecualizados con la variante linear-phase comentada aquí aparentan la mejora en coherencia pretendida. Queda pendiente un periodo de pruebas prolongado ;-)
+Los graves ecualizados con la variante linear-phase comentada aquí aparentan la mejora en coherencia pretendida. Queda pendiente un periodo de pruebas más extenso ;-)
 
 
 
