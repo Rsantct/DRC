@@ -7,6 +7,8 @@
     Experimental: Además de FIR min-phase, también genera
                   el equivalente linear-phase con la misma
                   respuesta en magnitud.
+
+    NOTA: se necesita tener instalado el paquete 'AudioHumLab/audiotools'
 """
 from scipy import signal
 
@@ -16,9 +18,13 @@ import sys
 HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
 # modulos de audiotools:
-import utils
-import pydsd
-
+try:
+    import utils
+    import pydsd
+except:
+    raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools")
+    sys.exit()
+    
 # PARAMETROS GLOBALES:
 fs = 44100  # Frecuencia de muestreo
 m  = 2**15  # Longitud del impulso FIR
