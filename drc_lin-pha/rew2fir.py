@@ -51,7 +51,8 @@ for channel in "L", "R":
                             f0     = params['fc'], 
                             Q      = params['Q'], 
                             dBgain = params['gain'],
-                            type   = "peakingEQ") 
+                            type   = "peakingEQ"
+                           ) 
 
         imp = signal.lfilter(b, a, imp)
 
