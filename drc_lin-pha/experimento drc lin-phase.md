@@ -54,7 +54,7 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
  
 **Herramienta: FIRtro**
  
-6. Cargar el FIR de arriba en la etapa drc_fir de FIRtro
+6. Cargar los FIR de arriba en la etapa drc_fir de FIRtro
  
 7. Evaluar el resultado.
 
