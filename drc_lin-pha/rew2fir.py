@@ -57,18 +57,18 @@ for channel in "L", "R":
         imp = signal.lfilter(b, a, imp)
 
     # 4. Guardamos el resultado minimum phase
-    fpcm = rewfname.replace('.txt', '.pcm')
-    utils.savePCM32(imp, fpcm)
+    pcmname = "mp-" + rewfname.replace('.txt', '.pcm')
+    utils.savePCM32(imp, pcmname)
 
-    # 5. Convertimos a LP linear phase :-| ejem...
+    # 5. Convertimos a LP linear phase (experimental) ...
     imp = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 
     # 6. Guardamos el resultado LP
-    utils.savePCM32(imp, "lp-" + fpcm)
+    utils.savePCM32(imp, pcmname.replace('mp-', 'lp-'))
 
 print
 print "(i) Observar los resultados haciendo zoom con"
-print "    'IRs_viewer.py  rew_R.pcm  lp-rew_R.pcm  44100'"
+print "    'IRs_viewer.py  mp-rew_R.pcm  lp-rew_R.pcm  44100'"
 print
 print "    Es interesante probar distintas fs, betas de kaiser..."
 print "    Si aumentamos beta disminuyen los microartifactos del GD del filtro, ¿audibles?,"
