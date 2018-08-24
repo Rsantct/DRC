@@ -49,6 +49,13 @@ for channel in "L", "R":
     # 3. Encadenamos los filtros 'peakingEQ' 
     for peqId, params in PEQs.items():
 
+        # Printado de paramétricos:
+        print  ("  fc: "    + str(   int(params['fc']      ) ) ).ljust(12) + "   " + \
+                 ("Q: "     + str( round(params['Q'], 2    ) ) ).ljust(12) + "   " + \
+                 ("dB: "    + str( round(params['gain'], 1 ) ) ).ljust(12) + "   " + \
+                 "(BWoct: " + str( round(params['BW'], 3 ) )               + ")"
+
+        # Calculamos los coeff IIR correspondientes:
         b, a = pydsd.biquad(fs     = fs, 
                             f0     = params['fc'], 
                             Q      = params['Q'], 
@@ -56,15 +63,10 @@ for channel in "L", "R":
                             type   = "peakingEQ"
                            ) 
 
+        # Aplicamos los coeff a nuestro impulso de partida
         imp = signal.lfilter(b, a, imp)
 
-        # Printado de paramétricos:
-        print  ("  fc: "    + str(   int(params['fc']      ) ) ).ljust(12) + "   " + \
-                 ("Q: "     + str( round(params['Q'], 2    ) ) ).ljust(12) + "   " + \
-                 ("dB: "    + str( round(params['gain'], 1 ) ) ).ljust(12) + "   " + \
-                 "(BWoct: " + str( round(params['BW'], 3 ) )               + ")"
-
-    # 4. Guardamos el resultado minimum phase
+    # 4. Guardamos el resultado (que es minimum phase)
     pcmname = "mp-" + rewfname.replace('.txt', '.pcm')
     utils.savePCM32(imp, pcmname)
 
@@ -78,6 +80,6 @@ print
 print "(i) Observar los resultados haciendo zoom con"
 print "    'IRs_viewer.py  mp-rew_R.pcm  lp-rew_R.pcm  44100'"
 print
-print "    Es interesante probar distintas fs, betas de kaiser..."
-print "    Si aumentamos beta disminuyen los microartifactos del GD del filtro, ¿audibles?,"
+print "    Es interesante probar distintos valores fs, taps, betas de kaiser..."
+print "    Si aumentamos beta disminuyen los microartefactos del GD del filtro, ¿audibles?,"
 print "    pero a costa de menos resolución en la curva de filtrado en graves."
