@@ -37,7 +37,9 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 **Herramienta: REW Room EQ Wizard**
  
 1. Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
+
     Veremos que los picos modales y los dips de cancelaciones varían mucho. 
+
     Anotar los modos detectados por REW en cada IR medido.
  
 2. Obtener la FR_avg promedio de las medidas anteriores.
@@ -60,7 +62,7 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
 ## El resultado
 
-En una primera prueba los nuevos filtros FIR construidos a partir de paramétricos funcionan correctamente, no se observan artifactos.
+En una primera prueba los nuevos filtros FIR construidos a partir de paramétricos funcionan correctamente, no se observan artefactos.
 
 FIRtro permite elegir entre:
 - DRC_FIR con estos filtros mp/lp .pcm
