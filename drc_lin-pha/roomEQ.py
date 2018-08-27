@@ -90,7 +90,7 @@ weightslograte = .5
 weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
 # Calculamos el nivel de referencia
 ref_level = round( np.average( r2mag, weights=weights ), 2)
-print "Ref. level: ", ref_level
+print "Ref. level: " +  str(ref_level) + " dB --> 0 dB"
 
 # 2.2 'smag': CURVA SUAVIZADA QUE USAREMOS PARA ECUALIZAR
 Noct = 48
