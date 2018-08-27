@@ -190,6 +190,6 @@ import warnings
 #fig.savefig(pdfName, bbox_inches='tight')
 
 # 7. Veamos los FIRs de EQ:
-os.system("IRs_viewer.py mp-L_eq.pcm lp-L_eq.pcm -1 " + str(int(fs)))
+os.system("IRs_viewer.py mp-L_eq.pcm lp-L_eq.pcm -eq -1 " + str(int(fs)))
 
 # FIN
