@@ -68,9 +68,11 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
 **[roomEQ.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.py)**
  
-- Generar FIRs para EQ a partir de la respuesta .frd del punto 2.
+- Generar FIRs para EQ a partir de la respuesta .frd del punto anterior.
 
     Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
+
+    Ejemplo de uso:    `roomEQ.py. L.frd`
 
 ![](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.png)
 
