@@ -72,7 +72,15 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
     Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
 
-    Ejemplo de uso:    `roomEQ.py. L.frd`
+    Ejemplo de uso:
+    
+    ```    
+    $ ./roomEQ.py L.frd 44100
+    fs: 44100 coincide con la indicada en L.frd
+              (usada solo para visualizar los impulsos generados)
+    Ref. level:  99.61
+    Guardando el FIR de ecualización en 'mp-L_eq.pcm' 'lp-L_eq.pcm'
+    ```    
 
 ![](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.png)
 
