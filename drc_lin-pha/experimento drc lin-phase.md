@@ -76,9 +76,9 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
 **Herramienta: FIRtro**
  
-6. Cargar los FIR de arriba en la etapa drc_fir de FIRtro
- 
-7. Evaluar el resultado.
+- Cargar los FIR de arriba en la etapa drc_fir de FIRtro
+
+- Escuchar música y evaluar el resultado.
 
 En una primera prueba los nuevos filtros FIR construidos a partir de paramétricos funcionan correctamente, no se observan artefactos.
 
