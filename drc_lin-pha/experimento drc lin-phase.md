@@ -32,43 +32,45 @@ El resultado esperado es que al no usar una EQ que modifica la phase en graves, 
 
 El principal problema de esta solución es el alto retardo inherente de los FIRs lin-phase y de alta resolución (largos), no apto para la escucha de material audiovisual. Entonces conviene aplicar EQ convenvional min-phase. Puede ser FIR en un convolver como Brutefir (FIRtro). O puede ser IIR, entonces consumiremos menos CPU (un host como Ecasound con plugins DSP también disponible en FIRtro).
 
-## 1. El procedimiento con REW Room EQ Wizard:
+## Procedimiento con REW Room EQ Wizard:
  
-1. Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
+- Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
 
     Veremos que los picos modales y los dips de cancelaciones varían mucho. 
 
     Anotar los modos detectados por REW en cada IR medido.
  
-2. Obtener la FR_avg promedio de las medidas anteriores.
+- Obtener la FR_avg promedio de las medidas anteriores.
  
-3. Calcular filtros para EQ de la FR_avg.
+- Calcular filtros para EQ de la FR_avg.
  
-    Descartar los filtros que no correspondan a los modos más importantes obtenidos en 1.
+    Descartar los filtros que no correspondan a los modos más importantes obtenidos arriba.
  
-4. Exportar los parámetros de los filtros EQ finales.
+- Exportar los parámetros de los filtros EQ finales.
  
 ### Herramienta rew2fir.py
 
 **[rew2fir.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/rew2fir.py)**
  
-5. Generar FIRs linear-phase con los parámetros de los filtros obtenidos con REW. Nota: **rew2fir.py** proporciona ambas versiones minimum-phase y linear-phase.
+- Generar FIRs linear-phase con los parámetros de los filtros obtenidos con REW.
 
-## 2. El procedimiento con ARTA:
+    Nota: **rew2fir.py** proporciona ambas versiones minimum-phase y linear-phase.
+
+## Procedimiento con ARTA:
  
-1. Usar el RTA de ARTA en modo promedio, o bien realizar varias medidas y promediar la FR.
+- Usar el RTA de ARTA en modo promedio, o bien realizar varias medidas y promediar la FR.
 
     Tomar varias medidas en distintos puntos de una zona de escucha amplia.
 
-2. Exportar a .frd
+- Exportar a .frd
   
 ### Herramienta roomEQ.py
 
 **[roomEQ.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.py)**
  
-5. Generar FIRs para EQ a partir de la respuesta .frd del punto 2.
+- Generar FIRs para EQ a partir de la respuesta .frd del punto 2.
 
-Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
+    Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
 
 ## El resultado
 
