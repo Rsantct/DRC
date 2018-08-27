@@ -68,7 +68,7 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
  
 5. Generar FIRs para EQ a partir de la respuesta .frd del punto 2.
 
-   Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
+Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
 
 ## El resultado
 
