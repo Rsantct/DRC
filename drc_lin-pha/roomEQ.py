@@ -141,10 +141,10 @@ imp = pydsd.semiblackmanharris(m) * imp[:m]
 
 # Ahora 'imp' tiene una respuesta 'natural', o sea de phase mínima.
 
-# 4.6 Versión linear-phase (experimental) ...
+# 4.5 Versión linear-phase (experimental) ...
 impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 
-# 4.5 Los guardamos en archivos .pcm:
+# 4.6 Guardamos los impulsos en archivos .pcm
 tmp = "Guardando el FIR de ecualización en '"
 eqPCMname = "mp-" + FRDname.replace('.frd', '_eq.pcm').replace('.txt', '_eq.pcm')
 utils.savePCM32(imp, eqPCMname)
