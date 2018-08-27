@@ -72,6 +72,8 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
     Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
 
+![](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.png)
+
 ## El resultado
 
 **Herramienta: FIRtro**
