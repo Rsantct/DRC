@@ -78,7 +78,7 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
     $ ./roomEQ.py L.frd 44100
     fs: 44100 coincide con la indicada en L.frd
               (usada solo para visualizar los impulsos generados)
-    Ref. level:  99.61
+    Ref. level:  99.61 dB  -->  0 dB
     Guardando el FIR de ecualización en 'mp-L_eq.pcm' 'lp-L_eq.pcm'
     ```    
 
