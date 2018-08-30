@@ -82,7 +82,7 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
     Guardando el FIR de ecualización en 'mp-L_eq.pcm' 'lp-L_eq.pcm'
     ```    
 
-![](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.png)
+![](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ_R.png)
 
 ## El resultado
 
