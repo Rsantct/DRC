@@ -90,12 +90,13 @@ weightslograte = .5
 weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
 # Calculamos el nivel de referencia
 ref_level = round( np.average( r2mag, weights=weights ), 2)
-print "Ref. level: " +  str(ref_level) + " dB --> 0 dB"
+print "Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB"
 
 # 2.2 'smag': CURVA SUAVIZADA QUE USAREMOS PARA ECUALIZAR
-Noct = 48
-vsf  = 5    # variableSmoothFactor
-smag = smooth(mag, frec, Noct, variableSmoothFactor=vsf)
+Noct = 48           # Suavizado fino inicial 1/48 oct
+f0  = 120           # Frec de transición de suavizado fino hacia 1/1 oct
+Tspeed = "medium"   # Velocidad de transición del suavizado
+smag = smooth(mag, frec, Noct, f0=f0, Tspeed=Tspeed)
 
 # 2.3 Recolocamos las curvas en el nivel de referencia:
 mag  -= ref_level
@@ -190,6 +191,6 @@ import warnings
 #fig.savefig(pdfName, bbox_inches='tight')
 
 # 7. Veamos los FIRs de EQ:
-os.system("IRs_viewer.py mp-L_eq.pcm lp-L_eq.pcm -eq -1 " + str(int(fs)))
+os.system("IRs_viewer.py mp-L_eq.pcm lp-L_eq.pcm 20-20000 -eq -1 " + str(int(fs)))
 
 # FIN
