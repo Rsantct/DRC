@@ -175,12 +175,25 @@ cplx = np.concatenate( [cplx, cplxR] )
 ## %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ##
 ## ir = real(ifft(cplx));
-## err = max(abs(imag(ifft(cplx))));  %%% if this is not really tiny then something is wrong
+ir = np.real( np.fft.ifft( cplx ) )
+## %%% if this is not really tiny then something is wrong:
+## err = max(abs(imag(ifft(cplx))));
+err = np.max( np.abs( np.imag ( np.fft.ifft(cplx) ) ) )
+#
+#           octave:66> max(abs(imag(ifft(cplx))))
+#           ans =    1.3636e-19
+#           
+#           In [54]: np.max( np.abs( np.imag ( np.fft.ifft(cplx) ) ) )
+#           Out[54]: 1.0842755210898343e-19
+#           ;-) bien por Numpy
+#
 ##
 ## %%% create window for fade-in and apply
 ## w = hann(2*Gd_start)';
 ## I = 1:Gd_start;
 ## ir(I) = ir(I).*w(I);
+w = np.hanning( 2 * Gd_start )
+I = np.arange(1, Gd_start+1)
 ##
 ## %%% create window for fade-out and apply
 ## w = hann(2*postfade)';
