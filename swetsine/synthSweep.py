@@ -17,14 +17,17 @@ from scipy import signal
 
 from grpdelay2phase import grpdelay2phase
 
-## function [sweep invsweepfft sweepRate] = synthSweep(T,FS,f1,f2,tail,magSpect)
-#def synthSweep(T, FS, f1, f2, tail=0, magSpect)
-
 T = 5
 FS = 48000
 f1 = 20.0
 f2 = 20000.0
 tail = 0
+magSpect_Def = np.ones( T*FS + 1 )
+magSpect = np.copy(magSpect_Def)
+
+## function [sweep invsweepfft sweepRate] = synthSweep(T,FS,f1,f2,tail,magSpect)
+#def synthSweep(T=T, FS=FS, f1=f1, f2=f2, tail=0, magSpect=magSpect_Def)
+
 
 ##
 ## % SYNTHSWEEP Synthesize a logarithmic sine sweep.
@@ -133,9 +136,6 @@ Gd = Gd + Gd_start/FS
 ## Gd = Gd*FS/2;                % convert from secs to samps
 Gd = Gd*FS/2.0
 
-
-sys.exit()   # HASTA AQUI ESTA COTEJADO CON OCTAVE
-
 ##
 ## %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ## %%%            CALCULATE DESIRED PHASE
@@ -144,22 +144,31 @@ sys.exit()   # HASTA AQUI ESTA COTEJADO CON OCTAVE
 ## if (nargin > 5)
 ##     mag = linspace(0.1, 1, length(mag));
 ## end
+if not np.array_equiv( magSpect, magSpect_Def ): 
+    mag = np.linspace(0.1, 1, len(mag))
 ##
 ##
 ## %%% integrate group delay to get phase
 ## ph = grpdelay2phase(Gd);
+ph = grpdelay2phase(Gd)
 ##
 ## %%% force the phase at FS/2 to be a multiple of 2pi using Muller eq 10
 ## %%% (but ending with mod 2pi instead of zero ...)
-## ph = ph - (f/(FS/2))*mod(ph(end),2*pi);
+## ph = ph - (f/(FS/2)) * mod(ph(end),2*pi);
+ph = ph - (f/(FS/2)) * ( ph[-1] % (2*np.pi) )
 ##
 ##
 ## %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ## %%%             SYNTHESIZE COMPLEX FREQUENCY RESPONSE
 ## %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ##
-## cplx = mag.*exp(sqrt(-1)*ph); %%% put mag and phase together in polar form
-## cplx = [cplx conj(fliplr(cplx(2:end-1)))]; %%% conjugate, flip, append for whole spectrum
+## %%% put mag and phase together in polar form
+## cplx = mag.*exp(sqrt(-1)*ph);
+cplx = mag * np.exp( (0+1j) * ph )
+## %%% conjugate, flip, append for WHOLE SPECTRUM
+## cplx = [ cplx conj( fliplr( cplx(2:end-1 ) ) ) ];
+cplxR = np.conj( np.flipud( cplx[1:-1] ) )              # el vector python es con flipud
+cplx = np.concatenate( [cplx, cplxR] )
 ##
 ## %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ## %%%             EXTRACT IMPULSE RESPONSE WITH IFFT AND WINDOW
