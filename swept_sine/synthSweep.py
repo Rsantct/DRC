@@ -263,6 +263,6 @@ def synthSweep(T, FS, f1, f2, tail=0, magSpect=None):
     ##
     ##
     ## %%% assign outputs
-    ## invsweepfft = invirfft;
-    ## sweep = ir;
+    invsweepfft = invirfft;
+    sweep = ir;
     return sweep, invsweepfft, sweepRate
