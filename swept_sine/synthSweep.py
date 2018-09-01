@@ -17,7 +17,8 @@ from scipy import signal
 from grpdelay2phase import grpdelay2phase
 
 ## function [sweep invsweepfft sweepRate] = synthSweep(T,FS,f1,f2,tail,magSpect)
-def synthSweep(T=T, FS=FS, f1=f1, f2=f2, tail=0, magSpect=None):
+def synthSweep(T, FS, f1, f2, tail=0, magSpect=None):
+
     ##
     ## % SYNTHSWEEP Synthesize a logarithmic sine sweep.
     ## %   [sweep invsweepfft sweepRate] = SYNTHSWEEP(T,FS,f1,f2,tail,magSpect)
@@ -265,4 +266,3 @@ def synthSweep(T=T, FS=FS, f1=f1, f2=f2, tail=0, magSpect=None):
     ## invsweepfft = invirfft;
     ## sweep = ir;
     return sweep, invsweepfft, sweepRate
-  
