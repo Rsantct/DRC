@@ -4,12 +4,12 @@
     v0.2
     Genera FIRs para DRC a partir de los filtros paramétricos
     de archivos .txt provinientes de Room EQ Wizard.
-    
+
     Uso:
             rew2fir.py archivoREW.txt [FS] [xK]
             FS: por defecto 44100
             xK: por defecto 32K taps
-    
+
     Experimental: Además de FIR min-phase, también genera
                   el equivalente linear-phase con la misma
                   respuesta en magnitud.
@@ -34,7 +34,7 @@ try:
 except:
     raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools")
     sys.exit()
-    
+
 # PARAMETROS GLOBALES POR DEFECTO:
 fs = 44100  # Frecuencia de muestreo
 m  = 2**15  # Longitud del impulso FIR
@@ -44,7 +44,7 @@ m  = 2**15  # Longitud del impulso FIR
 # 0. LECTURA DEL ARCHIVO .txt de filtros paramétricos de REW
 if len(sys.argv) == 1:
     print __doc__
-    sys.exit() 
+    sys.exit()
 rewfname = sys.argv[1]
 for opc in sys.argv[1:]:
     if opc.isdigit():
@@ -52,7 +52,7 @@ for opc in sys.argv[1:]:
     if "K" in opc.upper():
         k = int( opc.upper().replace("K", "") )
         m = 1024 * k
-    
+
 # 1. Partimos de una delta (espectro plano)
 imp = pydsd.delta(m)
 
@@ -63,7 +63,7 @@ imp = pydsd.delta(m)
 # 3. Leemos los filtros paramétricos desde un archivo de texto de REW:
 PEQs = utils.read_REW_EQ_txt(rewfname)
 
-# 4. Encadenamos los filtros 'peakingEQ' 
+# 4. Encadenamos los filtros 'peakingEQ'
 for peqId, params in PEQs.items():
 
     # Printado de paramétricos:
@@ -73,18 +73,22 @@ for peqId, params in PEQs.items():
              "(BWoct: " + str( round(params['BW'], 3 ) )               + ")"
 
     # Calculamos los coeff IIR correspondientes:
-    b, a = pydsd.biquad(fs     = fs, 
-                        f0     = params['fc'], 
-                        Q      = params['Q'], 
+    b, a = pydsd.biquad(fs     = fs,
+                        f0     = params['fc'],
+                        Q      = params['Q'],
                         dBgain = params['gain'],
                         type   = "peakingEQ"
-                       ) 
+                       )
 
     # Aplicamos los coeff a nuestro impulso de partida
     imp = signal.lfilter(b, a, imp)
 
 # 5. Guardamos el resultado (que es minimum phase)
-pcmname_mp = "mp-" + rewfname.replace('.txt', '.pcm')
+dirname = "/".join(rewfname.split("/")[:-1])
+fname   = rewfname.split("/")[-1]
+pcmname_mp = "mp-" + fname.replace('.txt', '.pcm')
+if dirname:
+    pcmname_mp = dirname + "/" + pcmname_mp
 utils.savePCM32(imp, pcmname_mp)
 
 # 6. Convertimos a LP linear phase (experimental) ...
