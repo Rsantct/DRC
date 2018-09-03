@@ -6,9 +6,9 @@
     de archivos .txt provinientes de Room EQ Wizard.
 
     Uso:
-            rew2fir.py archivoREW.txt [FS] [xK]
-            FS: por defecto 44100
-            xK: por defecto 32K taps
+            rew2fir.py archivoREW.txt [fs] [xxK]
+            fs:  por defecto 44100 (Hz)
+            xxK: Ktaps del FIR, por defecto 32K taps
 
     Experimental: Además de FIR min-phase, también genera
                   el equivalente linear-phase con la misma
