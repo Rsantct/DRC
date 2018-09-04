@@ -25,6 +25,7 @@
 import sys
 from matplotlib import pyplot as plt
 from numpy import *
+# https://python-sounddevice.readthedocs.io
 import sounddevice as sd
 
 print '----------------start of program--------------------'
@@ -38,7 +39,7 @@ c   =   343         # speed of sound
 dBclearance = 10    # white space above TF plots
 dBspan      = 80    # total scale of TF plots
 
-# ----------------enter important parameters-----------------
+# ----------------ENTER IMPORTANT PARAMETERS-----------------
 sig_frac = 0.5      # fraction of full scale
 fs = 48000          # must ensure that Windows settings are the same!
 N = 2**17           # make this larger if there is insufficient time clearance
@@ -114,8 +115,6 @@ plt.title('Sweep')
 print 'f_start*Ls: ' + str(round(f_start*Ls, 2)),  'Ls: ' + str(round(Ls,2))
 print 'finished sweep generation...'
 
-#plt.show()
-
 ## (2)------------data gathering: send out sweep, record system output------%
 # antiphase avoids codec midtap modulation:
 y = sig_frac * concatenate([windosweep, -windosweep]) 
@@ -144,14 +143,14 @@ else:
 
 
 ## %load('Logsweep1data.mat');
+dut = z[:, 0]  # we use LEFT  CHANNEL as DUT
 ref = z[:, 1]  # we use RIGHT CHANNEL as REFERENCE
-dut = z[:, 0]
 N = len(dut)
 ## %save('Logsweep1data.mat','sweep','z','N','fs','sig_frac','CF');
 # clear y z; NO es posible en Python
 
-print 'ref_rms_LSBs: ', round(sqrt( 2**30 * sum(ref**2) / N ), 2)
 print 'dut_rms_LSBs: ', round(sqrt( 2**30 * sum(dut**2) / N ), 2)
+print 'ref_rms_LSBs: ', round(sqrt( 2**30 * sum(ref**2) / N ), 2)
 
 
 plt.figure(20)
