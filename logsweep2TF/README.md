@@ -38,4 +38,4 @@ Usar -h se ver las opciones de uso de ambos scripts.
 
 Se puede elegir la tarjeta de sonido a usar.
 
-Se necesita tener **`~/audiotools`** actualizado.
+Se necesita tener **`https://github.com/AudioHumLab/audiotools`** instalado y actualizado.
