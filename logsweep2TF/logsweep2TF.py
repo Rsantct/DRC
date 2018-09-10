@@ -44,13 +44,14 @@
 #
 #   Observaciones:
 #
-#   -   En la sección "data gathering ... ..." una vez capturada la señal 'dut' se redefine
-#       N=len(dut). Esto lo he descartado entiendo que no tiene efectos secundarios.
+#   - En la sección "data gathering ... ..." una vez capturada la señal 'dut' se redefine
+#   N=len(dut). Esto lo he descartado entiendo que no tiene efectos secundarios.
 #
-#   -   El nivel max de la señal en domT no se corresponde con el max en domF,
-#       confirmar si es correcto, yo creo que si.
-
-
+#   - El nivel max de la señal en domT no se corresponde con el max en domF,
+#   confirmar si es correcto, yo creo que si.
+#
+#   - La opciones de calibración no se toman en cuenta aquí.
+#
 #---------------------------- IMPORT MODULES -------------------------
 #  ~/audiotools modules
 import os
@@ -380,11 +381,11 @@ def do_meas(windosweep, sweep):
     stereo = array([sig_frac * windosweep, sig_frac * -windosweep]) # [ch0, ch1]
     sd.default.samplerate = fs
     sd.default.channels = 2
-    # (i) y.transpose pq el player necesita una array con cada canal en una COLUMNA.
+    # (i) .transpose pq el player necesita una array con cada canal en una COLUMNA.
     z = sd.playrec(stereo.transpose(), blocking=True) # 'blocking' waits to finish.
     dut = z[:, 0]   # we use LEFT  CHANNEL as DUT
     ref = z[:, 1]   # we use RIGHT CHANNEL as REFERENCE
-    #N   = len(dut)
+    #N   = len(dut) # esto creo que es innecesario
     print 'Finished recording.'
 
     #---------------------------  Cheking LEVELS -----------------------------------
@@ -423,8 +424,8 @@ def do_meas(windosweep, sweep):
 
     #-----------------------------------------------------------------------------
     #------------- 3. Determine if time clearance: -------------------------------
-    #    sound card record/play delay    <    zeropad silence at the signal end
-    #    ( will use crosscorrelation )
+    # Checks if ound card play/rec delay is lower than the zeropad silence at the signal end.
+    # ( Will use crosscorrelation )
     #-----------------------------------------------------------------------------
     offset = 0.0 # ideal record/play delay
     TimeClearanceOK = True # forzamos aunque pudiera ser falso.
@@ -440,8 +441,8 @@ def do_meas(windosweep, sweep):
     lwindo[0:indexf1] = 0.5 * ( 1- cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
     lwindosweep = lwindo * sweep
     # remove play-record delay by shifting computer sweep array:
-    ## %sweep=circshift(sweep,-offset);             # Aparece comentado en el cód. original
-    ## lwindosweep=circshift(lwindosweep,-offset);  # se usa esta expresión.
+    ## %sweep=circshift(sweep,-offset);             # Aparece comentado en el cód. original,
+    ## lwindosweep=circshift(lwindosweep,-offset);  # se usa este código
     lwindosweep = roll(lwindosweep, -offset)
 
     # (i) NÓTESE que trabajamos con FFTs completas:
@@ -503,10 +504,11 @@ def do_meas(windosweep, sweep):
 #-----------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    # Turns plotting on when command line use, except if other options are provided.
+    # Las gráficas son mostradas por defecto
     TFplot      = True
     auxPlots    = True
     
+    # Lee la command line
     opcsOK = True
     for opc in sys.argv[1:]:
 
