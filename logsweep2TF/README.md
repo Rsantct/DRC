@@ -14,7 +14,7 @@ IMPORTANTE:
 
 Se recomienda una prueba previa de la tarjeta de sonido para verificar que:
 
-- La tarjeta de sonido no pierde muestras (visible en la gráfica del logsweep capturdo) y los niveles son correctos.
+- La tarjeta de sonido no pierde muestras (visible en la gráfica del logsweep capturado) y los niveles son correctos.
 
 - La medida es viable (Time clearance) con los parámetros usados.
 
@@ -28,10 +28,10 @@ Obtiene la medida de la respuesta estacionaria de una sala, mediante el **promed
 
 Se obtiene:
 
-`room_avg.frd`
+**`room_avg.frd`**
 Archivo de texto con la respuesta en frecuencia promedio de las medidas en varios puntos de escucha
 
-'room_avg_smoothed.frd'
+**`room_avg_smoothed.frd`**
 Archivo de texto promedio y suavizado 1/24 oct hasta la Freq Schroeder y progresivamente hacia 1/1 oct en Freq Nyq.
 
 Usar -h se ver las opciones de uso de ambos scripts.
