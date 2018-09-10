@@ -57,6 +57,7 @@ LS.plotSmoothSpectrum   = False
 
 if __name__ == "__main__":
 
+
     opcsOK = True
     for opc in sys.argv[1:]:
 
@@ -92,6 +93,7 @@ if __name__ == "__main__":
 
     LS.sd.default.channels     = 2
     LS.sd.default.samplerate   = float(LS.fs)
+    selected_card = LS.selected_card
 
     if selected_card:
         i = selected_card.split(",")[0].strip()
@@ -104,8 +106,8 @@ if __name__ == "__main__":
             sys.exit()
 
     # ejem..
-    N = LS.N
-    fs= LS.fs
+    N             = LS.N
+    fs            = LS.fs
 
     # 1. Preparamos el sweep
     windosweep, sweep = LS.make_sweep()
