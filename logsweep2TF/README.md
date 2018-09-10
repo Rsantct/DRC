@@ -1,4 +1,4 @@
-Utilidades para medir la respuesta de unos altavoces en la sala.
+Utilidades para medir la respuesta de un altavoz en la sala.
 
 ## `logsweep2TF.py`
 
@@ -18,13 +18,13 @@ Se recomienda una prueba previa de la tarjeta de sonido para verificar que:
 
 - La medida es viable (Time clearance) con los parámetros usados.
 
-NOTA:
-
-Actualmente no se contempla el enventado de la medida para obtener la respuesta libre de reflexiones.
-
 Ejemplo de captura con interrupciones que pueden ser no audibles:
 
 ![gaps](https://github.com/Rsantct/DRC/blob/master/logsweep2TF/gaps_in_recorded.jpg)
+
+NOTA:
+
+Actualmente no se contempla el enventado de la medida para obtener la respuesta libre de reflexiones.
 
 
 ## `roommeasure.py`
