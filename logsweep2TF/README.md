@@ -6,9 +6,9 @@ Obtiene la TF Transfer Function de un DUT (device under test) mediante
 la deconvolución de una señal de excitación (logsweep) y
 la respuesta capturada por el micrófono.
 
-**DUT   ---> LEFT CHANNEL**  (Señal del micrófono)
+**`DUT   ---> LEFT  CHANNEL`**  (Señal del micrófono)
 
-**LOOP  ---> RIGHT CHANNEL** (Bucle opcional para ayudar a validar la medida según la latencia HW vs la longitud N de la secuencia de pruebas)
+**`LOOP  ---> RIGHT CHANNEL`** (Bucle opcional para ayudar a validar la medida según la latencia HW vs la longitud N de la secuencia de pruebas)
 
 IMPORTANTE:
 
