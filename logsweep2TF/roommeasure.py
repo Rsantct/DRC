@@ -57,7 +57,6 @@ LS.plotSmoothSpectrum   = False
 
 if __name__ == "__main__":
 
-
     opcsOK = True
     for opc in sys.argv[1:]:
 
