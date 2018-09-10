@@ -22,6 +22,11 @@ NOTA:
 
 Actualmente no se contempla el enventado de la medida para obtener la respuesta libre de reflexiones.
 
+Ejemplo de captura con interrupciones que pueden ser no audibles:
+
+![gaps](https://github.com/Rsantct/DRC/blob/master/logsweep2TF/gaps_in_recorded.jpg)
+
+
 ## `roommeasure.py`
 
 Obtiene la medida de la respuesta estacionaria de una sala, mediante el **promediado de medidas en varios puntos de escucha**.
