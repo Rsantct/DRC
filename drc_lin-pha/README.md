@@ -48,11 +48,13 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
  
 - Exportar los parámetros de los filtros EQ finales.
  
-### Herramienta rew2fir.py
+### Herramienta `rew2fir.py`
 
 **[rew2fir.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/rew2fir.py)**
+
+- Procesa un archivo parametricos.txt obtenido con REW.
  
-- Generar FIRs linear-phase con los parámetros de los filtros obtenidos con REW.
+- Genera FIRs linear-phase con los parámetros de los filtros obtenidos con REW.
 
     Nota: **rew2fir.py** proporciona ambas versiones minimum-phase y linear-phase.
 
@@ -64,11 +66,13 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
 - Exportar a .frd
   
-### Herramienta roomEQ.py
+### Herramienta `roomEQ.py`
 
 **[roomEQ.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.py)**
+
+- Procesa un archivo `medicion.frd` por ejemplo de de ARTA o de `roommeasure.py`.
  
-- Generar FIRs para EQ a partir de la respuesta .frd del punto anterior.
+- Genera FIRs para EQ a partir de la respuesta .frd del punto anterior.
 
     Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
 
