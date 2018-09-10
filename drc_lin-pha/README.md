@@ -34,19 +34,19 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
 ## Procedimiento con REW Room EQ Wizard:
  
-- Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
+1.- Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
 
     Veremos que los picos modales y los dips de cancelaciones varían mucho. 
 
     Anotar los modos detectados por REW en cada IR medido.
  
-- Obtener la FR_avg promedio de las medidas anteriores.
+2.- Obtener la FR_avg promedio de las medidas anteriores.
  
-- Calcular filtros para EQ de la FR_avg.
+3.- Calcular filtros para EQ de la FR_avg.
  
     Descartar los filtros que no correspondan a los modos más importantes obtenidos arriba.
  
-- Exportar los parámetros de los filtros EQ finales.
+4.- Exportar los parámetros de los filtros EQ finales en un archivo `.txt`
  
 ### Herramienta `rew2fir.py`
 
@@ -58,13 +58,17 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
 
     Nota: **rew2fir.py** proporciona ambas versiones minimum-phase y linear-phase.
 
-## Procedimiento con ARTA:
+## Procedimiento con ARTA o con `roommeasure.py`:
  
-- Usar el RTA de ARTA en modo promedio, o bien realizar varias medidas y promediar la FR.
+1.- Usar el RTA de ARTA en modo promedio, o bien realizar varias medidas y promediar la FR.
 
     Tomar varias medidas en distintos puntos de una zona de escucha amplia.
 
-- Exportar a .frd
+2.- Exportar a .frd
+
+O bien
+
+1.- Ejecutar `roommeasure.py` para realizar varias medidas automáticamente y guardar la respuestra promediada en un archivo `.frd`
   
 ### Herramienta `roomEQ.py`
 
