@@ -24,8 +24,7 @@ Actualmente no se contempla el enventado de la medida para obtener la respuesta 
 
 ## `roommeasure.py`
 
-Obtiene la medida de la respuesta estacionaria de una sala, mediante
-el promediado de medidas en varios puntos de escucha.
+Obtiene la medida de la respuesta estacionaria de una sala, mediante el **promediado de medidas en varios puntos de escucha**.
 
 Se obtiene:
 
