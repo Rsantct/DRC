@@ -36,15 +36,15 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
  
 1.- Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
 
-    Veremos que los picos modales y los dips de cancelaciones varían mucho. 
+Veremos que los picos modales y los dips de cancelaciones varían mucho. 
 
-    Anotar los modos detectados por REW en cada IR medido.
+Anotar los modos detectados por REW en cada IR medido.
  
 2.- Obtener la FR_avg promedio de las medidas anteriores.
  
 3.- Calcular filtros para EQ de la FR_avg.
  
-    Descartar los filtros que no correspondan a los modos más importantes obtenidos arriba.
+Descartar los filtros que no correspondan a los modos más importantes obtenidos arriba.
  
 4.- Exportar los parámetros de los filtros EQ finales en un archivo `.txt`
  
@@ -62,7 +62,7 @@ El principal problema de esta solución es el alto retardo inherente de los FIRs
  
 1.- Usar el RTA de ARTA en modo promedio, o bien realizar varias medidas y promediar la FR.
 
-    Tomar varias medidas en distintos puntos de una zona de escucha amplia.
+Tomar varias medidas en distintos puntos de una zona de escucha amplia.
 
 2.- Exportar a .frd
 
