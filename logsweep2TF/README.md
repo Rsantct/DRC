@@ -34,7 +34,7 @@ Archivo de texto con la respuesta en frecuencia promedio de las medidas en vario
 **`room_avg_smoothed.frd`**
 Archivo de texto promedio y suavizado 1/24 oct hasta la Freq Schroeder y progresivamente hacia 1/1 oct en Freq Nyq.
 
-Usar -h se ver las opciones de uso de ambos scripts.
+Usar **`-h`** para ver las opciones de uso de ambos scripts.
 
 Se puede elegir la tarjeta de sonido a usar.
 
