@@ -11,7 +11,12 @@ unzip -o master.zip
 
 rm -rf ~/DRC
 mv ~/DRC-master ~/DRC
+
+chmod +x ~/DRC/drc_lin-pha/*py
+chmod +x ~/DRC/logsweep2TF/*py
+chmod +x ~/DRC/swept_sine/*py
+chmod -f +x ~/DRC/*py
+chmod -f +x ~/DRC/*sh
+
 rm ./update.sh
 
-chmod -R +x ~/DRC/*py
-chmod -R +x ~/DRC/*sh
