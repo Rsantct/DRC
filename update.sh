@@ -16,5 +16,5 @@ chmod +x ~/DRC/drc_lin-pha/*py
 chmod +x ~/DRC/logsweep2TF/*py
 chmod +x ~/DRC/swept_sine/*py
 
-rm ./update.sh
+rm ./update.sh  > /dev/null 2>&1
 
