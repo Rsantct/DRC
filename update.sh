@@ -8,6 +8,7 @@ rm -f ~/master.zip*
 
 wget https://github.com/Rsantct/DRC/archive/master.zip
 unzip -o master.zip
+rm -f ~/master.zip*
 
 rm -rf ~/DRC
 mv ~/DRC-master ~/DRC
