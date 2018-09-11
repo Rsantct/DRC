@@ -64,7 +64,7 @@ Descartar los filtros que no correspondan a los modos más importantes obtenidos
 
 Tomar varias medidas en distintos puntos de una zona de escucha amplia.
 
-2.- Exportar a .frd
+2.- Exportar a `.frd`
 
 O bien
 
@@ -96,7 +96,7 @@ O bien
 
 **Herramienta: FIRtro**
  
-- Cargar los FIR de arriba en la etapa drc_fir de FIRtro
+- Cargar los FIR de arriba en la etapa drc_fir de FIRtro, o en cualquier otro convolver a elección del usuario.
 
 - Escuchar música y evaluar el resultado.
 
