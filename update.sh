@@ -2,6 +2,8 @@
 
 cd ~/
 
+mkdir -p ~/DRC
+
 rm -f ~/master.zip*
 
 wget https://github.com/Rsantct/DRC/archive/$branch.zip
