@@ -6,7 +6,7 @@ mkdir -p ~/DRC
 
 rm -f ~/master.zip*
 
-wget https://github.com/Rsantct/DRC/archive/$branch.zip
+wget https://github.com/Rsantct/DRC/archive/master.zip
 unzip -o master.zip
 
 rm -rf ~/DRC
