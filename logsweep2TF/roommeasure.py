@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    Script para la medida de la respuesta estacionaria de una sala.
+    Script para obtenerla respuesta estacionaria de una sala,
+    en varios puntos de escucha (micrófono).
 
     Se obtiene:
 
-    'room_N.frd'   x M       Medidas en cada punto de escucha
+    'room_X.frd'             Medidas en cada punto de escucha X.
     'room_avg.frd'           Promedio de medidas en los puntos de escucha
     'room_avg_smoothed.frd'  Promedio suavizado 1/24 oct hasta la Freq Schroeder
                              y progresivamente hacia 1/1 oct en Freq Nyq.
@@ -17,7 +18,7 @@
          -Mxx               Número de medidas a realizar.
          -Exx               Potencia de 2 que determina la longitud=2^xx
                             en muestras de la señal de prueba. Por defecto 2^17.
-         -Pxx               String para prefijo-archivo.frd
+         -Pxx               String para prefijos 'xx-archivo.frd'
 
          -Sxx               Freq Shroeder para el suavizado, por defecto 200 Hz.
 
@@ -31,18 +32,33 @@
     
     Se pueden revisar las curvas con FRD_viewer.py del paquete audiotools, p.ej:
     
-        FRD_viewer.py $(ls room_?.frd) -9oct
+        FRD_tool.py $(ls room_?.frd)
+        FRD_tool.py $(ls room_?.frd) -24oct -f0=200  # Para verlas suavizadas
     
 """
 
 import sys
 from numpy import *
 from scipy import interpolate
+
 try:
     import logsweep2TF as LS
 except:
     print "(!) Se necesita logsweep2TF.py"
     sys.exit()
+
+#  ~/audiotools modules 
+import os 
+import sys 
+HOME = os.path.expanduser("~") 
+sys.path.append(HOME + "/audiotools") 
+try: 
+    import utils 
+    from smoothSpectrum import smoothSpectrum as smooth 
+except: 
+    raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools") 
+    sys.exit() 
+# end of /audiotools modules 
 
 # DEFAULTS
 
@@ -65,15 +81,6 @@ LS.checkClearence       = False     # Se da por hecho que se ha comprobado previ
 LS.TFplot               = False     # Omite las gráficas de logsweep2TF
 LS.auxPlots             = False
 LS.plotSmoothSpectrum   = False
-
-def saveFR(fname, freq, mag):
-    header =  "DFT Frequency Response\n"
-    header += "Numpoints = " + str(len(freq)) + "\n"
-    header += "SamplingRate = " + str(fs) + " Hz\n"
-    header += "Frequency(Hz)   Magnitude(dB)"
-    print "Guardando " + fname
-    savetxt( fname, column_stack((freq, 20*log10(mag))), 
-             delimiter="\t", fmt='%1.4e', header=header)
 
 def interpSS(freq, mag, Nbins):
     """ Interpola un Semi Spectro a una nueva longitud Nbins
@@ -150,9 +157,9 @@ if __name__ == "__main__":
     meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
     # Guardamos la curva en un archivo .frd secuenciado
     f, m = interpSS(freq, meas, binsFRD)
-    saveFR( prefix + 'room_0.frd', f, m )
+    utils.saveFRD( prefix + 'room_0.frd', f, 20*log10(m), fs=fs )
     # La ploteamos suavizada para mejor visualización
-    m_smoo = LS.smooth(m, f, Noct, f0=Scho)
+    m_smoo = smooth(m, f, Noct, f0=Scho)
     LS.plot_spectrum(m_smoo, semi=True, fig=10, label='0', color='C0')
 
     # Inicializamos la pila 'SSs' con esta primera toma (en 'alta resolución' N/2 bins)
@@ -166,9 +173,9 @@ if __name__ == "__main__":
         meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
         # Guardamos la curva en un archivo .frd secuenciado
         f, m = interpSS(freq, meas, binsFRD)
-        saveFR( prefix + 'room_' + str(i) + '.frd', f, m )
+        utils.saveFRD( prefix + 'room_' + str(i) + '.frd', f, 20*log10(m), fs=fs )
         # La ploteamos suavizada para mejor visualización
-        m_smoo = LS.smooth(m, f, Noct, f0=Scho)
+        m_smoo = smooth(m, f, Noct, f0=Scho)
         LS.plot_spectrum(m_smoo, semi=True, fig=10, label=str(i), color='C'+str(i))
         # Seguimos acumulando en la pila 'SSs'
         SSs = vstack( ( SSs, meas ) )
@@ -183,12 +190,13 @@ if __name__ == "__main__":
 
     # Guarda el promedio raw en .frd
     f, m = interpSS(freq, SSsAvg, binsFRD)
-    saveFR( prefix + 'room_avg.frd', f, m )
+    utils.saveFRD( prefix + 'room_avg.frd', f, 20*log10(m) , fs=fs)
     
     # Guarda la versión suavidaza del promedio
-    print "Suavizando 1/" + str(Noct) + " oct hasta " + str(Scho) + " Hz y variable hasta Nyq"
-    m_smoothed = LS.smooth(m, f, Noct, f0=Scho)
-    saveFR( prefix + 'room_avg_smoothed.frd', f, m_smoothed)
+    print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
+          " Hz y variando hasta 1/1 oct en Nyq"
+    m_smoothed = smooth(m, f, Noct, f0=Scho)
+    utils.saveFRD( prefix + 'room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs)
 
     # Muestra la respuesta en frecuencia promedio.
     LS.plot_spectrum(m,          semi=True, fig=20, color='blue', label='avg')
