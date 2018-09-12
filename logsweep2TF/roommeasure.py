@@ -36,6 +36,9 @@
         FRD_tool.py $(ls room_?.frd) -24oct -f0=200  # Para verlas suavizadas
     
 """
+#
+# TODO: ¿ofrecer una ponderación elegida por el operador para cada punto de medida?
+#
 
 import sys
 from numpy import *
@@ -158,23 +161,23 @@ if __name__ == "__main__":
     # Guardamos la curva en un archivo .frd secuenciado
     f, m = interpSS(freq, meas, binsFRD)
     utils.saveFRD( prefix + 'room_0.frd', f, 20*log10(m), fs=fs )
-    # La ploteamos suavizada para mejor visualización
+    # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
     m_smoo = smooth(m, f, Noct, f0=Scho)
     LS.plot_spectrum(m_smoo, semi=True, fig=10, label='0', color='C0')
 
-    # Inicializamos la pila 'SSs' con esta primera toma (en 'alta resolución' N/2 bins)
+    # Inicializamos la pila de promediado 'SSs' con esta primera toma (en 'alta resolución' N/2 bins)
     SSs = meas
     #   y añadimos el resto de medidas si las hubiera:
-    for i in range(1,numMeas):
+    for i in range(1, numMeas):
         print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
         print "PULSA INTRO PARA REALIZAR LA SIGUIENTE MEDIDA"
         print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        raw_input()
+        raw_input() # por algún extraño motivo no presenta un texto entre los paréntesis :-/
         meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
         # Guardamos la curva en un archivo .frd secuenciado
         f, m = interpSS(freq, meas, binsFRD)
         utils.saveFRD( prefix + 'room_' + str(i) + '.frd', f, 20*log10(m), fs=fs )
-        # La ploteamos suavizada para mejor visualización
+        # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
         m_smoo = smooth(m, f, Noct, f0=Scho)
         LS.plot_spectrum(m_smoo, semi=True, fig=10, label=str(i), color='C'+str(i))
         # Seguimos acumulando en la pila 'SSs'
@@ -188,19 +191,21 @@ if __name__ == "__main__":
     else:
         SSsAvg = SSs
 
-    # Guarda el promedio raw en .frd
+    # Guarda el promedio raw en un archivo .frd
     f, m = interpSS(freq, SSsAvg, binsFRD)
     utils.saveFRD( prefix + 'room_avg.frd', f, 20*log10(m) , fs=fs)
     
-    # Guarda la versión suavidaza del promedio
+    # También guarda una versión suavidaza del promedio en un .frd
     print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
           " Hz y variando hasta 1/1 oct en Nyq"
     m_smoothed = smooth(m, f, Noct, f0=Scho)
     utils.saveFRD( prefix + 'room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs)
 
-    # Muestra la respuesta en frecuencia promedio.
+    # Muestra las curvas de cada punto de escucha en una figura,
+    # y las curva promedio y promedio_suavizado en otra figura.
     LS.plot_spectrum(m,          semi=True, fig=20, color='blue', label='avg')
     LS.plot_spectrum(m_smoothed, semi=True, fig=20, color='red',  label='avg smoothed')
     LS.plt.show()
 
+    # FIN
 
