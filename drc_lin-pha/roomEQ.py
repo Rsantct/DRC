@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    roomEQ.py v0.1
+    roomEQ.py v0.1a
 
     Ecualiza una respuesta en frecuencia in room.
 
@@ -10,6 +10,14 @@
     Se necesita  github.com/AudioHumLab/audiotools
 
 """
+#
+# v0.1a
+#   - Nombrado de archivos de salida para FIRtro
+#   - Muestra la correspondencia del nivel de referencia estimado en el gráfico
+
+# AJUSTES POR DEFECTO:
+fs = 48000
+esParaFIRtro = True
 
 # Para que este script pueda estar fuera de ~/audiotools
 import os
@@ -31,8 +39,6 @@ from smoothSpectrum import smoothSpectrum as smooth
 import numpy as np
 from scipy import signal
 from matplotlib import pyplot as plt
-
-fs = 48000
 
 # 1. LECTURA DE LA CURVA A PROCESAR
 # Lee el nombre de archivo .frd
@@ -146,14 +152,24 @@ imp = pydsd.semiblackmanharris(m) * imp[:m]
 impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 
 # 4.6 Guardamos los impulsos en archivos .pcm
-tmp = "Guardando el FIR de ecualización en '"
-mpEQpcmname = "mp-" + FRDname.replace('.frd', '_eq.pcm').replace('.txt', '_eq.pcm')
-utils.savePCM32(imp, mpEQpcmname)
-tmp += mpEQpcmname
-lpEQpcmname = mpEQpcmname.replace('mp-', 'lp-')
+
+# Nombramos los pcm:
+if esParaFIRtro:
+    ch = 'C' # genérico por si no viene nombrado el frd
+    if FRDname[0].upper() in ('L','R'):
+        ch = FRDname[0].upper()
+        resto = FRDname[1:-4].strip().strip('_').strip('-')
+    mpEQpcmname = 'drc-X-'+ch+'_mp_'+resto+'.pcm'
+    lpEQpcmname = 'drc-X-'+ch+'_lp_'+resto+'.pcm'
+else:
+    mpEQpcmname = "mp_" + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
+    lpEQpcmname = "lp_" + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
+
+# Guardamos:
+utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
-tmp += "' '" + lpEQpcmname + "'"
-print tmp
+
+print "Guardando el FIR de ecualización en '" + mpEQpcmname + "' '" + lpEQpcmname + "'"
 
 # 5. PLOTEOS
 # Curva inicial sin suavizar
@@ -171,8 +187,8 @@ plt.semilogx(frec[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
 # Curva de EQ
 plt.semilogx(frec, eq,
              label="EQ", color="red")
-
-plt.title(FRDname)
+tmp = FRDname + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
+plt.title(tmp)
 plt.xlim(20, 20000)
 plt.ylim(-30, 10)
 plt.grid()
