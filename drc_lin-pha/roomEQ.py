@@ -2,13 +2,13 @@
 # -*- coding: utf-8 -*-
 """
     roomEQ.py v0.1
-    
+
     Ecualiza una respuesta en frecuencia in room.
-        
+
     Uso:  python roomEQ.py respuesta.frd  fs  (fs=48000 por defecto)
-    
+
     Se necesita  github.com/AudioHumLab/audiotools
-    
+
 """
 
 # Para que este script pueda estar fuera de ~/audiotools
@@ -38,7 +38,7 @@ fs = 48000
 # Lee el nombre de archivo .frd
 if len(sys.argv) == 1:
     print __doc__
-    sys.exit() 
+    sys.exit()
 
 try:
     FRDname = sys.argv[1]
@@ -51,7 +51,7 @@ try:
         except:
             pass
 
-    # Confirmamos si la fs está en el archivo .frd 
+    # Confirmamos si la fs está en el archivo .frd
     if not os.system("grep \ " + str(fs) + " " + FRDname + "> /dev/null 2>&1"):
         tmp = " coincide con la indicada en " + FRDname
     else:
@@ -147,12 +147,12 @@ impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 
 # 4.6 Guardamos los impulsos en archivos .pcm
 tmp = "Guardando el FIR de ecualización en '"
-eqPCMname = "mp-" + FRDname.replace('.frd', '_eq.pcm').replace('.txt', '_eq.pcm')
-utils.savePCM32(imp, eqPCMname)
-tmp += eqPCMname
-eqPCMname = eqPCMname.replace('mp-', 'lp-')
-utils.savePCM32(impLP, eqPCMname)
-tmp += "' '" + eqPCMname + "'"
+mpEQpcmname = "mp-" + FRDname.replace('.frd', '_eq.pcm').replace('.txt', '_eq.pcm')
+utils.savePCM32(imp, mpEQpcmname)
+tmp += mpEQpcmname
+lpEQpcmname = mpEQpcmname.replace('mp-', 'lp-')
+utils.savePCM32(impLP, lpEQpcmname)
+tmp += "' '" + lpEQpcmname + "'"
 print tmp
 
 # 5. PLOTEOS
@@ -182,15 +182,16 @@ plt.show()
 # 6. Guardamos las gráficas en un PDF:
 #pdfName = FRDname.replace('.frd', '_eq.pdf').replace('.txt', '_eq.pdf')
 #print "\nGuardando gráfica en el archivo " + pdfName
-# evitamos los warnings del pdf 
-# C:\Python27\lib\site-packages\matplotlib\figure.py:1742: UserWarning: 
-# This figure includes Axes that are not compatible with tight_layout, so 
+# evitamos los warnings del pdf
+# C:\Python27\lib\site-packages\matplotlib\figure.py:1742: UserWarning:
+# This figure includes Axes that are not compatible with tight_layout, so
 # its results might be incorrect.
 import warnings
 #warnings.filterwarnings("ignore")
 #fig.savefig(pdfName, bbox_inches='tight')
 
 # 7. Veamos los FIRs de EQ:
-os.system("IRs_viewer.py mp-L_eq.pcm lp-L_eq.pcm 20-20000 -eq -1 " + str(int(fs)))
+print "Veamos los impulsos con audiotools/IRs_viewer.py ..."
+os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname + "' 20-20000 -eq -1 " + str(int(fs)))
 
 # FIN
