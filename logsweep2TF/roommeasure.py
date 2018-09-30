@@ -29,16 +29,15 @@
     Se recomienda una prueba previa con logsweep2TF.py para verificar que:
     - La tarjeta de sonido no pierde muestras y los niveles son correctos.
     - La medida es viable (Time clearance) con los parámetros usados.
-    
+
     Se pueden revisar las curvas con FRD_viewer.py del paquete audiotools, p.ej:
-    
+
         FRD_tool.py $(ls room_?.frd)
         FRD_tool.py $(ls room_?.frd) -24oct -f0=200  # Para verlas suavizadas
-    
+
 """
-#
-# TODO: ¿ofrecer una ponderación elegida por el operador para cada punto de medida?
-#
+# v1.0a
+# Se separa la función medir(secuencia)
 
 import sys
 from numpy import *
@@ -50,18 +49,18 @@ except:
     print "(!) Se necesita logsweep2TF.py"
     sys.exit()
 
-#  ~/audiotools modules 
-import os 
-import sys 
-HOME = os.path.expanduser("~") 
-sys.path.append(HOME + "/audiotools") 
-try: 
-    import utils 
-    from smoothSpectrum import smoothSpectrum as smooth 
-except: 
-    raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools") 
-    sys.exit() 
-# end of /audiotools modules 
+#  ~/audiotools modules
+import os
+import sys
+HOME = os.path.expanduser("~")
+sys.path.append(HOME + "/audiotools")
+try:
+    import utils
+    from smoothSpectrum import smoothSpectrum as smooth
+except:
+    raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools")
+    sys.exit()
+# end of /audiotools modules
 
 # DEFAULTS
 
@@ -95,6 +94,23 @@ def interpSS(freq, mag, Nbins):
     # Y obtenemos las magnitudes interpoladas en las 'frecNew':
     return freqNew, funcI(freqNew)
 
+def medir(secuencia=0):
+    # Hacemos la medida, tomamos el SemiSpectrum positivo
+    meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
+    # Guardamos la curva en un archivo .frd secuenciado
+    f, m = interpSS(freq, meas, binsFRD)
+    utils.saveFRD( prefix + 'room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs )
+    # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
+    m_smoo = smooth(m, f, Noct, f0=Scho)
+    LS.plot_spectrum(m_smoo, semi=True, fig=10, label=str(secuencia), color='C'+str(secuencia))
+    return meas
+
+aviso_siguiente_medida = """
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+PULSA INTRO PARA REALIZAR LA SIGUIENTE MEDIDA
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+"""
+
 if __name__ == "__main__":
 
     opcsOK = True
@@ -112,7 +128,7 @@ if __name__ == "__main__":
                     sys.exit()
             except:
                 print __doc__
-                sys.exit()                
+                sys.exit()
 
         elif "-M" in opc:
             numMeas = int(opc[2:])
@@ -146,7 +162,7 @@ if __name__ == "__main__":
         if not LS.test_soundcard(i=i, o=o):    #  Si falla la tarjeta indicada en command line.
             sys.exit()
 
-    # ejem..
+    # Leemos los valores N y fs que hemos cargado en el módulo LS al leer las opciones -E.. -dev...
     N             = LS.N
     fs            = LS.fs
 
@@ -156,30 +172,14 @@ if __name__ == "__main__":
     # 1. Preparamos el sweep
     windosweep, sweep = LS.make_sweep()
 
-    # 2. Hacemos la primera medida, tomamos el SemiSpectrum positivo
-    meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
-    # Guardamos la curva en un archivo .frd secuenciado
-    f, m = interpSS(freq, meas, binsFRD)
-    utils.saveFRD( prefix + 'room_0.frd', f, 20*log10(m), fs=fs )
-    # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
-    m_smoo = smooth(m, f, Noct, f0=Scho)
-    LS.plot_spectrum(m_smoo, semi=True, fig=10, label='0', color='C0')
-
-    # Inicializamos la pila de promediado 'SSs' con esta primera toma (en 'alta resolución' N/2 bins)
-    SSs = meas
-    #   y añadimos el resto de medidas si las hubiera:
+    # 2. Medimos, acumulando en una pila de promediado 'SSs'
+    SSs = medir(secuencia=0)
+    #    Añadimos el resto de medidas si las hubiera:
     for i in range(1, numMeas):
-        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        print "PULSA INTRO PARA REALIZAR LA SIGUIENTE MEDIDA"
-        print "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
-        raw_input() # por algún extraño motivo no presenta un texto entre los paréntesis :-/
-        meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
-        # Guardamos la curva en un archivo .frd secuenciado
-        f, m = interpSS(freq, meas, binsFRD)
-        utils.saveFRD( prefix + 'room_' + str(i) + '.frd', f, 20*log10(m), fs=fs )
-        # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
-        m_smoo = smooth(m, f, Noct, f0=Scho)
-        LS.plot_spectrum(m_smoo, semi=True, fig=10, label=str(i), color='C'+str(i))
+        # Esperamos que se pulse INTRO
+        print aviso_siguiente_medida
+        raw_input(aviso_siguiente_medida) # usamos print pq raw_input no presenta el texto :-/
+        meas = medir(secuencia=i)
         # Seguimos acumulando en la pila 'SSs'
         SSs = vstack( ( SSs, meas ) )
 
@@ -194,7 +194,7 @@ if __name__ == "__main__":
     # Guarda el promedio raw en un archivo .frd
     f, m = interpSS(freq, SSsAvg, binsFRD)
     utils.saveFRD( prefix + 'room_avg.frd', f, 20*log10(m) , fs=fs)
-    
+
     # También guarda una versión suavidaza del promedio en un .frd
     print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
           " Hz y variando hasta 1/1 oct en Nyq"
