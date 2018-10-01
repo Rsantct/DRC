@@ -187,13 +187,13 @@ if __name__ == "__main__":
     # 2. Medimos, acumulando en una pila de promediado 'SSs'
     SSs = {}
     SSsAvg = {}
+    # Esperamos que se pulse INTRO
     for ch in channels:
-        # Esperamos que se pulse INTRO
         aviso_medida(ch=ch, secuencia=0)
         SSs[ch] = medir(ch=ch, secuencia=0)
     #    Añadimos el resto de medidas si las hubiera:
-    for ch in channels:
-        for i in range(1, numMeas):
+    for i in range(1, numMeas):
+        for ch in channels:
             # Esperamos que se pulse INTRO
             aviso_medida(ch=ch, secuencia=i)
             meas = medir(ch=ch, secuencia=i)
