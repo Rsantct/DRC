@@ -27,6 +27,8 @@
          -dev=cap,pbk,fs    Usa los números de dispositivo de sonido y la fs indicados.
                             (Ver dispositivos con logsweep2TF.py -h)
 
+         -nobeep            No pita antes de estar listo para medir.
+
     IMPORTANTE:
     Se recomienda una prueba previa con logsweep2TF.py para verificar que:
     - La tarjeta de sonido no pierde muestras y los niveles son correctos.
@@ -46,6 +48,7 @@
 import sys
 from numpy import *
 from scipy import interpolate
+from scipy.io import wavfile # para leer beepbeep.wav
 
 try:
     import logsweep2TF as LS
@@ -70,6 +73,7 @@ except:
 
 LS.N                    = 2**17     # Longitud en muestras de la señal de prueba.
 numMeas                 = 2         # Núm de medidas a realizar
+avisoBeep               = True      # pitido de aviso antes de medir
 
 binsFRD                 = 2**14     # bins finales de los archivos .frd obtenidos
 channels                = 'M'       # Canales a intercalar en cada punto de medida, se usará
@@ -120,9 +124,15 @@ def aviso_medida(ch, secuencia):
     aviso += "PULSA INTRO PARA MEDIR EN CANAL  < " + ch + " >  (" + str(secuencia+1) + "/" + str(numMeas) + ")\n"
     aviso += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     print aviso
+    if avisoBeep:
+        Nbeep = tile(beep, 1+secuencia)
+        LS.sd.play(Nbeep)
     raw_input(aviso) # usamos print pq raw_input no presenta el texto :-/
 
 if __name__ == "__main__":
+
+    # Pitido para avisar de la siguiente medida:
+    fsbeep, beep = wavfile.read(HOME+"/DRC/logsweep2TF/beep.wav")
 
     # Leemos los argumentos command line:
     opcsOK = True
@@ -131,6 +141,9 @@ if __name__ == "__main__":
         if "-h" in opc.lower():
             print __doc__
             sys.exit()
+
+        elif "-nobeep" in opc.lower():
+            avisoBeep = False
 
         elif "-dev" in opc.lower():
             try:
@@ -229,4 +242,3 @@ if __name__ == "__main__":
 
     # FIN
     LS.plt.show()
-
