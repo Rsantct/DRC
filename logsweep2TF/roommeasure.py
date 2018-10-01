@@ -15,12 +15,12 @@
 
          -h                 ayuda
 
-         -Mxx               Número de medidas a realizar.
-         -Exx               Potencia de 2 que determina la longitud=2^xx
+         -mX                Número de medidas a realizar.
+         -eXX               Potencia de 2 que determina la longitud=2^xx
                             en muestras de la señal de prueba. Por defecto 2^17.
-         -Pxx               String para prefijos 'xx-archivo.frd'
+         -cX                Canal: L | R | LR  se usará como prefijo del archivo.frd
 
-         -Sxx               Freq Shroeder para el suavizado, por defecto 200 Hz.
+         -sXX               Freq Shroeder para el suavizado, por defecto 200 Hz.
 
          -dev=cap,pbk,fs    Usa los sound devices y la fs indicada.
                             (Ver dispositivos con logsweep2TF.py -h)
@@ -37,7 +37,9 @@
 
 """
 # v1.0a
-# Se separa la función medir(secuencia)
+#   Se separa la función medir(secuencia)
+# v1.1
+#   Se permite intercanal medida para cada canal en cada punto de micrófono
 
 import sys
 from numpy import *
@@ -68,7 +70,8 @@ LS.N                    = 2**17     # Longitud en muestras de la señal de prueb
 numMeas                 = 2         # Núm de medidas a realizar
 
 binsFRD                 = 2**14     # bins finales de los archivos .frd obtenidos
-prefix                  = ''        # prefijo del los .frd, p.ej: "L" o "R"
+channels                = 'M'       # Canales a intercalar en cada punto de medida, se usará
+                                    # como prefijo del los .frd, p.ej: "L" o "R"
 
 Scho                    = 200       # Frec de Schroeder (Hz)
 Noct                    = 24        # Suavizado hasta Schroeder de la medida final promediada
@@ -94,25 +97,32 @@ def interpSS(freq, mag, Nbins):
     # Y obtenemos las magnitudes interpoladas en las 'frecNew':
     return freqNew, funcI(freqNew)
 
-def medir(secuencia=0):
+def medir(ch='M', secuencia=0):
     # Hacemos la medida, tomamos el SemiSpectrum positivo
     meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
     # Guardamos la curva en un archivo .frd secuenciado
     f, m = interpSS(freq, meas, binsFRD)
-    utils.saveFRD( prefix + 'room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs )
+    utils.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs )
     # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
     m_smoo = smooth(m, f, Noct, f0=Scho)
-    LS.plot_spectrum(m_smoo, semi=True, fig=10, label=str(secuencia), color='C'+str(secuencia))
+    figIdx = 10
+    canales = ('L', 'R', 'M')
+    if ch in canales:
+        figIdx += canales.index(ch)
+    LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
+                      label = ch + '_' + str(secuencia), color='C' + str(secuencia) )
     return meas
 
-aviso_siguiente_medida = """
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-PULSA INTRO PARA REALIZAR LA SIGUIENTE MEDIDA
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-"""
+def aviso_medida(ch, secuencia):
+    aviso =  "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    aviso += "PULSA INTRO PARA MEDIR EN CANAL  < " + ch + " >  (" + str(secuencia+1) + "/" + str(numMeas) + ")\n"
+    aviso += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    print aviso
+    raw_input(aviso) # usamos print pq raw_input no presenta el texto :-/
 
 if __name__ == "__main__":
 
+    # Leemos los argumentos command line:
     opcsOK = True
     for opc in sys.argv[1:]:
 
@@ -130,16 +140,16 @@ if __name__ == "__main__":
                 print __doc__
                 sys.exit()
 
-        elif "-M" in opc:
+        elif "-m" in opc:
             numMeas = int(opc[2:])
 
-        elif "-P" in opc:
-            prefix = opc[2:] + "-"
+        elif "-c" in opc:
+            channels = [x for x in opc[2:]]
 
-        elif "-S" in opc:
+        elif "-c" in opc:
             Scho = int(opc[2:])
 
-        elif "-E" in opc:
+        elif "-e" in opc:
             LS.N = 2**int(opc[2:])
 
         else:
@@ -173,39 +183,48 @@ if __name__ == "__main__":
     windosweep, sweep = LS.make_sweep()
 
     # 2. Medimos, acumulando en una pila de promediado 'SSs'
-    SSs = medir(secuencia=0)
-    #    Añadimos el resto de medidas si las hubiera:
-    for i in range(1, numMeas):
+    SSs = {}
+    SSsAvg = {}
+    for ch in channels:
         # Esperamos que se pulse INTRO
-        print aviso_siguiente_medida
-        raw_input(aviso_siguiente_medida) # usamos print pq raw_input no presenta el texto :-/
-        meas = medir(secuencia=i)
-        # Seguimos acumulando en la pila 'SSs'
-        SSs = vstack( ( SSs, meas ) )
+        aviso_medida(ch=ch, secuencia=0)
+        SSs[ch] = medir(ch=ch, secuencia=0)
+    #    Añadimos el resto de medidas si las hubiera:
+    for ch in channels:
+        for i in range(1, numMeas):
+            # Esperamos que se pulse INTRO
+            aviso_medida(ch=ch, secuencia=i)
+            meas = medir(ch=ch, secuencia=i)
+            # Seguimos acumulando en la pila 'SSs'
+            SSs[ch] = vstack( ( SSs[ch], meas ) )
 
     # 3. Calculamos el promedio de todas las medidas raw
-    print "Calculando el promedio"
-    if numMeas > 1:
-        # Calculamos el PROMEDIO de todas las medidas realizadas
-        SSsAvg = average(SSs, axis=0)
-    else:
-        SSsAvg = SSs
+    for ch in channels:
+        print "Calculando el promedio canal " + ch
+        if numMeas > 1:
+            # Calculamos el PROMEDIO de todas las medidas realizadas
+            SSsAvg[ch] = average(SSs[ch], axis=0)
+        else:
+            SSsAvg[ch] = SSs[ch]
 
-    # Guarda el promedio raw en un archivo .frd
-    f, m = interpSS(freq, SSsAvg, binsFRD)
-    utils.saveFRD( prefix + 'room_avg.frd', f, 20*log10(m) , fs=fs)
+    # 4. Guarda el promedio raw en un archivo .frd
+    i = 0
+    for ch in channels:
+        f, m = interpSS(freq, SSsAvg[ch], binsFRD)
+        utils.saveFRD( ch + '_room_avg.frd', f, 20*log10(m) , fs=fs)
 
-    # También guarda una versión suavidaza del promedio en un .frd
-    print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
-          " Hz y variando hasta 1/1 oct en Nyq"
-    m_smoothed = smooth(m, f, Noct, f0=Scho)
-    utils.saveFRD( prefix + 'room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs)
+        # 5. También guarda una versión suavidaza del promedio en un .frd
+        print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
+              " Hz y variando hasta 1/1 oct en Nyq"
+        m_smoothed = smooth(m, f, Noct, f0=Scho)
+        utils.saveFRD( ch + '_room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs)
 
-    # Muestra las curvas de cada punto de escucha en una figura,
-    # y las curva promedio y promedio_suavizado en otra figura.
-    LS.plot_spectrum(m,          semi=True, fig=20, color='blue', label='avg')
-    LS.plot_spectrum(m_smoothed, semi=True, fig=20, color='red',  label='avg smoothed')
-    LS.plt.show()
+        # 6. Muestra las curvas de cada punto de escucha en una figura,
+        #    y las curva promedio y promedio_suavizado en otra figura.
+        LS.plot_spectrum(m,          semi=True, fig=20+i, color='blue', label=ch+' avg')
+        LS.plot_spectrum(m_smoothed, semi=True, fig=20+i, color='red',  label=ch+' avg smoothed')
+        i += 1
 
     # FIN
+    LS.plt.show()
 
