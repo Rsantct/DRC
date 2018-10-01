@@ -16,13 +16,15 @@
          -h                 ayuda
 
          -mX                Número de medidas a realizar.
-         -eXX               Potencia de 2 que determina la longitud=2^xx
+         -eXX               Potencia de 2 que determina la longitud = 2^XX
                             en muestras de la señal de prueba. Por defecto 2^17.
-         -cX                Canal: L | R | LR  se usará como prefijo del archivo.frd
+         -cX                Canal: L | R | LR  se usará como prefijo del archivo.frd.
+                            LR permite intercalar medidas de cada canal en cada posición de micro.
+                            Si se omite se usará el prefijo 'M'.
 
          -sXX               Freq Shroeder para el suavizado, por defecto 200 Hz.
 
-         -dev=cap,pbk,fs    Usa los sound devices y la fs indicada.
+         -dev=cap,pbk,fs    Usa los números de dispositivo de sonido y la fs indicados.
                             (Ver dispositivos con logsweep2TF.py -h)
 
     IMPORTANTE:
@@ -39,7 +41,7 @@
 # v1.0a
 #   Se separa la función medir(secuencia)
 # v1.1
-#   Se permite intercanal medida para cada canal en cada punto de micrófono
+#   Opción para intercalar medidas para cada canal en cada punto de micrófono
 
 import sys
 from numpy import *
