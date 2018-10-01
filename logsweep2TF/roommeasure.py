@@ -148,7 +148,7 @@ if __name__ == "__main__":
         elif "-c" in opc:
             channels = [x for x in opc[2:]]
 
-        elif "-c" in opc:
+        elif "-s" in opc:
             Scho = int(opc[2:])
 
         elif "-e" in opc:
