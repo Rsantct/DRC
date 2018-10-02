@@ -63,10 +63,10 @@ Se recomienda cubrir posiciones en distintas alturas de micro.
 Se recomienda `-e18`, la S/N ratio y el 'time clearance' serán mejores que con `-e17`.
 
 Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los altavoces
-izquierdo y derecho, por lo que deberemos cambiar el canal de entrada al sistema
+izquierdo y derecho con la opción `-cLR`, por lo que deberemos cambiar el canal de entrada al sistema
 a medida que se nos indique por el terminal:
 
-    roommeasure.py -dev=3,2,48000 -e18 -m7
+    roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
 
 Para cambiar el canal de entrada al sistema podemos dejar el cable en la entrada
 analógica izquierda e ir conmutando con ayuda del script `bin_custom/prueba_canal`
@@ -74,11 +74,11 @@ en otro terminal accesorio conectado a FIRtro por ssh.
 
 Obtenderemos respuestas promedio:
 
-  xxxx_avg.frd
+    xxxx_avg.frd
 
 y, a nivel informativo, unas respuestas suavizadas de la respuesta estacionaria:
 
-  xxxx_avg_smooth.frd
+    xxxx_avg_smooth.frd
 
 ## 4. Generar los filtros de ecualización DRC, para cada canal, por ejemplo:
 
