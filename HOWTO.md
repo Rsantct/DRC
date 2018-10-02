@@ -7,9 +7,8 @@ Preparar el software de medición y ecualización, según de indica en:
 ## 2. Preparar FIRtro
 
 - Sin EQs (drc, peq, loudness, tonos)
-- Ajustar un nivel prudente p.ej -10 dBFS
+- Ajustar un volumen prudente p.ej -10 dB
 - Seleccionar la input analógica
-
 
 ## 3. Verificar niveles en la tarjeta de sonido y en altavoces.
 
@@ -30,8 +29,7 @@ Insertar el micro en la entrada 'Left/1' de la tarjeta de sonido.
 
 Se prefiere equipar la tarjeta con un cable en Y en la salida 'Left/1' que servirá de salida hacia el amplificador y de loop hacia la entrada de referencia 'Right/2'. Esto es opcional, el programa puede funcionar sin señal en el canal de entrada de referencia.
 
-**Probar niveles**, señal capturada y longitud del sweep para que no haya
-clipping ni falta de 'time clearance' (se avisa en el terminal). Por ejemplo:
+**Probar niveles**, señal capturada y longitud del sweep para que no haya clipping ni falta de 'time clearance' (se avisa en el terminal). Por ejemplo:
 
     logsweep2TF.py -dev=3,2,48000 -e17
 
@@ -39,11 +37,9 @@ Ejecutarlo sucesivamente, ajustar volumen de FIRtro y ajustar en la tarjeta de s
 
 - El nivel SPL en punto de escucha es suficientemente alto.
 
-- Los indicadores de clipping de la tarjeta de sonido no se encienden durante el sweep,
-  en ninguno de los canales (micro y bucle de referencia).
+- Los indicadores de clipping de la tarjeta de sonido no se encienden durante el sweep, en ninguno de los canales (micro y bucle de referencia).
 
-- El nivel de la señal de la entrada 'Left' es alto (ver gráfica azul del sweep capturado),
-  PERO no alcanza -3dB (esto se observa el el terminal). Lo mismo para el canal de referencia.
+- El nivel de la señal de la entrada 'Left' es alto (ver gráfica azul del sweep capturado), PERO no alcanza -3dB (esto se observa el el terminal). Lo mismo para el canal de referencia.
 
 - Los sweeps grabados se muestran uniformes sin discontinuidades.
 
@@ -59,15 +55,11 @@ Se recomienda cubrir posiciones en distintas alturas de micro.
     
 Se recomienda `-e18`, la S/N ratio y el 'time clearance' serán mejores que con `-e17`.
 
-Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los altavoces
-izquierdo y derecho con la opción `-cLR`, por lo que deberemos cambiar el canal de entrada al sistema
-a medida que se nos indique por el terminal:
+Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los altavoces izquierdo y derecho con la opción `-cLR`, por lo que deberemos cambiar el canal de entrada al sistema a medida que se nos indique por el terminal:
 
     roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
 
-Para cambiar el canal de entrada al sistema podemos dejar el cable en la entrada
-analógica izquierda e ir conmutando con ayuda del script `bin_custom/prueba_canal`
-en otro terminal accesorio conectado a FIRtro por ssh.
+Para cambiar el canal de entrada al sistema podemos dejar el cable en la entrada analógica izquierda e ir conmutando con ayuda del script `bin_custom/prueba_canal` en otro terminal accesorio conectado a FIRtro por ssh.
 
 Obtenderemos respuestas promedio:
 
@@ -92,8 +84,7 @@ Se generará un juego en minimum phase (mp) y otro en linear phase (lp).
     
 ## 5. Llevar los filtros a FIRtro
 
-Si ya tenemos otros juegos, por ejemplo drc-1-... drc-2-... y drc-3... ,
-  querremos que los nuestros sean numerados desde 4
+Si ya tenemos otros juegos, por ejemplo drc-1-... drc-2-... y drc-3..., querremos que los nuestros sean numerados desde 4
       
     $ numeraDRCs.sh 4
         
