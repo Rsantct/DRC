@@ -69,6 +69,10 @@ y, a nivel informativo, unas respuestas suavizadas de la respuesta estacionaria:
 
     xxxx_avg_smooth.frd
 
+Se mostrarán gráficas de las curvas medidas.
+
+Más adelante podremos visualizar las curvas .frd con `FRD_tool.py`
+
 ## 4. Generar los filtros de ecualización DRC, para cada canal.
 
     roomEQ.py L_room_avg.frd 44100
@@ -81,6 +85,8 @@ Se generará un juego en minimum phase (mp) y otro en linear phase (lp).
     drc-X-R_lp_room_avg.pcm
     drc-X-L_mp_room_avg.pcm
     drc-X-R_mp_room_avg.pcm
+
+Podemos visulizar la respuesta de estos IR (impulse response) con `IRs_viewer.py`
     
 ## 5. Llevar los filtros a FIRtro
 
