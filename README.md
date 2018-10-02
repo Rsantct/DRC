@@ -22,7 +22,7 @@ Se recomienda incluir estas utilidades en el PATH del usuario:
   ```
 
   ```
-  ### MY BIN, AUDIOTOOLS y DRC
+  ### AUDIOTOOLS y DRC
   export PATH=~/bin:~/audiotools:${PATH}
   export PATH=~/bin:~/DRC/logsweep2TF:${PATH}
   export PATH=~/bin:~/DRC/drc_linpha:${PATH}
