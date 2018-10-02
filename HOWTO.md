@@ -28,8 +28,7 @@ En este ejemplo usaremos el `2` para captura y el `3` para playback.
 
 Insertar el micro en la entrada 'Left/1' de la tarjeta de sonido.
 
-Se prefiere equipar la tarjeta con un cable en Y en la salida 'Left/1' que servirá
-de salida hacia el amplificador y de loop hacia la entrada de referencia 'Right/2'.
+Se prefiere equipar la tarjeta con un cable en Y en la salida 'Left/1' que servirá de salida hacia el amplificador y de loop hacia la entrada de referencia 'Right/2'. Esto es opcional, el programa puede funcionar sin señal en el canal de entrada de referencia.
 
 **Probar niveles**, señal capturada y longitud del sweep para que no haya
 clipping ni falta de 'time clearance' (se avisa en el terminal). Por ejemplo:
