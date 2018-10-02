@@ -9,9 +9,9 @@ Genera FIRs de correción de sala DRC
 
 Este software necesita:
 
-**Python: numpy scipy**
+- **Python: numpy scipy**
 
-**https://github.com/AudioHumLab/audiotools**
+- **https://github.com/AudioHumLab/audiotools**
 
 
 Para **instalar** este software en el home del usuario
