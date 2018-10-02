@@ -132,7 +132,7 @@ def aviso_medida(ch, secuencia):
 
 if __name__ == "__main__":
 
-    # Pitido para avisar de la siguiente medida:
+    # Cargamos un pitido por si deseamos avisar antes de cada medida:
     fsbeep, beep = wavfile.read(HOME+"/DRC/logsweep2TF/beep.wav")
 
     # Leemos los argumentos command line:
