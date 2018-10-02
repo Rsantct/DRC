@@ -14,7 +14,20 @@ Para **instalar** este software en el home del usuario
   rm master.zip
   mv DRC-master DRC
   ```
-  
+
+Se recomienda incluir estas utilidades en el PATH del usuario:
+
+  ```
+  nano ~/bash_profile
+  ```
+
+  ```
+  ### MY BIN, AUDIOTOOLS y DRC
+  export PATH=~/bin:~/audiotools:${PATH}
+  export PATH=~/bin:~/DRC/logsweep2TF:${PATH}
+  export PATH=~/bin:~/DRC/drc_linpha:${PATH}
+  ```
+
 Para **actualizar** este sofware:
 
   ```
