@@ -43,4 +43,6 @@ Usar **`-h`** para ver las opciones de uso de ambos scripts.
 
 Se puede elegir la tarjeta de sonido a usar.
 
+Permite intercalar medidas de cada canal para cada posición de micrófono.
+
 Se necesita tener **`https://github.com/AudioHumLab/audiotools`** instalado y actualizado.
