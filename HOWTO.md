@@ -1,5 +1,3 @@
-# Cómo preparar filtros `drc_linpha` de DRC para FIRtro.
-
 ## 1. Preparar equipo de medición: PC portátil, tarjeta de sonido USB, micrófono y cables.
 
 Preparar el software de medición y ecualización, según de indica en:
