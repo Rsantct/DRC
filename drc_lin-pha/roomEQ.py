@@ -5,7 +5,10 @@
 
     Ecualiza una respuesta en frecuencia in room.
 
-    Uso:  python roomEQ.py respuesta.frd  fs  (fs=48000 por defecto)
+    Uso:  python roomEQ.py respuesta.frd  FS  -v
+
+          fs    48000 por defecto
+          -v    Visualiza los impulsos FIR generados
 
     Se necesita  github.com/AudioHumLab/audiotools
 
@@ -41,10 +44,12 @@ from scipy import signal
 from matplotlib import pyplot as plt
 
 # 1. LECTURA DE LA CURVA A PROCESAR
-# Lee el nombre de archivo .frd
+# Lee argumentos command line
 if len(sys.argv) == 1:
     print __doc__
     sys.exit()
+
+verFIRs = False
 
 try:
     FRDname = sys.argv[1]
@@ -56,6 +61,9 @@ try:
                 fs = int(opc)
         except:
             pass
+
+        if '-v' in opc:
+            verFIRs = True
 
     # Confirmamos si la fs está en el archivo .frd
     if not os.system("grep \ " + str(fs) + " " + FRDname + "> /dev/null 2>&1"):
@@ -207,7 +215,8 @@ import warnings
 #fig.savefig(pdfName, bbox_inches='tight')
 
 # 7. Veamos los FIRs de EQ:
-print "Veamos los impulsos con audiotools/IRs_viewer.py ..."
-os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname + "' 20-20000 -eq -1 " + str(int(fs)))
+if verFIRs:
+    print "Veamos los impulsos con audiotools/IRs_viewer.py ..."
+    os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname + "' 20-20000 -eq -1 " + str(int(fs)))
 
 # FIN
