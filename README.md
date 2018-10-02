@@ -16,6 +16,7 @@ Para **instalar** este software en el home del usuario
   
 Para **actualizar** este sofware:
 
-  `sh ~/DRC/update.sh`
-  
+  ```
+  sh ~/DRC/update.sh
+  ```  
  
