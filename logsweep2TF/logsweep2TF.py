@@ -19,7 +19,7 @@
     -dev=cap,pbk,fs     Usa los sound devices y la fs indicada.
                         NO son devices ALSA, usar -h para ver un listado.
 
-    -Exx                Potencia de 2 que determina la longitud=2^xx total 
+    -eXX                Potencia de 2 que determina la longitud=2^XX total 
                         en muestras (N) de la señal de prueba. Por defecto 2^17.
 
     -noclearance        Elude la validación por excesiva latencia.
@@ -547,7 +547,7 @@ if __name__ == "__main__":
                 print __doc__
                 sys.exit()
 
-        elif "-E" in opc:
+        elif "-e" in opc:
             N = 2**int(opc[2:])
 
         else:
