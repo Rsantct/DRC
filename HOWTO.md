@@ -38,8 +38,7 @@ clipping ni falta de 'time clearance' (se avisa en el terminal). Por ejemplo:
 
     logsweep2TF.py -dev=3,2,48000 -e17
 
-Ejecutarlo sucesivamente y ajustar en la tarjeta de sonido niveles de salida y de entrada (micro y loop),
-verificar que:
+Ejecutarlo sucesivamente, ajustar volumen de FIRtro y ajustar en la tarjeta de sonido niveles de salida y de entrada (micro y loop), **verificando** que:
 
 - El nivel SPL en punto de escucha es suficientemente alto.
 
