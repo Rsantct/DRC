@@ -13,7 +13,7 @@ rm -f ~/master.zip*
 rm -rf ~/DRC
 mv ~/DRC-master ~/DRC
 
-chmod +x ~/DRC/drc_lin-pha/*py
+chmod +x ~/DRC/drc_linpha/*py
 chmod +x ~/DRC/logsweep2TF/*py
 
 rm ./update.sh  > /dev/null 2>&1
