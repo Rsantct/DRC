@@ -59,7 +59,7 @@ Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los
 
     roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
 
-Para cambiar el canal de entrada al sistema podemos dejar el cable en la entrada analógica izquierda e ir conmutando con ayuda del script `bin_custom/prueba_canal` en otro terminal accesorio conectado a FIRtro por ssh.
+Para cambiar el canal de entrada al sistema podemos dejar el cable en la entrada analógica izquierda e ir conmutando con ayuda del script de FIRtro `bin_custom/prueba_canal` en otro terminal accesorio conectado a FIRtro por ssh.
 
 Obtenderemos respuestas promedio:
 
