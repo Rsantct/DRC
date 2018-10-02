@@ -80,7 +80,8 @@ channels                = 'M'       # Canales a intercalar en cada punto de medi
                                     # como prefijo del los .frd, p.ej: "L" o "R"
 
 Scho                    = 200       # Frec de Schroeder (Hz)
-Noct                    = 24        # Suavizado hasta Schroeder de la medida final promediada
+Noct                    = 24        # Suavizado 1/N oct hasta Schroeder de la medida final promediada,
+                                    # pasada la frec Scho se aumentará el suavizado progresivamente hasta 1/1 oct.
 
 #LS.sd.default.xxxx                 # Tiene valores por defecto en logsweep2TF
 selected_card           = LS.selected_card
@@ -89,7 +90,7 @@ LS.printInfo            = True      # Para que logsweep2TF informe de su  progre
 
 LS.checkClearence       = False     # Se da por hecho que se ha comprobado previamente.
 
-LS.TFplot               = False     # Omite las gráficas de logsweep2TF
+LS.TFplot               = False     # Omite las gráficas por defecto del módulo logsweep2TF alias LS
 LS.auxPlots             = False
 LS.plotSmoothSpectrum   = False
 
