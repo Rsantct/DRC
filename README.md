@@ -1,5 +1,6 @@
 # DRC
-experimentos para DRC
+
+Genera FIRs de correción de sala DRC
 
 
 ## Instalación
