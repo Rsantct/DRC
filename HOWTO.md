@@ -60,7 +60,7 @@ Se recomienda cubrir posiciones en distintas alturas de micro.
 
 ## 5. Medir.
     
-Se recomienda `-e18` (la S/N ratio y el 'time clearance' serán mejores que con `-e17`).
+Se recomienda `-e18`, la S/N ratio y el 'time clearance' serán mejores que con `-e17`.
 
 Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los altavoces
 izquierdo y derecho, por lo que deberemos cambiar el canal de entrada al sistema
