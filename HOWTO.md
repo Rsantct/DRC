@@ -46,7 +46,7 @@ Ejecutarlo sucesivamente, ajustar volumen de FIRtro y ajustar en la tarjeta de s
   en ninguno de los canales (micro y bucle de referencia).
 
 - El nivel de la señal de la entrada 'Left' es alto (ver gráfica azul del sweep capturado),
-  PERO no alcanza -3dB (esto se observa el el terminal). Idem para el canal de referencia.
+  PERO no alcanza -3dB (esto se observa el el terminal). Lo mismo para el canal de referencia.
 
 - Los sweeps grabados se muestran uniformes sin discontinuidades.
 
