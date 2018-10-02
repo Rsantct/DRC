@@ -95,12 +95,12 @@ Se generará un juego en minimum phase (mp) y otro en linear phase (lp).
     
 ## 5. Llevar los filtros a FIRtro
 
-- Si ya tenemos otros juegos, por ejemplo drc-1-... drc-2-... y drc-3... ,
+Si ya tenemos otros juegos, por ejemplo drc-1-... drc-2-... y drc-3... ,
   querremos que los nuestros sean numerados desde 4
       
     $ numeraDRCs.sh 4
         
-- Podemos renombrarlos para mejor indicación:
+Podemos renombrarlos para mejor indicación:
     
     $ renombraDRCs.sh multipuntoV1
         
@@ -110,7 +110,7 @@ Se generará un juego en minimum phase (mp) y otro en linear phase (lp).
     drc-5-L_mp_multipuntoV1.pcm
     drc-5-R_mp_multipuntoV1.pcm
     
-- Subirlos a la máquina FIRtro
+Los subimos a la máquina FIRtro
     
     echo "put drc*" | sftp firtro@MyFIRtroIP
     
