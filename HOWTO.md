@@ -23,7 +23,7 @@ Elegir los dispositivos de sonido de entre los mostrados por
       2 USB Audio CODEC , Core Audio (0 in, 2 out)
       3 USB Audio CODEC , Core Audio (2 in, 0 out)
 
-En este ejemplo usaremos el `2` para captura y el `3` para playback.
+En este ejemplo usaremos el `3` para captura y el `2` para playback.
 
 Insertar el micro en la entrada 'Left/1' de la tarjeta de sonido.
 
