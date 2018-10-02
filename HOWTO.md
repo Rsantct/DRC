@@ -109,7 +109,7 @@ Los subimos a la máquina FIRtro
     mv drc* lspk/miAltavoz/44100/
     do_brutefir_config.py lspk/miAltavoz/44100/ | less
     
-Veremos los coeff que cargan nuestro nuevos filtros pcm.
+Veremos los coeff que cargan nuestros nuevos filtros pcm.
     
 Si todo es correcto actualizamos brutefir_config y reiniciamos:
     
