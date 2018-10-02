@@ -71,13 +71,13 @@ y, a nivel informativo, unas respuestas suavizadas de la respuesta estacionaria:
 
 Se mostrarán gráficas de las curvas medidas.
 
-Más adelante podremos visualizar las curvas .frd con `FRD_tool.py`
+Más adelante podremos revisarlas:
 
-- Curvas raw en cada punto: `FRD_tool.py $(ls L_room_?.frd)`
+- Curvas raw en cada punto: `FRD_tool.py   $(ls L_room_?.frd)`
 
-- Curvas suavizadas en cada punto: `FRD_tool.py $(ls L_room_?.frd) -f0=200 -12oct`
+- Curvas suavizadas en cada punto: `FRD_tool.py   $(ls L_room_?.frd)  -f0=200  -12oct`
 
-- Curva promedio de todos los puntos: `FRD_tool.py L_room_avg.frd`
+- Curva promedio de todos los puntos: `FRD_tool.py   L_room_avg.frd   L_room_avg_smoothed.frd`
 
 ## 4. Generar los filtros de ecualización DRC, para cada canal.
 
