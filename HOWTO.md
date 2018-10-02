@@ -86,7 +86,9 @@ Se generará un juego en minimum phase (mp) y otro en linear phase (lp).
     drc-X-L_mp_room_avg.pcm
     drc-X-R_mp_room_avg.pcm
 
-Podemos visulizar la respuesta de estos IR (impulse response) con `IRs_viewer.py`
+Podemos visulizar estos IR (impulse response) y su respuesta en frecuencia y retardo de grupo:
+
+    IRs_viewer.py drc-X-L_mp_room_avg.pcm 44100 -eq -1
     
 ## 5. Llevar los filtros a FIRtro
 
