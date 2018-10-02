@@ -80,12 +80,12 @@ y, a nivel informativo, unas respuestas suavizadas de la respuesta estacionaria:
 
     xxxx_avg_smooth.frd
 
-## 4. Generar los filtros de ecualización DRC, para cada canal, por ejemplo:
+## 4. Generar los filtros de ecualización DRC, para cada canal.
 
     roomEQ.py L_room_avg.frd 44100
     roomEQ.py R_room_avg.frd 44100
     
-Se genera un juego en minimum phase (mp) y otro en linear phase (lp).
+Se generará un juego en minimum phase (mp) y otro en linear phase (lp).
 
     $ ls drc*
     drc-X-L_lp_room_avg.pcm
