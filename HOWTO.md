@@ -129,3 +129,6 @@ Si todo es correcto actualizamos brutefir_config y reiniciamos:
     initfirtro.py &
     
 Ahora tendremos los filtros disponibles para evaluarlos:
+
+![](https://github.com/AudioHumLab/FIRtro/blob/master/doc/screenshots/drc_lista.png)
+
