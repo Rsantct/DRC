@@ -14,8 +14,7 @@ El script **`roomEQ.py`** se ocupa del cálculo del filtro de eq DRC a partir de
 
 Emmo, la variante `mp`puede resultar más adecuada en escenarios 'near field' con punto de escucha muy estable. Los accidentes en la respuesta en frecuencia por debajo de la frec. de Shroeder en estas condiciones tendrán naturaleza minimum phase y la corrección mp será entonces la óptima. Esta variante no introduce latencia.
 
-La variante `lp` puede adaptarse mejor a escenarios mid field tipo Hi-Fi con más influencia de campo reverberante y con posiciones de escucha más variables, si se confecciona a partir de una medida promediada en un amplio espacio de posiciones de micrófono.
-
+La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi doméstica con más influencia del campo reverberante y con posiciones de escucha más variables, si se confecciona a partir de una medida promediada en un amplio espacio de posiciones de micrófono.
 
 ## Instalación
 
