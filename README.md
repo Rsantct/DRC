@@ -24,6 +24,14 @@ Este software necesita:
 
 - **Python: numpy, scipy, matplotlib, sounddevice**
 
+Quizás se necesite actualizar las herramientas de compilación y el gestor de paquetes de Python:
+```
+sudo apt-get install build-essential libssl-dev libffi-dev python-dev
+sudo pip install --upgrade pip
+sudo pip install --upgrade setuptools
+sudo pip install sounddevice
+```
+
 - **https://github.com/AudioHumLab/audiotools**
 
 
