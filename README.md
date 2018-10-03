@@ -22,7 +22,7 @@ La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi domé
 
 Este software necesita:
 
-- **Python: numpy, scipy, matplotlib**
+- **Python: numpy, scipy, matplotlib, sounddevice**
 
 - **https://github.com/AudioHumLab/audiotools**
 
