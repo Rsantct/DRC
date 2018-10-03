@@ -1,6 +1,24 @@
 # DRC
 
-Genera FIRs de correción de sala DRC
+Genera FIRs para correción de sala DRC.
+
+El software tiene dos partes: medición y cálculo de filtros DRC.
+
+## Medición
+
+El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy.
+
+El script **`roommeasure.py`** permite realizar medidas estacionarias en múltiples puntos de micrófono, y obtendrá una respuesta promediada en formato `.frd`.
+
+Es responsabiidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
+
+## Cálculo
+
+El script **`roomEQ.py`** se ocupa del cálculo del filtro de eq DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA, etc.. Proporciona filtros minimum phase y linear phase, ambos con idéntica respuesta en magnitud.
+
+Emmo, la variante `mp`puede resultar más adecuada en escenarios 'near field' con punto de escucha muy estable. Esta variante no introduce latencia.
+
+La variante `lp` puede adaptarse mejor a escenarios mid field tipo Hi-Fi con más influencia de campo reverberante y con posiciones de escucha más variables, si se confecciona a partir de una medida promediada en un amplio espacio de posiciones de micrófono.
 
 
 ## Instalación
