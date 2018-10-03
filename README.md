@@ -6,7 +6,7 @@ El script de medición básico es **`logsweep2TF.py`**. Está basado en el progr
 
 El script **`roommeasure.py`** permite realizar medidas estacionarias en múltiples puntos de micrófono, y obtendrá una respuesta promediada en formato `.frd`.
 
-Es responsabiidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
+Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
 ## Cálculo
 
