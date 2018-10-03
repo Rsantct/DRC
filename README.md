@@ -29,30 +29,32 @@ Este software necesita:
 
 Para **instalar** este software en el home del usuario
 
-  ```
-  cd
-  wget https://github.com/Rsantct/DRC/archive/master.zip
-  unzip master
-  rm master.zip
-  mv DRC-master DRC
-  ```
+```
+cd
+wget https://github.com/Rsantct/DRC/archive/master.zip
+unzip master
+rm master.zip
+mv DRC-master DRC
+chmod +x DRC/logsweep2TF/*.py
+chmod +x DRC/drc_linpha/*.py
+chmod +x DRC/logsweep2TF/*.sh
+chmod +x DRC/drc_linpha/*.sh
+```
 
 Se recomienda incluir estas utilidades en el PATH del usuario:
 
-  ```
-  nano ~/bash_profile
-  ```
+```
+nano ~/bash_profile
+```
 
-  ```
-  ### AUDIOTOOLS y DRC
-  export PATH=~/bin:~/audiotools:${PATH}
-  export PATH=~/bin:~/DRC/logsweep2TF:${PATH}
-  export PATH=~/bin:~/DRC/drc_linpha:${PATH}
-  ```
+```
+### AUDIOTOOLS y DRC
+export PATH=~/audiotools:~/DRC/logsweep2TF:~/DRC/drc_linpha:$PATH
+```
 
 ## Actualización
 
-  ```
-  sh ~/DRC/update.sh
-  ```  
+```
+sh ~/DRC/update.sh
+```  
  
