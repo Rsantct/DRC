@@ -37,7 +37,7 @@ Se recomienda incluir estas utilidades en el PATH del usuario:
   export PATH=~/bin:~/DRC/drc_linpha:${PATH}
   ```
 
-Para **actualizar** este sofware:
+## Actualización
 
   ```
   sh ~/DRC/update.sh
