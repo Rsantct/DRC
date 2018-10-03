@@ -14,7 +14,7 @@ Preparar el software de medición y ecualización, según de indica en:
 
 Elegir los dispositivos de sonido de entre los mostrados por 
 
-    logsweep2TF.py -h
+    $ logsweep2TF.py -h
 
         SYSTEM SOUND DEVICES:
 
@@ -31,7 +31,7 @@ Se prefiere equipar la tarjeta con un cable en Y en la salida 'Left/1' que servi
 
 **Probar niveles**, señal capturada y longitud del sweep para que no haya clipping ni falta de 'time clearance' (se avisa en el terminal). Por ejemplo:
 
-    logsweep2TF.py -dev=3,2,48000 -e17
+    $ logsweep2TF.py -dev=3,2,48000 -e17
 
 Ejecutarlo sucesivamente, ajustar volumen de FIRtro y ajustar en la tarjeta de sonido niveles de salida y de entrada (micro y loop), **verificando** que:
 
@@ -57,7 +57,7 @@ Se recomienda `-e18`, la S/N ratio y el 'time clearance' serán mejores que con 
 
 Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los altavoces izquierdo y derecho con la opción `-cLR`, por lo que deberemos cambiar el canal de entrada al sistema a medida que se nos indique por el terminal:
 
-    roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
+    $ roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
 
 Para cambiar el canal de entrada al sistema podemos dejar el cable en la entrada analógica izquierda e ir conmutando con ayuda del script de FIRtro `bin_custom/prueba_canal` en otro terminal accesorio conectado a FIRtro por ssh.
 
