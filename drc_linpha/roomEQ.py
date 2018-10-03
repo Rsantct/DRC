@@ -19,8 +19,9 @@
 #   - Muestra la correspondencia del nivel de referencia estimado en el gráfico
 
 # AJUSTES POR DEFECTO:
-fs = 48000
-esParaFIRtro = True
+m               = 2**15       # Longitud del FIR por defecto 2^15=32K
+fs              = 48000
+esParaFIRtro    = True
 
 # Para que este script pueda estar fuera de ~/audiotools
 import os
@@ -126,10 +127,6 @@ np.clip(eq, a_min=None, a_max=0.0, out=eq)
 eq = smooth(eq, frec, Noct=12)
 
 # 4. Computamos el impulso de la EQ y lo guardamos un PCM
-###############################
-# Longitud deseada del impulso
-m = 2**15
-###############################
 
 # 4.1 Si el semiespectro 'eq' que tenemos se queda corto lo
 # completamos con zeros porque son dBs de un curva de EQ
