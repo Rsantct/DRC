@@ -5,10 +5,11 @@
 
     Ecualiza una respuesta en frecuencia in room.
 
-    Uso:  python roomEQ.py respuesta.frd  FS  -v
+    Uso:    python roomEQ.py respuesta.frd  -fs=xxxxx  [-ref=xx] [-v]
 
-          fs    48000 por defecto
-          -v    Visualiza los impulsos FIR generados
+            -fs     48000 por defecto
+            -ref    Nivel de referencia en dB (autodetectado por defecto)
+            -v      Visualiza los impulsos FIR generados
 
     Se necesita  github.com/AudioHumLab/audiotools
 
@@ -22,6 +23,8 @@
 m               = 2**15       # Longitud del FIR por defecto 2^15=32K
 fs              = 48000
 esParaFIRtro    = True
+autoRefLevel    = True
+verFIRs         = False
 
 # Para que este script pueda estar fuera de ~/audiotools
 import os
@@ -44,42 +47,50 @@ import numpy as np
 from scipy import signal
 from matplotlib import pyplot as plt
 
-# 1. LECTURA DE LA CURVA A PROCESAR
-# Lee argumentos command line
+# 1. LECTURA DE LA CURVA A PROCESAR y otros argumentos
 if len(sys.argv) == 1:
     print __doc__
     sys.exit()
 
-verFIRs = False
+for opc in sys.argv[1:]:
 
-try:
-    FRDname = sys.argv[1]
-    # Lee el contenido del archivo .frd
-    FR = utils.readFRD(FRDname)
-    for opc in sys.argv[1:]:
+    if opc[0] <> '-' and opc[-4:] in ('.frd','.txt'):
+        FRDname = opc
+        # Lee el contenido del archivo .frd
+        FR = utils.readFRD(FRDname)
+        frec = FR[:, 0]     # array de frecuencias
+        mag  = FR[:, 1]     # array de magnitudes
+
+    elif opc[:4] == '-fs=':
+        if opc[4:] in ('44100', '48000', '96000'):
+            fs = int(opc[4:])
+        else:
+            print "fs debe ser 44100 | 48000 | 96000"
+            sys.exit()
+
+    elif '-v' in opc:
+        verFIRs = True
+
+    elif opc[:5] == '-ref=':
         try:
-            if int(opc):
-                fs = int(opc)
+            ref_level = opc[5:]
+            ref_level = round( float(ref_level), 1)
+            autoRefLevel = False
         except:
-            pass
+            print __doc__
+            sys.exit()
 
-        if '-v' in opc:
-            verFIRs = True
-
-    # Confirmamos si la fs está en el archivo .frd
-    if not os.system("grep \ " + str(fs) + " " + FRDname + "> /dev/null 2>&1"):
-        tmp = " coincide con la indicada en " + FRDname
     else:
-        tmp = " debe ser la de la DFT con que se ha calculado " + FRDname
-    print "fs: " + str(fs) + tmp
-    print "          (usada solo para visualizar los impulsos generados)"
+        print __doc__
+        sys.exit()
 
-except:
-    print "No se puede leer " + FRDname
-    sys.exit()
-
-frec = FR[:, 0]     # array de frecuencias
-mag  = FR[:, 1]     # array de magnitudes
+# Confirmamos si la fs está en el archivo .frd
+if not os.system("grep \ " + str(fs) + " " + FRDname + "> /dev/null 2>&1"):
+    tmp = " coincide con la indicada en " + FRDname
+else:
+    tmp = " debe ser la de la DFT con que se ha calculado " + FRDname
+print "fs: " + str(fs) + tmp
+print "          (usada solo para visualizar los impulsos generados)"
 
 # 1a. PREMISA: el primer bin de 'frec' debe ser 0 Hz
 if frec[0] <> 0:
@@ -92,20 +103,23 @@ if frec[0] <> 0:
 # 2.1 'ref_level': NIVEL DE REFERENCIA
 # Curva muy suavizada 1/1oct que usaremos para tomar el nivel de referencia
 rmag = smooth(mag, frec, Noct=1)
-###########################################################
-# Rango de frecuencias para decidir el nivel de referencia:
-f1, f2 = 400, 4000
-###########################################################
-f1_idx = (np.abs(frec - f1)).argmin()
-f2_idx = (np.abs(frec - f2)).argmin()
-# magnitudes del rango de referencia:
-r2mag = rmag[ f1_idx : f2_idx ]
-# Vector de pesos para calcular el promedio
-weightslograte = .5
-weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
-# Calculamos el nivel de referencia
-ref_level = round( np.average( r2mag, weights=weights ), 2)
-print "Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB"
+if autoRefLevel:
+    ###########################################################
+    # Rango de frecuencias para decidir el nivel de referencia:
+    f1, f2 = 400, 4000
+    ###########################################################
+    f1_idx = (np.abs(frec - f1)).argmin()
+    f2_idx = (np.abs(frec - f2)).argmin()
+    # magnitudes del rango de referencia:
+    r2mag = rmag[ f1_idx : f2_idx ]
+    # Vector de pesos para calcular el promedio
+    weightslograte = .5
+    weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
+    # Calculamos el nivel de referencia
+    ref_level = round( np.average( r2mag, weights=weights ), 2)
+    print "Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB"
+else:
+    print "Nivel de referencia: " +  str(ref_level) + " dB --> 0 dB"
 
 # 2.2 'smag': CURVA SUAVIZADA QUE USAREMOS PARA ECUALIZAR
 Noct = 48           # Suavizado fino inicial 1/48 oct
@@ -186,8 +200,9 @@ plt.semilogx(frec, smag,
              label="smoothed", color="blue")
 
 # Cacho de curva usada para calcular el nivel de referencia
-plt.semilogx(frec[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
-             label="ref level range", color="black", linestyle="--", linewidth=2)
+if autoRefLevel:
+    plt.semilogx(frec[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
+                 label="ref level range", color="black", linestyle="--", linewidth=2)
 
 # Curva de EQ
 plt.semilogx(frec, eq,
