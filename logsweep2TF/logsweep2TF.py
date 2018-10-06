@@ -441,19 +441,19 @@ def do_meas(windosweep, sweep):
     lwindo[0:indexf1] = 0.5 * ( 1- cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
     lwindosweep = lwindo * sweep
     # remove play-record delay by shifting computer sweep array:
-    ## %sweep=circshift(sweep,-offset);             # Aparece comentado en el cód. original,
-    ## lwindosweep=circshift(lwindosweep,-offset);  # se usa este código
+    ## %sweep=circshift(sweep,-offset);             # Esto aparece comentado en el cód. original,
+    ## lwindosweep=circshift(lwindosweep,-offset);  # que usa este código.
     lwindosweep = roll(lwindosweep, -offset)
 
     # (i) NÓTESE que trabajamos con FFTs completas:
-    LWINDOSWEEP = sig_frac * S_dac * fft.fft(lwindosweep)
-    REF         = S_adc * fft.fft(ref);
-    DUT         = CF * S_adc * fft.fft(dut);
+    LWINDOSWEEP = S_dac * fft.fft(lwindosweep) * sig_frac   # sig_frac es la atenuación establecida al sweep
+    REF         = S_adc * fft.fft(ref)
+    DUT         = S_adc * fft.fft(dut)         * CF         # CF calibration factor
 
     # (i) La DECONVOLUCIÓN, mediante división en el dominio de la frecuencia
-    # - o sea los 'Frequency Domain Ratios' referidos arriba(*) -,
-    # proporciona la TF Transfer Function del dispositivo bajo ensayo DUT,
-    # que es el objetivo que nos ocupa ;-)
+    #     - o sea los 'Frequency Domain Ratios' referidos arriba(*) -
+    #     proporciona la TF Transfer Function del dispositivo bajo ensayo DUT
+    #     que es el objetivo que nos ocupa ;-)
 
     ##%TF       = DUT./SWEEP;                                # <- código original comentado
     DUT_SWEEP   = DUT / LWINDOSWEEP  # (orig named as 'TF' )   this has good Nyquist behaviour
