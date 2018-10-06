@@ -51,8 +51,8 @@
 #   confirmar si es correcto, yo creo que si.
 #
 #   - La opciones de calibración no se toman en cuenta aquí.
-#
-#---------------------------- IMPORT MODULES -------------------------
+
+#---------------------------- IMPORT MODULES: -------------------------
 #  ~/audiotools modules
 import os
 import sys
