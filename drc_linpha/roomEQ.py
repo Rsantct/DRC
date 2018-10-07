@@ -57,7 +57,7 @@ for opc in sys.argv[1:]:
     if opc[0] <> '-' and opc[-4:] in ('.frd','.txt'):
         FRDname = opc
         # Lee el contenido del archivo .frd
-        FR = utils.readFRD(FRDname)
+        FR, fs_FRD = utils.readFRD(FRDname)
         frec = FR[:, 0]     # array de frecuencias
         mag  = FR[:, 1]     # array de magnitudes
 
@@ -85,7 +85,7 @@ for opc in sys.argv[1:]:
         sys.exit()
 
 # Confirmamos si la fs está en el archivo .frd
-if not os.system("grep \ " + str(fs) + " " + FRDname + "> /dev/null 2>&1"):
+if fs == fs_FRD:
     tmp = " coincide con la indicada en " + FRDname
 else:
     tmp = " debe ser la de la DFT con que se ha calculado " + FRDname
