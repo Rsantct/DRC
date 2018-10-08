@@ -115,9 +115,9 @@ if autoRefLevel:
     weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
     # Calculamos el nivel de referencia
     ref_level = round( np.average( r2mag, weights=weights ), 2)
-    print "Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB"
+    print "(i) Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB"
 else:
-    print "Nivel de referencia: " +  str(ref_level) + " dB --> 0 dB"
+    print "(i) Nivel de referencia: " +  str(ref_level) + " dB --> 0 dB"
 
 # 2.2 'smag': CURVA SUAVIZADA QUE USAREMOS PARA ECUALIZAR
 Noct = 48           # Suavizado fino inicial 1/48 oct
@@ -183,7 +183,7 @@ else:
     lpEQpcmname = str(fs)+'/lp_' + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
 
 # Guardamos:
-print "Guardando el FIR de ecualización en '" + mpEQpcmname + "' '" + lpEQpcmname + "'"
+print "(i) Guardando el FIR de ecualización en '" + mpEQpcmname + "' '" + lpEQpcmname + "'"
 os.system( 'mkdir -p ' + str(fs) )
 utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
@@ -215,7 +215,7 @@ plt.show()
 
 # 6. Guardamos las gráficas en un PDF:
 #pdfName = FRDname.replace('.frd', '_eq.pdf').replace('.txt', '_eq.pdf')
-#print "\nGuardando gráfica en el archivo " + pdfName
+#print "\n(i) Guardando gráfica en el archivo " + pdfName
 # evitamos los warnings del pdf
 # C:\Python27\lib\site-packages\matplotlib\figure.py:1742: UserWarning:
 # This figure includes Axes that are not compatible with tight_layout, so
