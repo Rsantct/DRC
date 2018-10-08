@@ -86,11 +86,9 @@ for opc in sys.argv[1:]:
 
 # Confirmamos si la fs está en el archivo .frd
 if fs == fs_FRD:
-    tmp = " coincide con la indicada en " + FRDname
+    print "(i) fs=" + str(fs) + " coincide con la indicada en " + FRDname
 else:
-    tmp = " debe ser la de la DFT con que se ha calculado " + FRDname
-print "fs: " + str(fs) + tmp
-print "          (usada solo para visualizar los impulsos generados)"
+    print "(i) fs=" + str(fs) +  " distinta de " + str(fs_FRD) + " en " + FRDname
 
 # 1a. PREMISA: el primer bin de 'frec' debe ser 0 Hz
 if frec[0] <> 0:
@@ -178,17 +176,17 @@ if esParaFIRtro:
     if FRDname[0].upper() in ('L','R'):
         ch = FRDname[0].upper()
         resto = FRDname[1:-4].strip().strip('_').strip('-')
-    mpEQpcmname = 'drc-X-'+ch+'_mp_'+resto+'.pcm'
-    lpEQpcmname = 'drc-X-'+ch+'_lp_'+resto+'.pcm'
+    mpEQpcmname = str(fs)+'/drc-X-'+ch+'_mp_'+resto+'.pcm'
+    lpEQpcmname = str(fs)+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
 else:
-    mpEQpcmname = "mp_" + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
-    lpEQpcmname = "lp_" + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
+    mpEQpcmname = str(fs)+'/mp_' + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
+    lpEQpcmname = str(fs)+'/lp_' + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
 
 # Guardamos:
+print "Guardando el FIR de ecualización en '" + mpEQpcmname + "' '" + lpEQpcmname + "'"
+os.system( 'mkdir -p ' + str(fs) )
 utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
-
-print "Guardando el FIR de ecualización en '" + mpEQpcmname + "' '" + lpEQpcmname + "'"
 
 # 5. PLOTEOS
 # Curva inicial sin suavizar
