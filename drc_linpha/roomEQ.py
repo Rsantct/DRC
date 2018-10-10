@@ -1,15 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    roomEQ.py v0.1a
+    roomEQ.py
 
-    Ecualiza una respuesta en frecuencia in room.
+    Calcula un FIR para ecualizar la respuesta de una sala.
 
-    Uso:    python roomEQ.py respuesta.frd  -fs=xxxxx  [-ref=xx] [-v]
+    Uso:
+        python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho= XX e=XX -v ]
 
-            -fs     48000 por defecto
-            -ref    Nivel de referencia en dB (autodetectado por defecto)
-            -v      Visualiza los impulsos FIR generados
+        -fs=    48000 por defecto
+        -e=     Longitud del FIR en taps 2^XX (por defecto 2^14 = 16 Ktaps)
+        -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
+        -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
+        -v      Visualiza los impulsos FIR generados
 
     Se necesita  github.com/AudioHumLab/audiotools
 
@@ -18,14 +21,31 @@
 # v0.1a
 #   - Nombrado de archivos de salida para FIRtro
 #   - Muestra la correspondencia del nivel de referencia estimado en el gráfico
+# v0.1b
+#   - Longitud del FIR y nivel de referencia en command line.
+#   - Revisión del cómputo del FIR
 
+##########################################################################
 # AJUSTES POR DEFECTO:
-m               = 2**15       # Longitud del FIR por defecto 2^15=32K
-fs              = 48000
-esParaFIRtro    = True
-autoRefLevel    = True
-verFIRs         = False
 
+# Salida:
+m       = 2**14     # Longitud del FIR por defecto 2^14 = 16 Ktaps
+fs      = 48000     # fs del FIR de salida
+verFIRs = False
+
+# Nivel de referencia:                   
+autoRef = True
+f1, f2  = 400, 4000 # Rango de frecs. para decidir el nivel de referencia
+
+# TARGET sobre la curva .frd original
+Noct    = 48        # Suavizado fino inicial 1/48 oct
+fScho   = 200       # Frec de Schroeder
+octScho = 1         # Octavas respecto a la freq. Schoeder para iniciar 
+                    # la transición de suavizado fino hacia 1/1 oct
+Tspeed  = "medium"  # Velocidad de transición del suavizado audiotools/smoothSpectrum.py
+
+##########################################################################
+# IMPORTA MODULOS
 # Para que este script pueda estar fuera de ~/audiotools
 import os
 import sys
@@ -47,7 +67,10 @@ import numpy as np
 from scipy import signal
 from matplotlib import pyplot as plt
 
-# 1. LECTURA DE LA CURVA A PROCESAR y otros argumentos
+##########################################################################
+# 0 LEE ARGUMENTOS
+##########################################################################
+
 if len(sys.argv) == 1:
     print __doc__
     sys.exit()
@@ -58,8 +81,8 @@ for opc in sys.argv[1:]:
         FRDname = opc
         # Lee el contenido del archivo .frd
         FR, fs_FRD = utils.readFRD(FRDname)
-        frec = FR[:, 0]     # array de frecuencias
-        mag  = FR[:, 1]     # array de magnitudes
+        freq = FR[:, 0]     # >>>> vector de frecuencias <<<<
+        mag  = FR[:, 1]     # >>>> vector de magnitudes  <<<<
 
     elif opc[:4] == '-fs=':
         if opc[4:] in ('44100', '48000', '96000'):
@@ -68,49 +91,57 @@ for opc in sys.argv[1:]:
             print "fs debe ser 44100 | 48000 | 96000"
             sys.exit()
 
-    elif '-v' in opc:
-        verFIRs = True
+    elif opc[:3] == '-e=':
+        if opc[3:] in ('13', '14', '15', '16'):
+            m = 2**int(opc[3:])
+        else:
+            print "m: 13...16 (8K...64K taps)"
+            sys.exit()
 
     elif opc[:5] == '-ref=':
         try:
             ref_level = opc[5:]
             ref_level = round( float(ref_level), 1)
-            autoRefLevel = False
+            autoRef = False
         except:
             print __doc__
             sys.exit()
+
+    elif opc[:6] == '-scho=':
+        try:
+            fScho = float(opc[6:])
+        except:
+            print __doc__
+            sys.exit()
+            
+    elif '-v' in opc:
+        verFIRs = True
 
     else:
         print __doc__
         sys.exit()
 
-# Confirmamos si la fs está en el archivo .frd
+# Información
 if fs == fs_FRD:
     print "(i) fs=" + str(fs) + " coincide con la indicada en " + FRDname
 else:
     print "(i) fs=" + str(fs) +  " distinta de " + str(fs_FRD) + " en " + FRDname
 
-# 1a. PREMISA: el primer bin de 'frec' debe ser 0 Hz
-if frec[0] <> 0:
-    # nos inventamos el bin zero
-    frec = np.insert(frec, 0, 0)
-    mag  = np.insert(mag,  0, mag[0])
+print "(i) Longitud del FIR = " + utils.Ktaps(m)
 
-# 2. CALCULO DE LA EQ
+##########################################################################
+# 1 CALCULO DEL TARGET
+##########################################################################
 
-# 2.1 'ref_level': NIVEL DE REFERENCIA
-# Curva muy suavizada 1/1oct que usaremos para tomar el nivel de referencia
-rmag = smooth(mag, frec, Noct=1)
-if autoRefLevel:
-    ###########################################################
-    # Rango de frecuencias para decidir el nivel de referencia:
-    f1, f2 = 400, 4000
-    ###########################################################
-    f1_idx = (np.abs(frec - f1)).argmin()
-    f2_idx = (np.abs(frec - f2)).argmin()
-    # magnitudes del rango de referencia:
+# 1.1 NIVEL DE REFERENCIA
+# 'rmag' es una curva muy suavizada 1/1oct que usaremos para tomar el nivel de referencia
+rmag = smooth(mag, freq, Noct=1)
+if autoRef:
+    f1_idx = (np.abs(freq - f1)).argmin()
+    f2_idx = (np.abs(freq - f2)).argmin()
+    # 'r2mag' es un minivector de las magnitudes del rango de referencia:
     r2mag = rmag[ f1_idx : f2_idx ]
-    # Vector de pesos para calcular el promedio
+    # Vector de pesos auxiliar para calcular el promedio, de longitud como r2mag
     weightslograte = .5
     weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
     # Calculamos el nivel de referencia
@@ -119,92 +150,119 @@ if autoRefLevel:
 else:
     print "(i) Nivel de referencia: " +  str(ref_level) + " dB --> 0 dB"
 
-# 2.2 'smag': CURVA SUAVIZADA QUE USAREMOS PARA ECUALIZAR
-Noct = 48           # Suavizado fino inicial 1/48 oct
-f0  = 120           # Frec de transición de suavizado fino hacia 1/1 oct
-Tspeed = "medium"   # Velocidad de transición del suavizado
-smag = smooth(mag, frec, Noct, f0=f0, Tspeed=Tspeed)
+# 1.2 TARGET PARA ECUALIZAR
+# 'Noct'   suavizado fino inicial en graves (por defecto 1/48 oct)
+# 'f0'     freq a la que empezamos a suavizar más hasta llegar a 1/1 oct en Nyquist
+# 'Tspeed' velocidad de transición del suavizado audiotools/smoothSpectrum.py
+f0 = 2**(-octScho) * fScho
+# El target a ecualizar, resultado de suavizar la FRD original
+target = smooth(mag, freq, Noct, f0=f0, Tspeed=Tspeed)
 
-# 2.3 Recolocamos las curvas en el nivel de referencia:
-mag  -= ref_level
-rmag -= ref_level
-smag -= ref_level
+# 1.2 Reubicamos las curvas en el nivel de referencia
+mag    -= ref_level   # curva de magnitudes original
+rmag   -= ref_level   # minicurva de magnitudes para buscar el ref_level
+target -= ref_level   # curva target
 
-# 3. 'eq': CALCULO DE LA EQ
-# 3.1 Invertimos la respuesta:
-eq  = -smag
-# 3.2 Recortamos ganacias positivas:
+##########################################################################
+# 2 CÁLCULO DE LA EQ
+##########################################################################
+
+# 2.1 'eq' es la curva de ecualización por inversión del target:
+eq  = -target
+
+# 2.2 recortamos ganacias positivas:
 np.clip(eq, a_min=None, a_max=0.0, out=eq)
-# 3.3 Y limamos asperezas:
-eq = smooth(eq, frec, Noct=12)
 
-# 4. Computamos el impulso de la EQ y lo guardamos un PCM
+# 2.3 y limamos asperezas
+eq = smooth(eq, freq, Noct=12)
 
-# 4.1 Si el semiespectro 'eq' que tenemos se queda corto lo
-# completamos con zeros porque son dBs de un curva de EQ
-# que no tiene ganancia en los extremos.
-extra = m/2 - len(eq)
-if extra > 0:
-    eq_v2 = np.concatenate( (eq, np.zeros(extra)) )
+##########################################################################
+# 3. Interpolamos para adaptarnos a la longitud 'm' y 'fs'
+#    deseados para el impulso del FIR de salida
+##########################################################################
+if fs <> fs_FRD or m/2 <> len(freq):
+    print "(i) Interpolando"
+    newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
 else:
-    eq_v2 = np.copy(eq)
+    newFreq, newEq = freq, eq
 
-# 4.2 Si el semiespectro es de longitud EVEN, lo hacemos ODD
-if len(eq_v2) % 2 == 0:
-    eq_v2 = np.insert(eq_v2, -1, eq_v2[-1])
+##########################################################################
+# 4. Computamos el IR de salida (dom. de la freq --> dom. del tiempo)
+##########################################################################
 
-# 4.3 dB --> gain
-eq_v2 = 10.0**(eq_v2/20.0)
+# Preliminares:
+# 4.1 Comprobamos que nuestro semiespectro contenga el bin de DC (0 Hz)
+if newFreq[0] <> 0:
+    print "(i) Insertando el bin 0 Hz"
+    newFreq = np.insert(newFreq, 0, 0       )
+    newEq =   np.insert(newEq,   0, newEq[0])
 
-# 4.4 Computamos el impulso calculando la IFFT de la curva del EQ.
-#     OjO nuestra curva semiespectro de EQ es una abstracción reducida a magnitudes,
-#     pero la IFFT necesita un espectro real (con phase minima) y completo (simétrico)
-sp = pydsd.minphsp( pydsd.wholespmp(eq_v2) ) # Si lo printamos veremos que tiene phase
-imp = np.real( np.fft.ifft( sp ) )
+# 4.2 Comprobamos que contenga Nyquist
+fNyq = fs / 2.0
+if round(newFreq[-1] - fNyq, 1)  <> 0.0:
+    print "(i) Insertando bin Nyquist", fNyq
+    newFreq = np.insert(newFreq, -1, fNyq     )
+    newEq =   np.insert(newEq,   -1, newEq[-1])
+
+# 4.3 Y que sea ODD
+if len(newEq) % 2 == 0:
+    raise ValueError("(!) Algo va mal debería ser un semiespectro ODD con \
+                       el primer bin 0 Hz y el último Nyquist") 
+    sys.exit()
+
+# 4.4 Traducimos dB --> gain
+newEq = 10.0**(newEq/20.0)
+
+# 4.5 Computamos el impulso calculando la IFFT de la curva 'newEq'.
+#     OjO nuestra curva semiespectro 'newEq' es una abstracción reducida a magnitudes
+#     reales positivas, pero la IFFT necesita un espectro causal (con phase minima)
+#     y completo (freqs positivas y negativas)
+spectrum = pydsd.minphsp( pydsd.wholespmp(newEq) ) # Ahora ya tiene phase
+imp = np.real( np.fft.ifft( spectrum ) )
 imp = pydsd.semiblackmanharris(m) * imp[:m]
 
-# Ahora 'imp' tiene una respuesta 'natural', o sea de phase mínima.
+# Ahora 'imp' tiene una respuesta causal, natural, o sea de phase mínima.
 
 # 4.5 Versión linear-phase (experimental) ...
 impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 
 # 4.6 Guardamos los impulsos en archivos .pcm
 
-# Nombramos los pcm:
-if esParaFIRtro:
-    ch = 'C' # genérico por si no viene nombrado el frd
-    if FRDname[0].upper() in ('L','R'):
-        ch = FRDname[0].upper()
-        resto = FRDname[1:-4].strip().strip('_').strip('-')
-    mpEQpcmname = str(fs)+'/drc-X-'+ch+'_mp_'+resto+'.pcm'
-    lpEQpcmname = str(fs)+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
-else:
-    mpEQpcmname = str(fs)+'/mp_' + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
-    lpEQpcmname = str(fs)+'/lp_' + FRDname.replace('.frd', '_EQ.pcm').replace('.txt', '_EQ.pcm')
+# Nombres de los pcm:
+ch = 'C' # genérico por si no viene nombrado el frd
+if FRDname[0].upper() in ('L','R'):
+    ch = FRDname[0].upper()
+    resto = FRDname[1:-4].strip().strip('_').strip('-')
+mpEQpcmname = str(fs)+'/drc-X-'+ch+'_mp_'+resto+'.pcm'
+lpEQpcmname = str(fs)+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
 
-# Guardamos:
-print "(i) Guardando el FIR de ecualización en '" + mpEQpcmname + "' '" + lpEQpcmname + "'"
+# Guardamos los FIR :
+print "(i) Guardando los FIR de ecualización en '" + mpEQpcmname + "' '" + lpEQpcmname + "'"
 os.system( 'mkdir -p ' + str(fs) )
 utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
 
+##########################################################################
 # 5. PLOTEOS
+##########################################################################
+
 # Curva inicial sin suavizar
-plt.semilogx(frec, mag,
+plt.semilogx(freq, mag,
              label="raw", color="silver", linestyle=":")
 
 # Curva suavizada
-plt.semilogx(frec, smag,
+plt.semilogx(freq, target,
              label="smoothed", color="blue")
 
 # Cacho de curva usada para calcular el nivel de referencia
-if autoRefLevel:
-    plt.semilogx(frec[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
+if autoRef:
+    plt.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
                  label="ref level range", color="black", linestyle="--", linewidth=2)
 
 # Curva de EQ
-plt.semilogx(frec, eq,
+plt.semilogx(freq, eq,
              label="EQ", color="red")
+
 tmp = FRDname + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
 plt.title(tmp)
 plt.xlim(20, 20000)
@@ -213,7 +271,9 @@ plt.grid()
 plt.legend()
 plt.show()
 
+##########################################################################
 # 6. Guardamos las gráficas en un PDF:
+##########################################################################
 #pdfName = FRDname.replace('.frd', '_eq.pdf').replace('.txt', '_eq.pdf')
 #print "\n(i) Guardando gráfica en el archivo " + pdfName
 # evitamos los warnings del pdf
@@ -224,9 +284,12 @@ import warnings
 #warnings.filterwarnings("ignore")
 #fig.savefig(pdfName, bbox_inches='tight')
 
-# 7. Veamos los FIRs de EQ:
+##########################################################################
+# 7. Visualización de los FIRs de EQ:
+##########################################################################
 if verFIRs:
-    print "Veamos los impulsos con audiotools/IRs_viewer.py ..."
-    os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname + "' 20-20000 -eq -1 " + str(int(fs)))
+    print "Veamos los FIR con audiotools/IRs_viewer.py ..."
+    os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname
+              + "' 20-20000 -eq -1 " + str(int(fs)))
 
 # FIN
