@@ -109,7 +109,8 @@ def medir(ch='M', secuencia=0):
     meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
     # Guardamos la curva en un archivo .frd secuenciado
     f, m = interpSS(freq, meas, binsFRD)
-    utils.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs )
+    utils.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs,
+                   comments='roommeasure.py ch:' + ch + ' point:' + str(secuencia) )
     # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
     m_smoo = smooth(m, f, Noct, f0=Scho)
     figIdx = 10
@@ -227,13 +228,15 @@ if __name__ == "__main__":
     i = 0
     for ch in channels:
         f, m = interpSS(freq, SSsAvg[ch], binsFRD)
-        utils.saveFRD( ch + '_room_avg.frd', f, 20*log10(m) , fs=fs)
+        utils.saveFRD( ch + '_room_avg.frd', f, 20*log10(m) , fs=fs,
+                       comments='roommeasure.py ch:' + ch + ' raw avg' )
 
         # 5. También guarda una versión suavidaza del promedio en un .frd
         print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
               " Hz y variando hasta 1/1 oct en Nyq"
         m_smoothed = smooth(m, f, Noct, f0=Scho)
-        utils.saveFRD( ch + '_room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs)
+        utils.saveFRD( ch + '_room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs,
+                       comments='roommeasure.py ch:' + ch + ' smoothed avg' )
 
         # 6. Muestra las curvas de cada punto de escucha en una figura,
         #    y las curva promedio y promedio_suavizado en otra figura.
