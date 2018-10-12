@@ -10,11 +10,11 @@
 
         -fs=    fs del FIR de salida, por defecto 48000 (Hz)
         -e=     Longitud del FIR en taps 2^XX (por defecto 2^14 = 16 Ktaps)
-        
+
         -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
         -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
         -nofir  Solo se estima el target y la eq, no genera FIRs
-        
+
         -v      Visualiza los impulsos FIR generados
 
         -dev    Gráficas auxiliares sobre la EQ
@@ -206,7 +206,7 @@ np.clip(eq, a_min=None, a_max=0.0, out=eq)
 # Versión suavizada de 'eq' de la que nos interesa solo el suavizado cerca de 0 dB
 eqaux = smooth(freq, eq, Noct=12) # Noct=12 parece el valor más adecuado.
 
-# Actualizamos 'eq' con los valores altos de 'eqaux', de manera que 
+# Actualizamos 'eq' con los valores altos de 'eqaux', de manera que
 # respetemos los valles profundos y suavizamos solo las transiciones de np.clip
 np.copyto( eq, eqaux, where=(eqaux > -3.0) )
 
@@ -222,8 +222,8 @@ np.copyto( eq, eqaux, where=(eqaux > -3.0) )
 #   Se observa que ARTA proporciona respuestas .frd
 #   - de longitud power of 2
 #   - el primer bin es 0 Hz
-#   - si fs=48000, el último bin es fs/2 
-#   - si fs=44100, el último bin es (fs/2)-1  ¿!? what the fuck 
+#   - si fs=48000, el último bin es fs/2
+#   - si fs=44100, el último bin es (fs/2)-1  ¿!? what the fuck
 #
 #   NOTA: interpolando con pydsd.lininterp tenemos garantizado que:
 #   - La longitud del nuevo semiespectro será ODD (power of 2) + 1,
@@ -284,20 +284,21 @@ plt.semilogx(freq, target,
              label="target (smoothed response)",
              color="blue", linestyle='-')
 
-# Cacho de curva usada para calcular el nivel de referencia:
-if autoRef:
-    plt.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
-                 label="range to estimate ref level",
-                 color="black", linestyle="--", linewidth=2)
-
 # Curva de EQ para generar el FIR:
 plt.semilogx(newFreq, newEq,
              label="EQ applied (" + str(len(newEq)) + " bins)",
              color="red")
 
+# Curva resultado estimada:
 if dev:
     plt.semilogx(freq, (target + eq),
-                 label='target + eq', color='green', linewidth=1.5)
+                 label='result estimated', color='green', linewidth=1.5)
+
+# Cacho de curva usada para calcular el nivel de referencia:
+if autoRef:
+    plt.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
+                 label="range to estimate ref level",
+                 color="black", linestyle="--", linewidth=2)
 
 title = FRDbasename + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
 plt.title(title)
