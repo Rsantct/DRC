@@ -347,8 +347,9 @@ if FRDpathname:
     lpEQpcmname = FRDpathname + "/" + lpEQpcmname
 
 # Guardamos los FIR :
-print "(i) Guardando los FIR de ecualización en '" + mpEQpcmname.split("/")[-1] \
-       + "' '" + lpEQpcmname.split("/")[-1] + "'"
+print "(i) Guardando los FIR de ecualización:"
+print "    " + str(fs) + "/" + mpEQpcmname.split("/")[-1]
+print "    " + str(fs) + "/" + lpEQpcmname.split("/")[-1]
 
 utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
