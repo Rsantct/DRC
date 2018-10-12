@@ -47,7 +47,7 @@ verFIRs = False
 
 # Nivel de referencia:
 autoRef = True
-f1, f2  = 400, 4000 # Rango de frecs. para decidir el nivel de referencia
+f1, f2  = 500, 2000 # Rango de frecs. para decidir el nivel de referencia
 
 # TARGET sobre la curva .frd original
 Noct    = 96        # Suavizado fino inicial 1/96 oct
@@ -210,20 +210,6 @@ eqaux = smooth(freq, eq, Noct=12) # Noct=12 parece el valor más adecuado.
 # respetemos los valles profundos y suavizamos solo las transiciones de np.clip
 np.copyto( eq, eqaux, where=(eqaux > -3.0) )
 
-# DEBUG para ver lo que hemos hecho:
-if dev:
-    plt.xlim(20,20000);plt.ylim(-30, 10)
-    plt.semilogx(freq, mag,         label='raw', linestyle=':', linewidth=.5, color='grey')
-    plt.semilogx(freq, target,      label='target', linestyle='-', color='blue')
-    plt.semilogx(freq, target+eq,   label='target + eq', color='green', linewidth=1.5)
-    plt.semilogx(freq, eq,          label='eq', color='red')
-    plt.semilogx(freq, eqaux,       label='eqaux', linestyle=':', color='purple')
-    plt.axvline(fScho,              label='Schroeder', color='black', linestyle=':')
-    plt.axvline(f0,                 label='f0 = -' + str(octScho) + ' oct', color='grey', linestyle=':')
-    plt.legend()
-    plt.show()
-    #sys.exit()
-
 ##########################################################################
 # 3. Computamos el FIR de salida que usaremos en el convolver.
 #    dom. de la freq ---( IFFT )---> dom. del tiempo
@@ -278,6 +264,16 @@ impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 # Marcamos la freq Schroeder
 plt.axvline(fScho, label='Schroeder', color='black', linestyle=':')
 
+
+# Gráficas auxiliares de la EQ (solo si opc -dev)
+if dev:
+    plt.axvline (f0,
+                 label='f0 = -' + str(octScho) + ' oct vs Schroeder',
+                 color='orange', linestyle=':', linewidth=1)
+
+    plt.semilogx(freq, eqaux,
+                 label='eqaux', linestyle=':', color='purple')
+
 # Curva inicial sin suavizar:
 plt.semilogx(freq, mag,
              label="raw response (" + str(len(mag)) + " bins)",
@@ -285,12 +281,13 @@ plt.semilogx(freq, mag,
 
 # Curva suavizada target:
 plt.semilogx(freq, target,
-             label="target (smoothed response)", color="blue")
+             label="target (smoothed response)",
+             color="blue", linestyle='-')
 
 # Cacho de curva usada para calcular el nivel de referencia:
 if autoRef:
     plt.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
-                 label="ref level range",
+                 label="range to estimate ref level",
                  color="black", linestyle="--", linewidth=2)
 
 # Curva de EQ para generar el FIR:
@@ -298,12 +295,16 @@ plt.semilogx(newFreq, newEq,
              label="EQ applied (" + str(len(newEq)) + " bins)",
              color="red")
 
+if dev:
+    plt.semilogx(freq, (target + eq),
+                 label='target + eq', color='green', linewidth=1.5)
+
 title = FRDbasename + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
 plt.title(title)
 plt.xlim(20, 20000)
-plt.ylim(-30, 10)
+plt.ylim(-30, 15)
 plt.grid()
-plt.legend()
+plt.legend(loc='lower right')
 plt.show()
 
 ##########################################################################
