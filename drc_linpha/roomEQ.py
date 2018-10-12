@@ -10,9 +10,14 @@
 
         -fs=    fs del FIR de salida, por defecto 48000 (Hz)
         -e=     Longitud del FIR en taps 2^XX (por defecto 2^14 = 16 Ktaps)
+        
         -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
         -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
+        -nofir  Solo se estima el target y la eq, no genera FIRs
+        
         -v      Visualiza los impulsos FIR generados
+
+        -dev    Gráficas auxiliares sobre la EQ
 
     Se necesita  github.com/AudioHumLab/audiotools
 
@@ -28,6 +33,12 @@
 ##########################################################################
 # AJUSTES POR DEFECTO:
 ##########################################################################
+
+# Solo calcula el target y la curva de EQ, no genera los FIR
+noFIRs  = False
+
+# Para developers, muestra gráficas relativas al cálculo del target
+dev = False
 
 # Salida:
 m       = 2**14     # Longitud del FIR por defecto 2^14 = 16 Ktaps
@@ -119,6 +130,12 @@ for opc in sys.argv[1:]:
     elif '-v' in opc:
         verFIRs = True
 
+    elif '-nofir' in opc:
+        noFIRs = True
+
+    elif '-dev' in opc:
+        dev = True
+
     else:
         print __doc__
         sys.exit()
@@ -132,6 +149,12 @@ if fs == fs_FRD:
     print "(i) fs=" + str(fs) + " coincide con la indicada en " + FRDbasename
 else:
     print "(i) fs=" + str(fs) +  " distinta de " + str(fs_FRD) + " en " + FRDbasename
+
+# Información de la resolución
+print "(i) bins leidos:", len(freq), ", bins del EQ:", m/2
+if (m/2) / len(freq) > 1:
+    print "(!) La longitud m=2^" + str(int(np.log2(m))) \
+           + " EXCEDE la resolución original de " + FRDbasename
 
 #######################################################################################
 # 1 CALCULO DEL TARGET: ecualizaremos una versión suavizada de la respuesta de la sala
@@ -188,18 +211,26 @@ eqaux = smooth(freq, eq, Noct=12) # Noct=12 parece el valor más adecuado.
 np.copyto( eq, eqaux, where=(eqaux > -3.0) )
 
 # DEBUG para ver lo que hemos hecho:
-#plt.xlim(20,20000);plt.ylim(-15, 10)
-#plt.semilogx(freq, target+eq,   label='target + eq')
-#plt.semilogx(freq, eq,          label='eq', color='red')
-#plt.semilogx(freq, eqaux,       label='eqaux', linestyle=':')
-#plt.axvline(fScho,              label='Schroeder', color='black', linestyle=':')
-#plt.axvline(f0,                 label='f0 = -' + str(octScho) + ' oct', color='grey', linestyle=':')
-#plt.legend()
-#plt.show()
-#sys.exit()
+if dev:
+    plt.xlim(20,20000);plt.ylim(-30, 10)
+    plt.semilogx(freq, mag,         label='raw', linestyle=':', linewidth=.5, color='grey')
+    plt.semilogx(freq, target,      label='target', linestyle='-', color='blue')
+    plt.semilogx(freq, target+eq,   label='target + eq', color='green', linewidth=1.5)
+    plt.semilogx(freq, eq,          label='eq', color='red')
+    plt.semilogx(freq, eqaux,       label='eqaux', linestyle=':', color='purple')
+    plt.axvline(fScho,              label='Schroeder', color='black', linestyle=':')
+    plt.axvline(f0,                 label='f0 = -' + str(octScho) + ' oct', color='grey', linestyle=':')
+    plt.legend()
+    plt.show()
+    #sys.exit()
 
 ##########################################################################
-# 2.3 Interpolamos la curva 'eq' para adaptarnos a la longitud 'm'
+# 3. Computamos el FIR de salida que usaremos en el convolver.
+#    dom. de la freq ---( IFFT )---> dom. del tiempo
+##########################################################################
+
+##########################################################################
+# 3.1 Interpolamos la curva 'eq' para adaptarnos a la longitud 'm'
 #     y a la 'fs' deseadas para el impulso del FIR de salida.
 #
 #   Se observa que ARTA proporciona respuestas .frd
@@ -215,23 +246,18 @@ np.copyto( eq, eqaux, where=(eqaux > -3.0) )
 #   - El primer bin es 0 Hz y el último es Nyquist
 #
 ##########################################################################
-print "(i) Interpolando"
+print "(i) Interpolando espectro para m = " + utils.Ktaps(m) + " @ " + str(fs) + " Hz"
 newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
 
-##########################################################################
-# 3. Computamos el FIR de salida que usaremos en el convolver.
-#    dom. de la freq ---( IFFT )---> dom. del tiempo
-##########################################################################
-
-# 3.1 Comprobamos que sea ODD
+# 3.2 Comprobamos que sea ODD
 if len(newEq) % 2 == 0:
     raise ValueError("(!) Algo va mal debería ser un semiespectro ODD: " + str(len(newEq)))
     sys.exit()
 
-# 3.2 Traducimos dBs --> linear
+# 3.3 Traducimos dBs --> linear
 newEqlin = 10.0**(newEq/20.0)
 
-# 3.3 Computamos el impulso calculando la IFFT de la curva 'newEq'.
+# 3.4 Computamos el impulso calculando la IFFT de la curva 'newEq'.
 #     OjO nuestra curva semiespectro 'newEq' es una abstracción reducida a magnitudes
 #     de freqs positivas, pero la IFFT necesita un espectro causal (con phase minima)
 #     y completo (freqs positivas y negativas)
@@ -242,12 +268,63 @@ imp = pydsd.semiblackmanharris(m) * imp[:m]
 
 # Ahora 'imp' tiene una respuesta causal, natural, o sea de phase mínima.
 
-# 3.4 Versión linear-phase (experimental)
+# 3.5 Versión linear-phase (experimental)
 impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 
 ##########################################################################
-# 4 Guardamos los impulsos en archivos .pcm
+# 4 PLOTEOS
 ##########################################################################
+
+# Marcamos la freq Schroeder
+plt.axvline(fScho, label='Schroeder', color='black', linestyle=':')
+
+# Curva inicial sin suavizar:
+plt.semilogx(freq, mag,
+             label="raw response (" + str(len(mag)) + " bins)",
+             color="silver", linestyle=":", linewidth=.5)
+
+# Curva suavizada target:
+plt.semilogx(freq, target,
+             label="target (smoothed response)", color="blue")
+
+# Cacho de curva usada para calcular el nivel de referencia:
+if autoRef:
+    plt.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
+                 label="ref level range",
+                 color="black", linestyle="--", linewidth=2)
+
+# Curva de EQ para generar el FIR:
+plt.semilogx(newFreq, newEq,
+             label="EQ applied (" + str(len(newEq)) + " bins)",
+             color="red")
+
+title = FRDbasename + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
+plt.title(title)
+plt.xlim(20, 20000)
+plt.ylim(-30, 10)
+plt.grid()
+plt.legend()
+plt.show()
+
+##########################################################################
+# 5 Guardamos las gráficas en un PDF:
+##########################################################################
+#pdfName = FRDname.replace('.frd', '_eq.pdf').replace('.txt', '_eq.pdf')
+#print "\n(i) Guardando gráfica en el archivo " + pdfName
+# evitamos los warnings del pdf
+# C:\Python27\lib\site-packages\matplotlib\figure.py:1742: UserWarning:
+# This figure includes Axes that are not compatible with tight_layout, so
+# its results might be incorrect.
+#import warnings
+#warnings.filterwarnings("ignore")
+#fig.savefig(pdfName, bbox_inches='tight')
+
+##########################################################################
+# 6 Guardamos los impulsos en archivos .pcm
+##########################################################################
+if noFIRs:
+    print "(i) No se generan FIRs. Bye!"
+    sys.exit()
 
 # Separamos los FIR de salida en un directorio de la fs solicitada
 if FRDpathname:
@@ -274,52 +351,6 @@ print "(i) Guardando los FIR de ecualización en '" + mpEQpcmname.split("/")[-1]
 utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
 
-##########################################################################
-# 5 PLOTEOS
-##########################################################################
-
-plt.axvline(fScho,              label='Schroeder', color='black', linestyle=':')
-
-# Curva inicial sin suavizar:
-plt.semilogx(freq, mag,
-             label="raw response (" + str(len(mag)) + " bins)",
-             color="silver", linestyle=":")
-
-# Curva suavizada target:
-plt.semilogx(freq, target,
-             label="target (smoothed response)", color="blue")
-
-# Cacho de curva usada para calcular el nivel de referencia:
-if autoRef:
-    plt.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
-                 label="ref level range",
-                 color="black", linestyle="--", linewidth=2)
-
-# Curva de EQ para generar el FIR:
-plt.semilogx(newFreq, newEq,
-             label="EQ applied (" + str(len(newEq)) + " bins)",
-             color="red")
-
-title = FRDbasename + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
-plt.title(title)
-plt.xlim(20, 20000)
-plt.ylim(-30, 10)
-plt.grid()
-plt.legend()
-plt.show()
-
-##########################################################################
-# 6 Guardamos las gráficas en un PDF:
-##########################################################################
-#pdfName = FRDname.replace('.frd', '_eq.pdf').replace('.txt', '_eq.pdf')
-#print "\n(i) Guardando gráfica en el archivo " + pdfName
-# evitamos los warnings del pdf
-# C:\Python27\lib\site-packages\matplotlib\figure.py:1742: UserWarning:
-# This figure includes Axes that are not compatible with tight_layout, so
-# its results might be incorrect.
-#import warnings
-#warnings.filterwarnings("ignore")
-#fig.savefig(pdfName, bbox_inches='tight')
 
 ##########################################################################
 # 7 Visualización de los FIRs de EQ:
