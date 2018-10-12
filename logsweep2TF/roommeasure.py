@@ -20,7 +20,7 @@
                             en muestras de la señal de prueba. Por defecto 2^17.
          -cX                Canal: L | R | LR  se usará como prefijo del archivo.frd.
                             LR permite intercalar medidas de cada canal en cada posición de micro.
-                            Si se omite se usará el prefijo 'M'.
+                            Si se omite se usará el prefijo 'C'.
 
          -sXX               Freq Shroeder para el suavizado, por defecto 200 Hz.
 
@@ -76,7 +76,7 @@ numMeas                 = 2         # Núm de medidas a realizar
 avisoBeep               = True      # pitido de aviso antes de medir
 
 binsFRD                 = 2**14     # bins finales de los archivos .frd obtenidos
-channels                = 'M'       # Canales a intercalar en cada punto de medida, se usará
+channels                = 'C'       # Canales a intercalar en cada punto de medida, se usará
                                     # como prefijo del los .frd, p.ej: "L" o "R"
 
 Scho                    = 200       # Frec de Schroeder (Hz)
@@ -104,7 +104,7 @@ def interpSS(freq, mag, Nbins):
     # Y obtenemos las magnitudes interpoladas en las 'frecNew':
     return freqNew, funcI(freqNew)
 
-def medir(ch='M', secuencia=0):
+def medir(ch='C', secuencia=0):
     # Hacemos la medida, tomamos el SemiSpectrum positivo
     meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
     # Guardamos la curva en un archivo .frd secuenciado
@@ -112,9 +112,9 @@ def medir(ch='M', secuencia=0):
     utils.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs,
                    comments='roommeasure.py ch:' + ch + ' point:' + str(secuencia) )
     # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
-    m_smoo = smooth(m, f, Noct, f0=Scho)
+    m_smoo = smooth(f, m, Noct, f0=Scho)
     figIdx = 10
-    canales = ('L', 'R', 'M')
+    canales = ('L', 'R', 'C')
     if ch in canales:
         figIdx += canales.index(ch)
     LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
@@ -234,7 +234,7 @@ if __name__ == "__main__":
         # 5. También guarda una versión suavidaza del promedio en un .frd
         print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
               " Hz y variando hasta 1/1 oct en Nyq"
-        m_smoothed = smooth(m, f, Noct, f0=Scho)
+        m_smoothed = smooth(f, m, Noct, f0=Scho)
         utils.saveFRD( ch + '_room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs,
                        comments='roommeasure.py ch:' + ch + ' smoothed avg' )
 

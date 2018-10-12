@@ -484,7 +484,7 @@ def do_meas(windosweep, sweep):
             print "--- Smoothing DUT spectrum (this can take a while ...)"
             t_start = time()
             # (i) 'audiotools.smooth' trabaja con semiespectros positivos y reales (no complejos)
-            smoothed = smooth(abs(magNew), frecNew, Noct=24)
+            smoothed = smooth(frecNew, abs(magNew), Noct=24)
             plot_spectrum(smoothed, semi=True, fig=100, color='green', label='DUT/SWEEP smoothed')
             print "Smoothing computed in " + str( round(time() - t_start, 1) ) + " s"
 
