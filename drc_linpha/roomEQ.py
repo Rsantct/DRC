@@ -292,7 +292,7 @@ plt.semilogx(newFreq, newEq,
 # Curva resultado estimada:
 if dev:
     plt.semilogx(freq, (target + eq),
-                 label='result estimated', color='green', linewidth=1.5)
+                 label='estimated result', color='green', linewidth=1.5)
 
 # Cacho de curva usada para calcular el nivel de referencia:
 if autoRef:
