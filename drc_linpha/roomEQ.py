@@ -41,7 +41,7 @@ f1, f2  = 400, 4000 # Rango de frecs. para decidir el nivel de referencia
 # TARGET sobre la curva .frd original
 Noct    = 96        # Suavizado fino inicial 1/96 oct
 fScho   = 200       # Frec de Schroeder
-octScho = 1         # Octavas respecto a la freq. Schoeder para iniciar
+octScho = 2         # Octavas respecto a la freq. Schoeder para iniciar
                     # la transición de suavizado fino hacia 1/1 oct
 Tspeed  = "medium"  # Velocidad de transición del suavizado audiotools/smoothSpectrum.py
 
@@ -94,10 +94,10 @@ for opc in sys.argv[1:]:
             sys.exit()
 
     elif opc[:3] == '-e=':
-        if opc[3:] in ('13', '14', '15', '16'):
+        if opc[3:] in ('12', '13', '14', '15', '16'):
             m = 2**int(opc[3:])
         else:
-            print "m: 13...16 (8K...64K taps)"
+            print "m: 12...16 (4K...64K taps)"
             sys.exit()
 
     elif opc[:5] == '-ref=':
@@ -139,7 +139,7 @@ else:
 
 # 1.1 Nivel de referencia
 # 'rmag' es una curva muy suavizada 1/1oct que usaremos para tomar el nivel de referencia
-rmag = smooth(mag, freq, Noct=1)
+rmag = smooth(freq, mag, Noct=1)
 if autoRef:
     f1_idx = (np.abs(freq - f1)).argmin()
     f2_idx = (np.abs(freq - f2)).argmin()
@@ -160,7 +160,7 @@ f0 = 2**(-octScho) * fScho
 # 'Noct': suavizado fino inicial en graves (por defecto 1/48 oct)
 # 'Tspeed': velocidad de transición del suavizado audiotools/smoothSpectrum.py
 print "(i) Suavizando la respuesta para calcular el target"
-target = smooth(mag, freq, Noct, f0=f0, Tspeed=Tspeed)
+target = smooth(freq, mag, Noct, f0=f0, Tspeed=Tspeed)
 
 # 1.3 Reubicamos las curvas en el nivel de referencia
 mag    -= ref_level   # curva de magnitudes original
@@ -171,29 +171,49 @@ target -= ref_level   # curva target
 # 2 CÁLCULO DE LA EQ
 ##########################################################################
 
-# 2.1 'eq' es la curva de ecualización por inversión del target:
+# 'eq' es la curva de ecualización por inversión del target:
 eq  = -target
 
-# 2.2 Recortamos ganacias positivas:
+# Recortamos ganacias positivas:
 np.clip(eq, a_min=None, a_max=0.0, out=eq)
-# 2.1 y limamos asperezas (Esto hay que mejorarlo, ya que suaviza los notch)
-eq = smooth(eq, freq, Noct=12)
+# Nótese que ahora 'eq' tiene unas transiciones abruptas en 0 dB debidas al recorte.
+
+# Limamos asperezas:
+
+# Versión suavizada de 'eq' de la que nos interesa solo el suavizado cerca de 0 dB
+eqaux = smooth(freq, eq, Noct=12) # Noct=12 parece el valor más adecuado.
+
+# Actualizamos 'eq' con los valores altos de 'eqaux', de manera que 
+# respetemos los valles profundos y suavizamos solo las transiciones de np.clip
+np.copyto( eq, eqaux, where=(eqaux > -3.0) )
+
+# DEBUG para ver lo que hemos hecho:
+#plt.xlim(20,20000);plt.ylim(-15, 10)
+#plt.semilogx(freq, target+eq,   label='target + eq')
+#plt.semilogx(freq, eq,          label='eq', color='red')
+#plt.semilogx(freq, eqaux,       label='eqaux', linestyle=':')
+#plt.axvline(fScho,              label='Schroeder', color='black', linestyle=':')
+#plt.axvline(f0,                 label='f0 = -' + str(octScho) + ' oct', color='grey', linestyle=':')
+#plt.legend()
+#plt.show()
+#sys.exit()
 
 ##########################################################################
 # 2.3 Interpolamos la curva 'eq' para adaptarnos a la longitud 'm'
 #     y a la 'fs' deseadas para el impulso del FIR de salida.
-
+#
 #   Se observa que ARTA proporciona respuestas .frd
 #   - de longitud power of 2
 #   - el primer bin es 0 Hz
 #   - si fs=48000, el último bin es fs/2 
 #   - si fs=44100, el último bin es (fs/2)-1  ¿!? what the fuck 
-
-#     NOTA: interpolando con pydsd.lininterp tenemos garantizado que:
-#     - La longitud del nuevo semiespectro será ODD (power of 2) + 1,
-#       conveniente para computar un wholespectrum EVEN que servirá para
-#       sintetizar el IR con IFFT
-#     - El primer bin es 0 Hz y el último es Nyquist
+#
+#   NOTA: interpolando con pydsd.lininterp tenemos garantizado que:
+#   - La longitud del nuevo semiespectro será ODD (power of 2) + 1,
+#     conveniente para computar un wholespectrum EVEN que servirá para
+#     sintetizar el IR con IFFT
+#   - El primer bin es 0 Hz y el último es Nyquist
+#
 ##########################################################################
 print "(i) Interpolando"
 newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
@@ -208,7 +228,7 @@ if len(newEq) % 2 == 0:
     raise ValueError("(!) Algo va mal debería ser un semiespectro ODD: " + str(len(newEq)))
     sys.exit()
 
-# 3.2 Traducimos dB --> gain
+# 3.2 Traducimos dBs --> linear
 newEqlin = 10.0**(newEq/20.0)
 
 # 3.3 Computamos el impulso calculando la IFFT de la curva 'newEq'.
@@ -229,7 +249,15 @@ impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 # 4 Guardamos los impulsos en archivos .pcm
 ##########################################################################
 
-ch = 'C' # genérico por si no viene nombrado el frd
+# Separamos los FIR de salida en un directorio de la fs solicitada
+if FRDpathname:
+    dirSal = FRDpathname + "/" + str(fs)
+else:
+    dirSal = str(fs)
+os.system("mkdir -p " + dirSal)
+
+# Indicativo del canal para el nombre del .pcm de salida
+ch = 'C'
 if FRDbasename[0].upper() in ('L','R'):
     ch = FRDbasename[0].upper()
     resto = FRDbasename[1:-4].strip().strip('_').strip('-')
@@ -243,19 +271,14 @@ if FRDpathname:
 print "(i) Guardando los FIR de ecualización en '" + mpEQpcmname.split("/")[-1] \
        + "' '" + lpEQpcmname.split("/")[-1] + "'"
 
-# Directorio de salida
-if FRDpathname:
-    dirSal = FRDpathname + "/" + str(fs)
-else:
-    dirSal = str(fs)
-os.system("mkdir -p " + dirSal)
-
 utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
 
 ##########################################################################
 # 5 PLOTEOS
 ##########################################################################
+
+plt.axvline(fScho,              label='Schroeder', color='black', linestyle=':')
 
 # Curva inicial sin suavizar:
 plt.semilogx(freq, mag,
