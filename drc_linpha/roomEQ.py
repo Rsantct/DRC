@@ -328,11 +328,11 @@ if noFIRs:
     print "(i) No se generan FIRs. Bye!"
     sys.exit()
 
-# Separamos los FIR de salida en un directorio de la fs solicitada
+# Separamos los FIR de salida en un directorio indicativo de la fs y la longitud en taps:
 if FRDpathname:
-    dirSal = FRDpathname + "/" + str(fs)
+    dirSal = FRDpathname + "/" + str(fs) + "_" + utils.Ktaps(m).replace(' ','')
 else:
-    dirSal = str(fs)
+    dirSal = str(fs) + "_" + utils.Ktaps(m).replace(' ','')
 os.system("mkdir -p " + dirSal)
 
 # Indicativo del canal para el nombre del .pcm de salida
@@ -340,16 +340,13 @@ ch = 'C'
 if FRDbasename[0].upper() in ('L','R'):
     ch = FRDbasename[0].upper()
     resto = FRDbasename[1:-4].strip().strip('_').strip('-')
-mpEQpcmname = str(fs)+'/drc-X-'+ch+'_mp_'+resto+'.pcm'
-lpEQpcmname = str(fs)+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
-if FRDpathname:
-    mpEQpcmname = FRDpathname + "/" + mpEQpcmname
-    lpEQpcmname = FRDpathname + "/" + lpEQpcmname
+mpEQpcmname = dirSal+'/drc-X-'+ch+'_mp_'+resto+'.pcm'
+lpEQpcmname = dirSal+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
 
 # Guardamos los FIR :
 print "(i) Guardando los FIR de ecualización:"
-print "    " + str(fs) + "/" + mpEQpcmname.split("/")[-1]
-print "    " + str(fs) + "/" + lpEQpcmname.split("/")[-1]
+print "    " + str(fs) + "_" + utils.Ktaps(m).replace(' ','') + "/" + mpEQpcmname.split("/")[-1]
+print "    " + str(fs) + "_" + utils.Ktaps(m).replace(' ','')+ "/" + lpEQpcmname.split("/")[-1]
 
 utils.savePCM32(imp,   mpEQpcmname)
 utils.savePCM32(impLP, lpEQpcmname)
