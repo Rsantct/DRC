@@ -16,6 +16,33 @@ Emmo, la variante `mp` puede resultar más adecuada en escenarios 'near field' c
 
 La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi doméstica con posiciones de escucha más variables. En este escenario es difícilmente precedecible una corrección en amplitud y su fase mínima asociada. Para calcular el filtro de drc, podremos confeccionar la `frd` promediando varias medidas tomadas en un amplio espacio de posiciones de micrófono.
 
+**`roomEQ.py`** permite generar FIR con distintas longitudes (resolucion) y fs. El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, pero se puede indicar manualmente otro nivel una vez vista la propuesta del programa:
+
+```
+~$ roomEQ.py 
+
+    roomEQ.py
+
+    Calcula un FIR para ecualizar la respuesta de una sala.
+
+    Uso:
+        python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho= XX e=XX -v ]
+
+        -fs=    fs del FIR de salida, por defecto 48000 (Hz)
+        -e=     Longitud del FIR en taps 2^XX (por defecto 2^14 = 16 Ktaps)
+
+        -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
+        -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
+        -nofir  Solo se estima el target y la eq, no genera FIRs
+
+        -v      Visualiza los impulsos FIR generados
+
+        -dev    Gráficas auxiliares sobre la EQ
+
+    Se necesita  github.com/AudioHumLab/audiotools
+```
+
+
 ## Instalación
 
 ### Dependencias
