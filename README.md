@@ -42,7 +42,7 @@ La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi domé
 
     Se necesita  github.com/AudioHumLab/audiotools
 ```
-![graph](https://github.com/Rsantct/DRC/blob/master/drc_multipoint/roomEQ_drc.png)
+![graph](https://github.com/Rsantct/DRC/blob/master/drc_multipoint/roomEQ_drc.png =640x480)
 
 
 ## Instalación
