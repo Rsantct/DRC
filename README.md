@@ -29,7 +29,8 @@ La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi domé
         python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho= XX e=XX -v ]
 
         -fs=    fs del FIR de salida, por defecto 48000 (Hz)
-        -e=     Longitud del FIR en taps 2^XX (por defecto 2^14 = 16 Ktaps)
+        -e=     Longitud del FIR en taps 2^XX. Por defecto 2^15, es decir,
+                32 Ktaps con resolución de 16K bins sobre la fs.
 
         -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
         -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
