@@ -4,7 +4,7 @@ Este software permite medir la respuesta 'in room' y calcular FIRs para correci�
 
 El script de medición básico es **`logsweep2TF/logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
 
-El script **`drc_multipoint/roommeasure.py`** permite realizar **_medidas estacionarias en múltiples puntos de micrófono, se obtendrá una respuesta promediada en formato_** `.frd`.
+El script **`drc_multipoint/roommeasure.py`** permite realizar **_medidas estacionarias en múltiples puntos de micrófono_**, se obtendrá una respuesta promediada en formato `.frd`.
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
@@ -14,7 +14,7 @@ El script **`drc_multipoint/roomEQ.py`** se ocupa del cálculo del filtro de eq 
 
 Emmo, la variante `mp` puede resultar más adecuada en escenarios 'near field' con punto de escucha muy localizado. Los accidentes en la respuesta en frecuencia por debajo de la frecuencia de Shroeder en esa localización de escucha tendrán una naturaleza minimum phase invariable, entonces la corrección `mp` será óptima. Esta variante no introduce latencia.
 
-La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi doméstica con posiciones de escucha más variables. En este escenario es difícilmente precedecible una corrección en amplitud y su fase mínima asociada. Para calcular el filtro de drc, podremos confeccionar la `frd` promediando varias medidas tomadas en un amplio espacio de posiciones de micrófono.
+La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi doméstica con posiciones de escucha más variables. En este escenario es difícilmente precedecible una corrección en amplitud y su fase mínima asociada. Para calcular el filtro de drc, podremos confeccionar la respuesta `.frd` promediando varias medidas tomadas en un amplio espacio de posiciones de micrófono.
 
 **`roomEQ.py`** permite generar FIR con distintas longitudes (resolucion) y fs. El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, pero se puede indicar manualmente otro nivel una vez vista la propuesta del programa:
 
