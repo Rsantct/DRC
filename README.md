@@ -2,19 +2,19 @@ Este software permite medir la respuesta 'in room' y calcular FIRs para correci�
 
 ## Medición
 
-El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
+El script de medición básico es **`logsweep2TF/logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
 
-El script **`roommeasure.py`** permite realizar medidas estacionarias en múltiples puntos de micrófono, y obtendrá una respuesta promediada en formato `.frd`.
+El script **`drc_multipoint/roommeasure.py`** permite realizar medidas estacionarias en múltiples puntos de micrófono, se obtendrá una respuesta promediada en formato `.frd`.
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
 ## Cálculo
 
-El script **`roomEQ.py`** se ocupa del cálculo del filtro de eq DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA, etc.. Proporciona filtros minimum phase y linear phase, ambos con idéntica respuesta en magnitud.
+El script **`drc_multipoint/roomEQ.py`** se ocupa del cálculo del filtro de eq DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA o Room EQ Wizard. Proporciona filtros minimum phase y linear phase, ambos con idéntica respuesta en magnitud.
 
-Emmo, la variante `mp`puede resultar más adecuada en escenarios 'near field' con punto de escucha muy estable. Los accidentes en la respuesta en frecuencia por debajo de la frec. de Shroeder en estas condiciones tendrán naturaleza minimum phase y la corrección mp será entonces la óptima. Esta variante no introduce latencia.
+Emmo, la variante `mp` puede resultar más adecuada en escenarios 'near field' con punto de escucha muy localizado. Los accidentes en la respuesta en frecuencia por debajo de la frecuencia de Shroeder en esa localización de escucha tendrán una naturaleza minimum phase invariable, entonces la corrección `mp` será óptima. Esta variante no introduce latencia.
 
-La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi doméstica con más influencia del campo reverberante y con posiciones de escucha más variables, si se confecciona a partir de una medida promediada en un amplio espacio de posiciones de micrófono.
+La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi doméstica con posiciones de escucha más variables. En este escenario es difícilmente precedecible una corrección en amplitud y su fase mínima asociada. Para calcular el filtro de drc, podremos confeccionar la `frd` promediando varias medidas tomadas en un amplio espacio de posiciones de micrófono.
 
 ## Instalación
 
