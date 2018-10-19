@@ -44,9 +44,8 @@ unzip master
 rm master.zip
 mv DRC-master DRC
 chmod +x DRC/logsweep2TF/*.py
-chmod +x DRC/drc_linpha/*.py
-chmod +x DRC/logsweep2TF/*.sh
-chmod +x DRC/drc_linpha/*.sh
+chmod +x DRC/drc_multipoint/*.py
+chmod +x DRC/drc_multipoint/*.sh
 ```
 
 Se recomienda incluir estas utilidades en el PATH del usuario:
