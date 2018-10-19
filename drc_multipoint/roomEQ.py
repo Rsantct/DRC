@@ -9,7 +9,8 @@
         python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho= XX e=XX -v ]
 
         -fs=    fs del FIR de salida, por defecto 48000 (Hz)
-        -e=     Longitud del FIR en taps 2^XX (por defecto 2^14 = 16 Ktaps)
+        -e=     Longitud del FIR en taps 2^XX. Por defecto 2^15, es decir,
+                32 Ktaps con resolución de 16K bins sobre la fs.
 
         -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
         -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
@@ -41,7 +42,7 @@ noFIRs  = False
 dev = False
 
 # Salida:
-m       = 2**14     # Longitud del FIR por defecto 2^14 = 16 Ktaps
+m       = 2**15     # Longitud del FIR por defecto 2^15 = 32 Ktaps (resolución 16K bins)
 fs      = 48000     # fs del FIR de salida
 verFIRs = False
 
@@ -64,16 +65,14 @@ import os
 import sys
 HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
-# modulos de audiotools:
+# Módulos de AudioHumLab/audiotools
 try:
     import utils
     import pydsd
+    from smoothSpectrum import smoothSpectrum as smooth
 except:
-    raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools")
+    raise ValueError("roomEQ.py necesita https://githum.com/AudioHumLab/audiotools")
     sys.exit()
-
-# Módulo de AudioHumLab/audiotools
-from smoothSpectrum import smoothSpectrum as smooth
 
 # Módulos estandar
 import numpy as np
@@ -199,11 +198,10 @@ eq  = -target
 
 # Recortamos ganacias positivas:
 np.clip(eq, a_min=None, a_max=0.0, out=eq)
-# Nótese que ahora 'eq' tiene unas transiciones abruptas en 0 dB debidas al recorte.
+# Nótese que ahora 'eq' tiene unas transiciones abruptas en 0 dB debidas al recorte,
+# limamos asperezas:
 
-# Limamos asperezas:
-
-# Versión suavizada de 'eq' de la que nos interesa solo el suavizado cerca de 0 dB
+# Versión suavizada de 'eq' de la que nos interesa solo el suavizado superior
 eqaux = smooth(freq, eq, Noct=12) # Noct=12 parece el valor más adecuado.
 
 # Actualizamos 'eq' con los valores altos de 'eqaux', de manera que
@@ -248,7 +246,7 @@ newEqlin = 10.0**(newEq/20.0)
 #     de freqs positivas, pero la IFFT necesita un espectro causal (con phase minima)
 #     y completo (freqs positivas y negativas)
 wholespectrum = pydsd.minphsp( pydsd.wholespmp(newEqlin) ) # Ahora ya tiene phase
-# dom.F --> dom.T
+# dom.F --> dom.T y enventanado
 imp = np.real( np.fft.ifft( wholespectrum ) )
 imp = pydsd.semiblackmanharris(m) * imp[:m]
 
@@ -261,12 +259,11 @@ impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
 # 4 PLOTEOS
 ##########################################################################
 
-# Marcamos la freq Schroeder
-plt.axvline(fScho, label='Schroeder', color='black', linestyle=':')
-
-
 # Gráficas auxiliares de la EQ (solo si opc -dev)
 if dev:
+
+    plt.axvline(fScho, label='Schroeder', color='black', linestyle=':')
+
     plt.axvline (f0,
                  label='f0 = -' + str(octScho) + ' oct vs Schroeder',
                  color='orange', linestyle=':', linewidth=1)
@@ -286,7 +283,7 @@ plt.semilogx(freq, target,
 
 # Curva de EQ para generar el FIR:
 plt.semilogx(newFreq, newEq,
-             label="EQ applied (" + str(len(newEq)) + " bins)",
+             label="EQ applied (" + str(len(newEq)-1) + " bins)",
              color="red")
 
 # Curva resultado estimada:
