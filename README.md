@@ -26,7 +26,7 @@ La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi domé
     Calcula un FIR para ecualizar la respuesta de una sala.
 
     Uso:
-        python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho= XX e=XX -v ]
+        python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho=XX e=XX -v ]
 
         -fs=    fs del FIR de salida, por defecto 48000 (Hz)
         -e=     Longitud del FIR en taps 2^XX. Por defecto 2^15, es decir,
