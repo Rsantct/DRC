@@ -4,7 +4,7 @@ Este software permite medir la respuesta 'in room' y calcular FIRs para correci�
 
 El script de medición básico es **`logsweep2TF/logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
 
-El script **`drc_multipoint/roommeasure.py`** permite realizar medidas estacionarias en múltiples puntos de micrófono, se obtendrá una respuesta promediada en formato `.frd`.
+El script **`drc_multipoint/roommeasure.py`** permite realizar **_medidas estacionarias en múltiples puntos de micrófono, se obtendrá una respuesta promediada en formato_** `.frd`.
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
