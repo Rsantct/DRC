@@ -56,7 +56,7 @@ nano ~/bash_profile
 
 ```
 ### AUDIOTOOLS y DRC
-export PATH=~/audiotools:~/DRC/logsweep2TF:~/DRC/drc_linpha:$PATH
+export PATH=~/audiotools:~/DRC/logsweep2TF:~/DRC/drc_multipoint:$PATH
 ```
 
 ## Actualización
