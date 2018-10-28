@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Des-numera los drc-X...
+# Des-numera:
+#    drc-X-L_des_crip_cion.pcm  --->  drc.L_des_crip_cion.pcm
 
 for x in drc*; do
     if [[ true  ]]; then
