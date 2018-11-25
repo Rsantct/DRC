@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 """
-    Script para obtenerla respuesta estacionaria de una sala,
+    Script para obtener la respuesta estacionaria de una sala,
     en varios puntos de escucha (micrófono).
 
     Se obtiene:
