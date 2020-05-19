@@ -3,6 +3,9 @@
 branch="master"
 if [[ $1 ]]; then
   branch=$1
+else
+  echo 'update.sh   master | alternative_branch'
+  exit 0
 fi
 
 cd ~/
