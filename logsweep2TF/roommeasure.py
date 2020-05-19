@@ -103,7 +103,7 @@ def interpSS(freq, mag, Nbins):
 
 def medir(ch='C', secuencia=0):
     # Hacemos la medida, tomamos el SemiSpectrum positivo
-    meas = abs( LS.do_meas(windosweep, sweep)[:N/2] )
+    meas = abs( LS.do_meas(windosweep, sweep)[:int(N/2)] )
     # Guardamos la curva en un archivo .frd secuenciado
     f, m = interpSS(freq, meas, binsFRD)
     tools.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs,
