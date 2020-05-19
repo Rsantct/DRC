@@ -119,13 +119,14 @@ def medir(ch='C', secuencia=0):
     return meas
 
 def aviso_medida(ch, secuencia):
-    aviso =  "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-    aviso += "PULSA INTRO PARA MEDIR EN CANAL  < " + ch + " >  (" + str(secuencia+1) + "/" + str(numMeas) + ")\n"
-    aviso += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
+    aviso =   '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    aviso += f'PULSA INTRO PARA MEDIR EN CANAL  <{ch}>  ( {str(secuencia+1)}/{str(numMeas)})\n'
+    aviso +=  '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+    print(aviso)
+    input()
     if avisoBeep:
         Nbeep = tile(beep, 1 + secuencia)
         LS.sd.play(Nbeep)
-    input(aviso)
 
 if __name__ == "__main__":
 
