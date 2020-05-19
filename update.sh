@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
 branch="master"
-if [[ $1 ]]; then
+if [ $1 ]; then
   branch=$1
 else
   echo 'update.sh   master | alternative_branch'
