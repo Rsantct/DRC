@@ -57,12 +57,7 @@ import os
 import sys
 HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
-try:
-    from smoothSpectrum import smoothSpectrum as smooth
-except:
-    raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools")
-    sys.exit()
-# end of /audiotools modules
+from smoothSpectrum import smoothSpectrum as smooth
 
 from time import time       # Para evaluar el tiempo de proceso de algunos cálculos,
                             # como por ejemplo la crosscorrelation que tarda un güevo.
