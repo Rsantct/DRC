@@ -1,17 +1,19 @@
 #!/bin/bash
 
+branch=$1
+
 cd ~/
 
 mkdir -p ~/DRC
 
-rm -f ~/master.zip*
+rm -f ~/"$branch".zip*
 
-wget https://github.com/Rsantct/DRC/archive/master.zip
-unzip -o master.zip
-rm -f ~/master.zip*
+wget https://github.com/Rsantct/DRC/archive/"$branch".zip
+unzip -o "$branch".zip
+rm -f ~/"$branch".zip*
 
 rm -rf ~/DRC
-mv ~/DRC-master ~/DRC
+mv ~/DRC-"$branch" ~/DRC
 
 chmod +x ~/DRC/drc_multipoint/*.py
 chmod +x ~/DRC/drc_multipoint/*.sh
