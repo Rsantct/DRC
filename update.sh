@@ -1,6 +1,9 @@
 #!/bin/bash
 
-branch=$1
+branch="master"
+if [[ $1 ]]; then
+  branch=$1
+fi
 
 cd ~/
 
