@@ -29,7 +29,7 @@ HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
 # modulos de audiotools:
 try:
-    import utils
+    import tools
     import pydsd
 except:
     raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools")
@@ -58,10 +58,10 @@ imp = pydsd.delta(m)
 
 # 2. Aplicamos una curva Room Gain +6dB
 #gain = 6.0
-#imp = utils.RoomGain2impulse(imp, fs, gain)
+#imp = tools.RoomGain2impulse(imp, fs, gain)
 
 # 3. Leemos los filtros paramétricos desde un archivo de texto de REW:
-PEQs = utils.read_REW_EQ_txt(rewfname)
+PEQs = tools.read_REW_EQ_txt(rewfname)
 
 # 4. Encadenamos los filtros 'peakingEQ'
 for peqId, params in PEQs.items():
@@ -89,14 +89,14 @@ fname   = rewfname.split("/")[-1]
 pcmname_mp = "mp-" + fname.replace('.txt', '.pcm')
 if dirname:
     pcmname_mp = dirname + "/" + pcmname_mp
-utils.savePCM32(imp, pcmname_mp)
+tools.savePCM32(imp, pcmname_mp)
 
 # 6. Convertimos a LP linear phase (experimental) ...
-imp = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
+imp = tools.MP2LP(imp, windowed=True, kaiserBeta=1)
 
 # 7. Guardamos el resultado LP
 pcmname_lp = pcmname_mp.replace('mp-', 'lp-')
-utils.savePCM32(imp, pcmname_lp)
+tools.savePCM32(imp, pcmname_lp)
 
 print "Guardados FIRs: ", pcmname_mp, pcmname_lp
 
