@@ -1,7 +1,6 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
-    v0.2
+    v0.2p3 (python3)
     Genera FIRs para DRC a partir de los filtros paramétricos
     de archivos .txt provinientes de Room EQ Wizard.
 
@@ -43,7 +42,7 @@ m  = 2**15  # Longitud del impulso FIR
 
 # 0. LECTURA DEL ARCHIVO .txt de filtros paramétricos de REW
 if len(sys.argv) == 1:
-    print __doc__
+    print(__doc__)
     sys.exit()
 rewfname = sys.argv[1]
 for opc in sys.argv[1:]:
@@ -98,7 +97,7 @@ imp = tools.MP2LP(imp, windowed=True, kaiserBeta=1)
 pcmname_lp = pcmname_mp.replace('mp-', 'lp-')
 tools.savePCM32(imp, pcmname_lp)
 
-print "Guardados FIRs: ", pcmname_mp, pcmname_lp
+print("Guardados FIRs: ", pcmname_mp, pcmname_lp)
 
 # 8. Veamos los FIRs de EQ:
 os.system("IRs_viewer.py " + pcmname_mp + " " + pcmname_lp + " 20-20000 -eq -1 " + str(int(fs)))
