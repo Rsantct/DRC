@@ -59,7 +59,6 @@ import sys
 HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
 try:
-    import utils
     from smoothSpectrum import smoothSpectrum as smooth
 except:
     raise ValueError("rew2fir.py necesita https://githum.com/AudioHumLab/audiotools")
