@@ -1,5 +1,4 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
     roomEQ.py
 
@@ -30,6 +29,7 @@
 # v0.1b
 #   - Longitud del FIR y nivel de referencia en command line.
 #   - Revisión del cómputo del FIR
+# v0.1c python3
 
 ##########################################################################
 # AJUSTES POR DEFECTO:
@@ -65,14 +65,9 @@ import os
 import sys
 HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
-# Módulos de AudioHumLab/audiotools
-try:
-    import tools
-    import pydsd
-    from smoothSpectrum import smoothSpectrum as smooth
-except:
-    raise ValueError("roomEQ.py necesita https://githum.com/AudioHumLab/audiotools")
-    sys.exit()
+import tools
+import pydsd
+from smoothSpectrum import smoothSpectrum as smooth
 
 # Módulos estandar
 import numpy as np
@@ -84,12 +79,12 @@ from matplotlib import pyplot as plt
 ##########################################################################
 
 if len(sys.argv) == 1:
-    print __doc__
+    print(__doc__)
     sys.exit()
 
 for opc in sys.argv[1:]:
 
-    if opc[0] <> '-' and opc[-4:] in ('.frd','.txt'):
+    if opc[0] != '-' and opc[-4:] in ('.frd','.txt'):
         FRDname = opc
         # Lee el contenido del archivo .frd
         FR, fs_FRD = tools.readFRD(FRDname)
@@ -100,14 +95,14 @@ for opc in sys.argv[1:]:
         if opc[4:] in ('44100', '48000', '96000'):
             fs = int(opc[4:])
         else:
-            print "fs debe ser 44100 | 48000 | 96000"
+            print( "fs debe ser 44100 | 48000 | 96000" )
             sys.exit()
 
     elif opc[:3] == '-e=':
         if opc[3:] in ('12', '13', '14', '15', '16'):
             m = 2**int(opc[3:])
         else:
-            print "m: 12...16 (4K...64K taps)"
+            print( "m: 12...16 (4K...64K taps)" )
             sys.exit()
 
     elif opc[:5] == '-ref=':
@@ -116,14 +111,14 @@ for opc in sys.argv[1:]:
             ref_level = round( float(ref_level), 1)
             autoRef = False
         except:
-            print __doc__
+            print( __doc__ )
             sys.exit()
 
     elif opc[:6] == '-scho=':
         try:
             fScho = float(opc[6:])
         except:
-            print __doc__
+            print( __doc__ )
             sys.exit()
 
     elif '-v' in opc:
@@ -136,7 +131,7 @@ for opc in sys.argv[1:]:
         dev = True
 
     else:
-        print __doc__
+        print( __doc__ )
         sys.exit()
 
 # Auxiliares para manejar los archivos de salida y para printados:
@@ -145,15 +140,15 @@ FRDpathname = "/".join(FRDname.split("/")[:-1])
 
 # Información fs
 if fs == fs_FRD:
-    print "(i) fs=" + str(fs) + " coincide con la indicada en " + FRDbasename
+    print( "(i) fs=" + str(fs) + " coincide con la indicada en " + FRDbasename )
 else:
-    print "(i) fs=" + str(fs) +  " distinta de " + str(fs_FRD) + " en " + FRDbasename
+    print( "(i) fs=" + str(fs) +  " distinta de " + str(fs_FRD) + " en " + FRDbasename )
 
 # Información de la resolución
-print "(i) bins leidos:", len(freq), ", bins del EQ:", m/2
+print( "(i) bins leidos:", len(freq), ", bins del EQ:", m/2 )
 if (m/2) / len(freq) > 1:
-    print "(!) La longitud m=2^" + str(int(np.log2(m))) \
-           + " EXCEDE la resolución original de " + FRDbasename
+    print( "(!) La longitud m=2^" + str(int(np.log2(m))) \
+           + " EXCEDE la resolución original de " + FRDbasename)
 
 #######################################################################################
 # 1 CALCULO DEL TARGET: ecualizaremos una versión suavizada de la respuesta de la sala
@@ -172,16 +167,16 @@ if autoRef:
     weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
     # Calculamos el nivel de referencia
     ref_level = round( np.average( r2mag, weights=weights ), 2)
-    print "(i) Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB"
+    print( "(i) Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB" )
 else:
-    print "(i) Nivel de referencia: " +  str(ref_level) + " dB --> 0 dB"
+    print( "(i) Nivel de referencia: " +  str(ref_level) + " dB --> 0 dB" )
 
 # 1.2 Curva 'target': será una versión suavizada de la respuesta .frd de la sala:
 # 'f0': freq a la que empezamos a suavizar más hasta llegar a 1/1 oct en Nyquist
 f0 = 2**(-octScho) * fScho
 # 'Noct': suavizado fino inicial en graves (por defecto 1/48 oct)
 # 'Tspeed': velocidad de transición del suavizado audiotools/smoothSpectrum.py
-print "(i) Suavizando la respuesta para calcular el target"
+print( "(i) Suavizando la respuesta para calcular el target" )
 target = smooth(freq, mag, Noct, f0=f0, Tspeed=Tspeed)
 
 # 1.3 Reubicamos las curvas en el nivel de referencia
@@ -230,7 +225,7 @@ np.copyto( eq, eqaux, where=(eqaux > -3.0) )
 #   - El primer bin es 0 Hz y el último es Nyquist
 #
 ##########################################################################
-print "(i) Interpolando espectro para m = " + tools.Ktaps(m) + " @ " + str(fs) + " Hz"
+print( "(i) Interpolando espectro para m = " + tools.Ktaps(m) + " @ " + str(fs) + " Hz" )
 newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
 
 # 3.2 Comprobamos que sea ODD
@@ -309,7 +304,7 @@ plt.show()
 # 5 Guardamos las gráficas en un PDF:
 ##########################################################################
 #pdfName = FRDname.replace('.frd', '_eq.pdf').replace('.txt', '_eq.pdf')
-#print "\n(i) Guardando gráfica en el archivo " + pdfName
+#print( "\n(i) Guardando gráfica en el archivo " + pdfName )
 # evitamos los warnings del pdf
 # C:\Python27\lib\site-packages\matplotlib\figure.py:1742: UserWarning:
 # This figure includes Axes that are not compatible with tight_layout, so
@@ -322,7 +317,7 @@ plt.show()
 # 6 Guardamos los impulsos en archivos .pcm
 ##########################################################################
 if noFIRs:
-    print "(i) No se generan FIRs. Bye!"
+    print( "(i) No se generan FIRs. Bye!" )
     sys.exit()
 
 # Separamos los FIR de salida en un directorio indicativo de la fs y la longitud en taps:
@@ -341,9 +336,9 @@ mpEQpcmname = dirSal+'/drc-X-'+ch+'_mp_'+resto+'.pcm'
 lpEQpcmname = dirSal+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
 
 # Guardamos los FIR :
-print "(i) Guardando los FIR de ecualización:"
-print "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + mpEQpcmname.split("/")[-1]
-print "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','')+ "/" + lpEQpcmname.split("/")[-1]
+print( "(i) Guardando los FIR de ecualización:" )
+print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + mpEQpcmname.split("/")[-1] )
+print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','')+ "/" + lpEQpcmname.split("/")[-1] )
 
 tools.savePCM32(imp,   mpEQpcmname)
 tools.savePCM32(impLP, lpEQpcmname)
@@ -353,7 +348,7 @@ tools.savePCM32(impLP, lpEQpcmname)
 # 7 Visualización de los FIRs de EQ:
 ##########################################################################
 if verFIRs:
-    print "Veamos los FIR con audiotools/IRs_viewer.py ..."
+    print( "Veamos los FIR con audiotools/IRs_viewer.py ..." )
     os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname
               + "' 20-20000 -eq -1 " + str(int(fs)))
 
