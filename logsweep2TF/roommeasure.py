@@ -1,5 +1,4 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 """
     Script para obtener la respuesta estacionaria de una sala,
     en varios puntos de escucha (micrófono).
@@ -44,16 +43,18 @@
 #   Se separa la función medir(secuencia)
 # v1.1
 #   Opción para intercalar medidas para cada canal en cada punto de micrófono
+# v1.1p3
+#   python3
 
 import sys
 from numpy import *
 from scipy import interpolate
-from scipy.io import wavfile # para leer beepbeep.wav
+from scipy.io import wavfile    # para leer beepbeep.wav
 
 try:
     import logsweep2TF as LS
 except:
-    print "(!) Se necesita logsweep2TF.py"
+    print( "(!) Se necesita logsweep2TF.py" )
     sys.exit()
 
 #  ~/audiotools modules
@@ -125,11 +126,10 @@ def aviso_medida(ch, secuencia):
     aviso =  "\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
     aviso += "PULSA INTRO PARA MEDIR EN CANAL  < " + ch + " >  (" + str(secuencia+1) + "/" + str(numMeas) + ")\n"
     aviso += "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-    print aviso
     if avisoBeep:
-        Nbeep = tile(beep, 1+secuencia)
+        Nbeep = tile(beep, 1 + secuencia)
         LS.sd.play(Nbeep)
-    raw_input(aviso) # usamos print pq raw_input no presenta el texto :-/
+    input(aviso)
 
 if __name__ == "__main__":
 
@@ -141,7 +141,7 @@ if __name__ == "__main__":
     for opc in sys.argv[1:]:
 
         if "-h" in opc.lower():
-            print __doc__
+            print( __doc__ )
             sys.exit()
 
         elif "-nobeep" in opc.lower():
@@ -151,10 +151,10 @@ if __name__ == "__main__":
             try:
                 selected_card = opc.split("=")[1]
                 if not selected_card:
-                    print __doc__
+                    print( __doc__ )
                     sys.exit()
             except:
-                print __doc__
+                print( __doc__ )
                 sys.exit()
 
         elif "-m" in opc:
@@ -173,7 +173,7 @@ if __name__ == "__main__":
             opcsOK = False
 
     if not opcsOK:
-        print __doc__
+        print( __doc__ )
         sys.exit()
 
     LS.sd.default.channels     = 2
@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     # 3. Calculamos el promedio de todas las medidas raw
     for ch in channels:
-        print "Calculando el promedio canal " + ch
+        print( "Calculando el promedio canal " + ch )
         if numMeas > 1:
             # Calculamos el PROMEDIO de todas las medidas realizadas
             SSsAvg[ch] = average(SSs[ch], axis=0)
@@ -232,8 +232,8 @@ if __name__ == "__main__":
                        comments='roommeasure.py ch:' + ch + ' raw avg' )
 
         # 5. También guarda una versión suavidaza del promedio en un .frd
-        print "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
-              " Hz y variando hasta 1/1 oct en Nyq"
+        print( "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
+              " Hz y variando hasta 1/1 oct en Nyq" )
         m_smoothed = smooth(f, m, Noct, f0=Scho)
         tools.saveFRD( ch + '_room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs,
                        comments='roommeasure.py ch:' + ch + ' smoothed avg' )
