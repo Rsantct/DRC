@@ -67,7 +67,7 @@ HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
 # Módulos de AudioHumLab/audiotools
 try:
-    import utils
+    import tools
     import pydsd
     from smoothSpectrum import smoothSpectrum as smooth
 except:
@@ -92,7 +92,7 @@ for opc in sys.argv[1:]:
     if opc[0] <> '-' and opc[-4:] in ('.frd','.txt'):
         FRDname = opc
         # Lee el contenido del archivo .frd
-        FR, fs_FRD = utils.readFRD(FRDname)
+        FR, fs_FRD = tools.readFRD(FRDname)
         freq = FR[:, 0]     # >>>> vector de frecuencias <<<<
         mag  = FR[:, 1]     # >>>> vector de magnitudes  <<<<
 
@@ -230,7 +230,7 @@ np.copyto( eq, eqaux, where=(eqaux > -3.0) )
 #   - El primer bin es 0 Hz y el último es Nyquist
 #
 ##########################################################################
-print "(i) Interpolando espectro para m = " + utils.Ktaps(m) + " @ " + str(fs) + " Hz"
+print "(i) Interpolando espectro para m = " + tools.Ktaps(m) + " @ " + str(fs) + " Hz"
 newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
 
 # 3.2 Comprobamos que sea ODD
@@ -253,7 +253,7 @@ imp = pydsd.semiblackmanharris(m) * imp[:m]
 # Ahora 'imp' tiene una respuesta causal, natural, o sea de phase mínima.
 
 # 3.5 Versión linear-phase (experimental)
-impLP = utils.MP2LP(imp, windowed=True, kaiserBeta=1)
+impLP = tools.MP2LP(imp, windowed=True, kaiserBeta=1)
 
 ##########################################################################
 # 4 PLOTEOS
@@ -327,9 +327,9 @@ if noFIRs:
 
 # Separamos los FIR de salida en un directorio indicativo de la fs y la longitud en taps:
 if FRDpathname:
-    dirSal = FRDpathname + "/" + str(fs) + "_" + utils.Ktaps(m).replace(' ','')
+    dirSal = FRDpathname + "/" + str(fs) + "_" + tools.Ktaps(m).replace(' ','')
 else:
-    dirSal = str(fs) + "_" + utils.Ktaps(m).replace(' ','')
+    dirSal = str(fs) + "_" + tools.Ktaps(m).replace(' ','')
 os.system("mkdir -p " + dirSal)
 
 # Indicativo del canal para el nombre del .pcm de salida
@@ -342,11 +342,11 @@ lpEQpcmname = dirSal+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
 
 # Guardamos los FIR :
 print "(i) Guardando los FIR de ecualización:"
-print "    " + str(fs) + "_" + utils.Ktaps(m).replace(' ','') + "/" + mpEQpcmname.split("/")[-1]
-print "    " + str(fs) + "_" + utils.Ktaps(m).replace(' ','')+ "/" + lpEQpcmname.split("/")[-1]
+print "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + mpEQpcmname.split("/")[-1]
+print "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','')+ "/" + lpEQpcmname.split("/")[-1]
 
-utils.savePCM32(imp,   mpEQpcmname)
-utils.savePCM32(impLP, lpEQpcmname)
+tools.savePCM32(imp,   mpEQpcmname)
+tools.savePCM32(impLP, lpEQpcmname)
 
 
 ##########################################################################
