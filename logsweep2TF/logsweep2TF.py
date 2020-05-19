@@ -141,8 +141,8 @@ def choose_soundcard():
         print( "\n    SYSTEM SOUND DEVICES:\n" )
         print( sd.query_devices() )
         print()
-        print( "    Select capture  device: " ); i = int(raw_input())
-        print( "    Select playback device: " ); o = int(raw_input())
+        print( "    Select capture  device: " ); i = int(input())
+        print( "    Select playback device: " ); o = int(input())
         tested = test_soundcard(i,o)
         tries += 1
 
