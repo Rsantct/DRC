@@ -15,8 +15,10 @@
          -h                 ayuda
 
          -mX                Número de medidas a realizar.
+
          -eXX               Potencia de 2 que determina la longitud = 2^XX
                             en muestras de la señal de prueba. Por defecto 2^17.
+
          -cX                Canal: L | R | LR  se usará como prefijo del archivo.frd.
                             LR permite intercalar medidas de cada canal en cada posición de micro.
                             Si se omite se usará el prefijo 'C'.
@@ -29,14 +31,20 @@
          -nobeep            No pita antes de estar listo para medir.
 
     IMPORTANTE:
+
     Se recomienda una prueba previa con logsweep2TF.py para verificar que:
+
     - La tarjeta de sonido no pierde muestras y los niveles son correctos.
+
     - La medida es viable (Time clearance) con los parámetros usados.
+
+
+    INTERESANTE:
 
     Se pueden revisar las curvas con FRD_viewer.py del paquete audiotools, p.ej:
 
-        FRD_tool.py $(ls room_?.frd)
-        FRD_tool.py $(ls room_?.frd) -24oct -f0=200  # Para verlas suavizadas
+        FRD_tool.py $(ls L_room_?.frd)
+        FRD_tool.py $(ls L_room_?.frd) -24oct -f0=200  # Para verlas suavizadas
 
 """
 # v1.0a
@@ -49,7 +57,7 @@
 import sys
 from numpy import *
 from scipy import interpolate
-from scipy.io import wavfile    # para leer beepbeep.wav
+from scipy.io import wavfile    # para leer beepbeep.wav (PENDIENTE GENERARLO AQUI)
 
 try:
     import logsweep2TF as LS
@@ -65,6 +73,10 @@ sys.path.append(HOME + "/audiotools")
 import tools
 from smoothSpectrum import smoothSpectrum as smooth
 # end of /audiotools modules
+
+# A list of 148 CSS4 colors to plot measured curves
+from matplotlib import colors as mcolors
+css4_colors = list(mcolors.CSS4_COLORS.values())    # (black is index 7)
 
 # DEFAULTS
 
@@ -114,8 +126,11 @@ def medir(ch='C', secuencia=0):
     canales = ('L', 'R', 'C')
     if ch in canales:
         figIdx += canales.index(ch)
+    # Recorremos la secuencia de 148 colores CSS4, empezando desde el negro que
+    # es el de índice 7.
     LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
-                      label = ch + '_' + str(secuencia), color='C' + str(secuencia) )
+                      label = ch + '_' + str(secuencia),
+                      color=css4_colors[(7 + secuencia) % 148] )
     return meas
 
 def aviso_medida(ch, secuencia):
