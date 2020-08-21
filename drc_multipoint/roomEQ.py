@@ -5,21 +5,26 @@
     Calcula un FIR para ecualizar la respuesta de una sala.
 
     Uso:
-        python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho=XX  e=XX  -v ]
+
+        roomEQ.py respuesta.frd  -fs=xxxxx  [ -e=XX -ref=XX  -scho=XX  -doFIR -plot ]
 
         -fs=    fs del FIR de salida, por defecto 48000 (Hz)
+
         -e=     Longitud del FIR en taps 2^XX. Por defecto 2^15, es decir,
                 32 Ktaps con resolución de 16K bins sobre la fs.
 
         -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
-        -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
-        -nofir  Solo se estima el target y la eq, no genera FIRs
 
-        -v      Visualiza los impulsos FIR generados
+        -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
+
+        -doFIR  Genera FIRs después de estimar el target y la EQ de sala.
+
+        -plot   Visualiza los impulsos FIR generados
 
         -dev    Gráficas auxiliares sobre la EQ
 
-    Se necesita  github.com/AudioHumLab/audiotools
+
+    NOTA: se necesita  github.com/AudioHumLab/audiotools
 
 """
 #
@@ -36,7 +41,7 @@
 ##########################################################################
 
 # Solo calcula el target y la curva de EQ, no genera los FIR
-noFIRs  = False
+noFIRs  = True
 
 # Para developers, muestra gráficas relativas al cálculo del target
 dev = False
@@ -124,8 +129,8 @@ for opc in sys.argv[1:]:
     elif '-v' in opc:
         verFIRs = True
 
-    elif '-nofir' in opc:
-        noFIRs = True
+    elif '-doFIR' in opc:
+        noFIRs = False
 
     elif '-dev' in opc:
         dev = True
@@ -321,19 +326,19 @@ if noFIRs:
     sys.exit()
 
 # Separamos los FIR de salida en un directorio indicativo de la fs y la longitud en taps:
+
 if FRDpathname:
-    dirSal = FRDpathname + "/" + str(fs) + "_" + tools.Ktaps(m).replace(' ','')
+    dirSal = f'{FRDpathname}/{str(fs)}_{tools.Ktaps(m).replace(" ","")}'
 else:
-    dirSal = str(fs) + "_" + tools.Ktaps(m).replace(' ','')
+    dirSal = f'{str(fs)}_{tools.Ktaps(m).replace(" ","")}'
 os.system("mkdir -p " + dirSal)
 
 # Indicativo del canal para el nombre del .pcm de salida
 ch = 'C'
 if FRDbasename[0].upper() in ('L','R'):
     ch = FRDbasename[0].upper()
-    resto = FRDbasename[1:-4].strip().strip('_').strip('-')
-mpEQpcmname = dirSal+'/drc-X-'+ch+'_mp_'+resto+'.pcm'
-lpEQpcmname = dirSal+'/drc-X-'+ch+'_lp_'+resto+'.pcm'
+mpEQpcmname = f'{dirSal}/drc.{ch}_mp.pcm'
+lpEQpcmname = f'{dirSal}/drc.{ch}_lp.pcm'
 
 # Guardamos los FIR :
 print( "(i) Guardando los FIR de ecualización:" )
