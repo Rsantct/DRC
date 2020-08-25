@@ -37,6 +37,25 @@
 # v0.1c python3
 
 ##########################################################################
+# IMPORTA MODULOS
+##########################################################################
+# Para que este script pueda estar fuera de ~/audiotools
+import os
+import sys
+HOME = os.path.expanduser("~")
+sys.path.append(HOME + "/audiotools")
+import tools
+import pydsd
+from smoothSpectrum import smoothSpectrum as smooth
+
+# Módulos estandar
+import numpy as np
+from scipy import signal
+from matplotlib import pyplot as plt
+from matplotlib.ticker import EngFormatter
+
+
+##########################################################################
 # AJUSTES POR DEFECTO:
 ##########################################################################
 
@@ -61,23 +80,6 @@ fScho   = 200       # Frec de Schroeder
 octScho = 2         # Octavas respecto a la freq. Schoeder para iniciar
                     # la transición de suavizado fino hacia 1/1 oct
 Tspeed  = "medium"  # Velocidad de transición del suavizado audiotools/smoothSpectrum.py
-
-##########################################################################
-# IMPORTA MODULOS
-##########################################################################
-# Para que este script pueda estar fuera de ~/audiotools
-import os
-import sys
-HOME = os.path.expanduser("~")
-sys.path.append(HOME + "/audiotools")
-import tools
-import pydsd
-from smoothSpectrum import smoothSpectrum as smooth
-
-# Módulos estandar
-import numpy as np
-from scipy import signal
-from matplotlib import pyplot as plt
 
 ##########################################################################
 # 0 LEE ARGUMENTOS
@@ -259,50 +261,66 @@ impLP = tools.MP2LP(imp, windowed=True, kaiserBeta=1)
 # 4 PLOTEOS
 ##########################################################################
 
+plt.rcParams.update({'font.size': 8})
+fig, ax = plt.subplots( figsize=(9, 4.5) )    # in inches wide aspect
+
+ax.set_xscale('log')
+
+ax.grid(True, which='both', axis='x')
+ax.grid(True, which='major', axis='y')
+
+ax.set_xlim(20, 20000)
+
 # Gráficas auxiliares de la EQ (solo si opc -dev)
 if dev:
 
-    plt.axvline(fScho, label='Schroeder', color='black', linestyle=':')
+    ax.axvline(fScho, label='Schroeder', color='black', linestyle=':')
 
-    plt.axvline (f0,
-                 label='f0 = -' + str(octScho) + ' oct vs Schroeder',
-                 color='orange', linestyle=':', linewidth=1)
+    ax.axvline (f0, label='f0 = -' + str(octScho) + ' oct vs Schroeder',
+                    color='orange', linestyle=':', linewidth=1)
 
-    plt.semilogx(freq, eqaux,
+    ax.semilogx(freq, eqaux,
                  label='eqaux', linestyle=':', color='purple')
 
 # Curva inicial sin suavizar:
-plt.semilogx(freq, mag,
+ax.semilogx(freq, mag,
              label="raw response (" + str(len(mag)) + " bins)",
              color="silver", linestyle=":", linewidth=.5)
 
 # Curva suavizada target:
-plt.semilogx(freq, target,
+ax.semilogx(freq, target,
              label="target (smoothed response)",
              color="blue", linestyle='-')
 
 # Curva de EQ para generar el FIR:
-plt.semilogx(newFreq, newEq,
+ax.semilogx(newFreq, newEq,
              label="EQ applied (" + str(len(newEq)-1) + " bins)",
              color="red")
 
 # Curva resultado estimada:
 if dev:
-    plt.semilogx(freq, (target + eq),
+    ax.semilogx(freq, (target + eq),
                  label='estimated result', color='green', linewidth=1.5)
 
 # Cacho de curva usada para calcular el nivel de referencia:
 if autoRef:
-    plt.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
+    ax.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
                  label="range to estimate ref level",
                  color="black", linestyle="--", linewidth=2)
 
 title = FRDbasename + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
+
+# Nice engineering formatting "1 K"
+ax.xaxis.set_major_formatter( EngFormatter() )
+ax.xaxis.set_minor_formatter( EngFormatter() )
+
+# Rotate_labels for both major and minor xticks
+for label in ax.get_xticklabels(which='both'):
+    label.set_rotation(70)
+    label.set_horizontalalignment('center')
+
 plt.title(title)
-plt.xlim(20, 20000)
-plt.ylim(-30, 15)
-plt.grid()
-plt.legend(loc='lower right')
+
 plt.show()
 
 ##########################################################################
