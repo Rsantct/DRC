@@ -8,7 +8,7 @@ Tomar las distintas medidas en distintos puntos de una zona de escucha amplia en
 ## Procedimiento de EQ con `roomEQ.py`:
  
 
-### Respuesta promediada con `Rsantct/DRC/logsweep2TF/roommeasure.py`:
+### Respuesta promediada con `logsweep2TF/roommeasure.py`:
 
 Ejecutar `roommeasure.py` para realizar varias medidas automáticamente y guardar la respuestra promediada en un archivo `.frd`
 
