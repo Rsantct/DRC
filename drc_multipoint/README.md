@@ -1,6 +1,8 @@
-# HOWTO
+# DRC multipunto
 
-## Procedimiento con REW Room EQ Wizard:
+El programa **`roomEQ.py`** procesará una medida promedio previamente preparada, y generará un FIR para DRC (Digital Room Correction).
+
+## Procedimiento con REW - Room EQ Wizard:
  
 1.- Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
 
@@ -18,13 +20,12 @@ Descartar los filtros que no correspondan a los modos más importantes obtenidos
  
 ### Herramienta `rew2fir.py`
 
-**[rew2fir.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/rew2fir.py)**
+**[rew2fir.py]**
 
 - Procesa un archivo parametricos.txt obtenido con REW.
  
-- Genera FIRs linear-phase con los parámetros de los filtros obtenidos con REW.
+- Genera FIRs con los parámetros de los filtros obtenidos con REW.
 
-    Nota: **rew2fir.py** proporciona ambas versiones minimum-phase y linear-phase.
 
 ## Procedimiento con ARTA o con `roommeasure.py`:
  
