@@ -1,8 +1,36 @@
 # DRC multipunto
 
-El programa **`roomEQ.py`** procesará una medida promedio previamente preparada, y generará un FIR para DRC (Digital Room Correction).
+Se trata de procesar una respuesta promedio de medir en varios puntos, previamente preparada, y generar un FIR para DRC (Digital Room Correction).
 
-## Procedimiento con REW - Room EQ Wizard:
+Tomar las distintas medidas en distintos puntos de una zona de escucha amplia entorno al punto de escucha previsto.
+
+
+## Procedimiento de EQ con `roomEQ.py`:
+ 
+
+### Respuesta promediada con `Rsantct/DRC/logsweep2TF/roommeasure.py`:
+
+Ejecutar `roommeasure.py` para realizar varias medidas automáticamente y guardar la respuestra promediada en un archivo `.frd`
+
+
+### Alternativa: respuesta promediada midiendo con ARTA:
+
+1.- Realizar varias medidas IR y promediar la FR, o bien usar el RTA (esto no está probado).
+
+2.- Exportar a `.frd`
+
+
+### Cálculo de la EQ con roomEQ.py
+
+- Procesa un archivo `Ch_xxxxxx.frd` por ejemplo de de ARTA o de `roommeasure.py`.
+ 
+- Genera FIRs para ecualizar la respuesta .frd
+
+Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase (experimental)
+
+
+
+## Procedimiento alternativo con REW - Room EQ Wizard:
  
 1.- Tomar varias medidas de IR en distintos puntos de una zona de escucha amplia.
 
@@ -20,69 +48,28 @@ Descartar los filtros que no correspondan a los modos más importantes obtenidos
  
 ### Herramienta `rew2fir.py`
 
-**[rew2fir.py]**
-
 - Procesa un archivo parametricos.txt obtenido con REW.
  
 - Genera FIRs con los parámetros de los filtros obtenidos con REW.
 
-
-## Procedimiento con ARTA o con `roommeasure.py`:
- 
-1.- Usar el RTA de ARTA en modo promedio, o bien realizar varias medidas y promediar la FR.
-
-Tomar varias medidas en distintos puntos de una zona de escucha amplia.
-
-2.- Exportar a `.frd`
-
-O bien
-
-1.- Ejecutar `roommeasure.py` para realizar varias medidas automáticamente y guardar la respuestra promediada en un archivo `.frd`
-  
-### Herramienta `roomEQ.py`
-
-**[roomEQ.py](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ.py)**
-
-- Procesa un archivo `medicion.frd` por ejemplo de de ARTA o de `roommeasure.py`.
- 
-- Genera FIRs para EQ a partir de la respuesta .frd del punto anterior.
-
-    Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase.
-
-    Ejemplo de uso:
-    
-    ```    
-    $ ./roomEQ.py L.frd 44100
-    fs: 44100 coincide con la indicada en L.frd
-              (usada solo para visualizar los impulsos generados)
-    Ref. level:  99.61 dB  -->  0 dB
-    Guardando el FIR de ecualización en 'mp-L_eq.pcm' 'lp-L_eq.pcm'
-    ```    
-
-![](https://github.com/Rsantct/DRC/blob/master/drc_lin-pha/roomEQ_R.png)
-
-## El resultado
-
-**Herramienta: FIRtro**
- 
-- Cargar los FIR de arriba en la etapa drc_fir de FIRtro, o en cualquier otro convolver a elección del usuario.
-
-- Escuchar música y evaluar el resultado.
-
-En una primera prueba los nuevos filtros FIR construidos a partir de paramétricos funcionan correctamente, no se observan artefactos.
-
-FIRtro permite elegir entre:
-- DRC_FIR con estos filtros mp/lp .pcm
-- DRC_IIR (plugins ecasound) con los parámetricos. Se observa que el resultado "matamodos" es equivalente.
-
-La variante lp introduce un retardo de unos 370ms respecto de la mp, como era de esperar con 32Ktaps@44100.
-
-Los graves ecualizados con la variante linear-phase comentada aquí aparentan la mejora en coherencia pretendida. Queda pendiente un periodo de pruebas más extenso ;-)
+Nota: **rew2fir.py** proporciona FIRs en versiones minimum-phase y linear-phase (experimental)
 
 
-==============================================
+## Aplicando FIR de DRC
 
-### Experimental: DRC usando filtros linear-phase
+El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP...
+
+Aquí proponemos las evoluciones pe.audio.sys o pre.di.c del proyecto original FIRtro (actualmente sin mantenimiento)
+
+https://github.com/AudioHumLab
+
+
+
+
+
+## ==================( experimental )========================
+
+### DRC usando filtros linear-phase
  
 #### Intro
 
