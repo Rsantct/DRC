@@ -22,9 +22,9 @@ Ejecutar `roommeasure.py` para realizar varias medidas automáticamente y guarda
 
 ### Cálculo de la EQ con roomEQ.py
 
-- Procesa un archivo `Ch_xxxxxx.frd` por ejemplo de de ARTA o de `roommeasure.py`.
+- Procesa un archivo de respuesta `Ch_xxxxxx.frd` proporcionado por `roommeasure.py` o por ejemplo por ARTA.
  
-- Genera FIRs para ecualizar la respuesta .frd
+- Genera los FIRs para ecualizar la respuesta .frd
 
 Nota: **roomEQ.py** proporciona FIRs en versiones minimum-phase y linear-phase (experimental)
 
