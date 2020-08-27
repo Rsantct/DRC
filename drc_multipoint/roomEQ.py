@@ -1,45 +1,59 @@
 #!/usr/bin/env python3
+
+# Copyright (c) 2019 Rafael Sánchez
+# This file is part of 'Rsantct.DRC', yet another DRC FIR toolkit.
+#
+# 'Rsantct.DRC' is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# 'Rsantct.DRC' is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with 'Rsantct.DRC'.  If not, see <https://www.gnu.org/licenses/>.
+
+
 """
     roomEQ.py
 
-    Calcula un FIR para ecualizar la respuesta de una sala.
+    Calculates a room equalizer FIR
 
-    Uso:
+    Usage
 
-        roomEQ.py respuesta.frd  -fs=xxxxx  [ -e=XX -ref=XX  -scho=XX  -doFIR -plot ]
-
-        -fs=    fs del FIR de salida, por defecto 48000 (Hz)
-
-        -e=     Longitud del FIR en taps 2^XX. Por defecto 2^15, es decir,
-                32 Ktaps con resolución de 16K bins sobre la fs.
-
-        -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
-
-        -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
-
-        -doFIR  Genera FIRs después de estimar el target y la EQ de sala.
-
-        -plot   Visualiza los impulsos FIR generados
-
-        -dev    Gráficas auxiliares sobre la EQ
+        roomEQ.py response.frd  -fs=xxxxx  [ -e=XX -ref=XX  -scho=XX  -doFIR -plot ]
 
 
-    NOTA: se necesita  github.com/AudioHumLab/audiotools
+        -fs=    output FIR sampling freq (default 48000 Hz)
+
+        -e=     exponent 2^XX for the length of the FIR in taps.
+                (default 15, i.e. 2^15=32 Ktaps)
+
+        -ref=   Ref lefel in dB (default autodetected)
+
+        -scho=  Schroeder freq. (default 200 Hz)
+
+        -wFc=   gaussian to limit positive EQ, center freq
+                (default 1000 Hz)
+
+        -wOct=  gaussian to limit positive EQ, wide in octaves
+                (default 10 octaves 20 ~ 20 KHz)
+
+        -doFIR  Generates the pcm FIR after estimating the final EQ.
+
+        -plot   FIR visualizer
+
+        -dev    Auxiliary plots
+
+
+    NOTE:   this tool depends on github.com/AudioHumLab/audiotools
 
 """
-#
-# v0.1a
-#   - Nombrado de archivos de salida para FIRtro
-#   - Muestra la correspondencia del nivel de referencia estimado en el gráfico
-# v0.1b
-#   - Longitud del FIR y nivel de referencia en command line.
-#   - Revisión del cómputo del FIR
-# v0.1c python3
 
-##########################################################################
-# IMPORTA MODULOS
-##########################################################################
-# Para que este script pueda estar fuera de ~/audiotools
+### ~/audiotools
 import os
 import sys
 HOME = os.path.expanduser("~")
@@ -48,41 +62,60 @@ import tools
 import pydsd
 from smoothSpectrum import smoothSpectrum as smooth
 
-# Módulos estandar
+### standar modules
 import numpy as np
 from scipy import signal
+from scipy.interpolate import interp1d
 from matplotlib import pyplot as plt
 from matplotlib.ticker import EngFormatter
 
 
 ##########################################################################
-# AJUSTES POR DEFECTO:
+### pyplot settings
+##########################################################################
+plt.rcParams.update({'font.size': 8})
+fig, ax = plt.subplots( figsize=(9, 4.5) )    # in inches wide aspect
+ax.set_xscale('log')
+ax.grid(True, which='both', axis='x')
+ax.grid(True, which='major', axis='y')
+ax.set_xlim(20, 20000)
+ax.set_yticks( range(-90, 60, 6) )
+ax.set_ylim(-30, 18)
+
+
+##########################################################################
+### DEFAULTS:
 ##########################################################################
 
-# Solo calcula el target y la curva de EQ, no genera los FIR
+# just calculates EQ, do not generates FIR
 noFIRs  = True
 
-# Para developers, muestra gráficas relativas al cálculo del target
+# for developers, aux plots about managing curves
 dev = False
 
-# Salida:
-m       = 2**15     # Longitud del FIR por defecto 2^15 = 32 Ktaps (resolución 16K bins)
-fs      = 48000     # fs del FIR de salida
-verFIRs = False
+# output:
+m       = 2**15     # FIR length
+fs      = 48000     # FIR fs
+viewFIRs = False
 
-# Nivel de referencia:
+# reference level:
 autoRef = True
-f1, f2  = 500, 2000 # Rango de frecs. para decidir el nivel de referencia
+f1, f2  = 500, 2000 # Range of freqs to get the ref level
 
-# TARGET sobre la curva .frd original
-Noct    = 96        # Suavizado fino inicial 1/96 oct
-fScho   = 200       # Frec de Schroeder
-octScho = 2         # Octavas respecto a la freq. Schoeder para iniciar
-                    # la transición de suavizado fino hacia 1/1 oct
-Tspeed  = "medium"  # Velocidad de transición del suavizado audiotools/smoothSpectrum.py
+# TARGET over the original given .frd
+Noct    = 96        # initial fine smoothing 1/96 oct
+fScho   = 200       # Schroeder freq.
+octScho = 2         # octaves referred to Schoeder to initiate the transition
+                    # from fine smoothing towards a wider one 1/1 oct
+Tspeed  = "medium"  # Transition speed for audiotools/smoothSpectrum.py
+
+# Gaussian window to limit positive gains:
+wFc     = 1000 # center freq
+wOct    = 10   # wide in octaves
+
 
 ##########################################################################
-# 0 LEE ARGUMENTOS
+# 0. READING COMMAND LINE OPTIONS
 ##########################################################################
 
 if len(sys.argv) == 1:
@@ -93,10 +126,10 @@ for opc in sys.argv[1:]:
 
     if opc[0] != '-' and opc[-4:] in ('.frd','.txt'):
         FRDname = opc
-        # Lee el contenido del archivo .frd
+        # Reading the FRD file
         FR, fs_FRD = tools.readFRD(FRDname)
-        freq = FR[:, 0]     # >>>> vector de frecuencias <<<<
-        mag  = FR[:, 1]     # >>>> vector de magnitudes  <<<<
+        freq = FR[:, 0]     # >>>> frequencies vector <<<<
+        mag  = FR[:, 1]     # >>>> magnitudes vector  <<<<
 
     elif opc[:4] == '-fs=':
         if opc[4:] in ('44100', '48000', '96000'):
@@ -128,8 +161,22 @@ for opc in sys.argv[1:]:
             print( __doc__ )
             sys.exit()
 
+    elif opc[:5] == '-wFc=':
+        try:
+            wFc = float(opc[5:])
+        except:
+            print( __doc__ )
+            sys.exit()
+
+    elif opc[:6] == '-wOct=':
+        try:
+            wOct = float(opc[6:])
+        except:
+            print( __doc__ )
+            sys.exit()
+
     elif '-v' in opc:
-        verFIRs = True
+        viewFIRs = True
 
     elif '-doFIR' in opc:
         noFIRs = False
@@ -141,137 +188,135 @@ for opc in sys.argv[1:]:
         print( __doc__ )
         sys.exit()
 
-# Auxiliares para manejar los archivos de salida y para printados:
+# Aux to managing output files and printouts
 FRDbasename = FRDname.split("/")[-1]
 FRDpathname = "/".join(FRDname.split("/")[:-1])
 
-# Información fs
+# fs information
 if fs == fs_FRD:
-    print( "(i) fs=" + str(fs) + " coincide con la indicada en " + FRDbasename )
+    print( "(i) fs=" + str(fs) + " same as enclosed in " + FRDbasename )
 else:
-    print( "(i) fs=" + str(fs) +  " distinta de " + str(fs_FRD) + " en " + FRDbasename )
+    print( "(i) fs=" + str(fs) +  " differs from " + str(fs_FRD) + " in " + FRDbasename )
 
-# Información de la resolución
-print( "(i) bins leidos:", len(freq), ", bins del EQ:", m/2 )
+# Resolution information
+print( "(i) read bins:", len(freq), ", EQ bins:", m/2 )
 if (m/2) / len(freq) > 1:
-    print( "(!) La longitud m=2^" + str(int(np.log2(m))) \
-           + " EXCEDE la resolución original de " + FRDbasename)
+    print( "(!) The length m=2^" + str(int(np.log2(m))) \
+           + " EXCEEDS the original in " + FRDbasename)
+
 
 #######################################################################################
-# 1 CALCULO DEL TARGET: ecualizaremos una versión suavizada de la respuesta de la sala
+# 1. TARGET CALCULATION: a smoothed version of the given freq response
 #######################################################################################
 
-# 1.1 Nivel de referencia
-# 'rmag' es una curva muy suavizada 1/1oct que usaremos para tomar el nivel de referencia
+# 1.1 Reference level
+# 'rmag' is a heavily smoothed curve 1/1oct useful to getting the ref level
 rmag = smooth(freq, mag, Noct=1)
 if autoRef:
     f1_idx = (np.abs(freq - f1)).argmin()
     f2_idx = (np.abs(freq - f2)).argmin()
-    # 'r2mag' es un minivector de las magnitudes del rango de referencia:
+    # 'r2mag' is a portion of the magnitudes within the reference range:
     r2mag = rmag[ f1_idx : f2_idx ]
-    # Vector de pesos auxiliar para calcular el promedio, de longitud como r2mag
+    # Aux ponderation array to calculate the average, same length as 'r2mag'
     weightslograte = .5
     weights = np.logspace( np.log(1), np.log(weightslograte), len(r2mag) )
-    # Calculamos el nivel de referencia
+    # Calculate the reference level
     ref_level = round( np.average( r2mag, weights=weights ), 2)
-    print( "(i) Nivel de referencia estimado: " +  str(ref_level) + " dB --> 0 dB" )
+    print( "(i) estimated ref level: " +  str(ref_level) + " dB --> 0 dB" )
 else:
-    print( "(i) Nivel de referencia: " +  str(ref_level) + " dB --> 0 dB" )
+    print( "(i) given ref level:     " +  str(ref_level) + " dB --> 0 dB" )
 
-# 1.2 Curva 'target': será una versión suavizada de la respuesta .frd de la sala:
-# 'f0': freq a la que empezamos a suavizar más hasta llegar a 1/1 oct en Nyquist
+# 1.2 'target' curve: a smoothed version of the given freq response
+# 'f0': the bottom freq to begin increasing smoothing towards 1/1 oct at Nyquist
 f0 = 2**(-octScho) * fScho
-# 'Noct': suavizado fino inicial en graves (por defecto 1/48 oct)
-# 'Tspeed': velocidad de transición del suavizado audiotools/smoothSpectrum.py
-print( "(i) Suavizando la respuesta para calcular el target" )
+
+# 'Noct': starting fine somoothing in low freq (def 1/48 oct)
+# 'Tspeed': smoothing transition speed (audiotools/smoothSpectrum.py)
+print( "(i) Smoothing response for target calculation ..." )
 target = smooth(freq, mag, Noct, f0=f0, Tspeed=Tspeed)
 
-# 1.3 Reubicamos las curvas en el nivel de referencia
-mag    -= ref_level   # curva de magnitudes original
-rmag   -= ref_level   # minicurva de magnitudes para buscar el ref_level
-target -= ref_level   # curva target
+# 1.3 Move curves to ref level
+mag    -= ref_level   # original curve
+rmag   -= ref_level   # the 1/1 oct version
+target -= ref_level   # the final target to be equalised
+
 
 ##########################################################################
-# 2 CÁLCULO DE LA EQ
+# 2. COMPUTING THE EQ
 ##########################################################################
 
-# 'eq' es la curva de ecualización por inversión del target:
+# Find the first eq curve by simply inverting:
 eq  = -target
 
-# Recortamos ganacias positivas:
-np.clip(eq, a_min=None, a_max=0.0, out=eq)
-# Nótese que ahora 'eq' tiene unas transiciones abruptas en 0 dB debidas al recorte,
-# limamos asperezas:
+# Positive and negative hemispheres
+eqPos = np.clip(eq, a_min=0,    a_max=None)
+eqNeg = np.clip(eq, a_min=None, a_max=0)
 
-# Versión suavizada de 'eq' de la que nos interesa solo el suavizado superior
-eqaux = smooth(freq, eq, Noct=12) # Noct=12 parece el valor más adecuado.
+# Ponderation window for positive gains
+wPos = tools.logspaced_gauss(fc=wFc, wideOct=wOct, freq=freq)
 
-# Actualizamos 'eq' con los valores altos de 'eqaux', de manera que
-# respetemos los valles profundos y suavizamos solo las transiciones de np.clip
-np.copyto( eq, eqaux, where=(eqaux > -3.0) )
+# Applying the window to positive gains
+eqPos *= wPos
 
-##########################################################################
-# 3. Computamos el FIR de salida que usaremos en el convolver.
-#    dom. de la freq ---( IFFT )---> dom. del tiempo
-##########################################################################
+# Joining hemispheres to have an updated 'eq' curve with limited positive gains
+eq = eqPos + eqNeg
+eq = smooth(freq, eq, Noct=24)
+
 
 ##########################################################################
-# 3.1 Interpolamos la curva 'eq' para adaptarnos a la longitud 'm'
-#     y a la 'fs' deseadas para el impulso del FIR de salida.
+# 3. The output FIR to be used in a convolver.
+#    freq domain ---( IFFT )---> tieme domain
+##########################################################################
+
+##########################################################################
+# 3.1 Interpolating the 'eq' curve to reach the desired 'm' length and 'fs'
+#     on the output FIR
 #
-#   Se observa que ARTA proporciona respuestas .frd
-#   - de longitud power of 2
-#   - el primer bin es 0 Hz
-#   - si fs=48000, el último bin es fs/2
-#   - si fs=44100, el último bin es (fs/2)-1  ¿!? what the fuck
+#   The ARTA .frd files have:
+#   - a length power of 2
+#   - firts bin is 0 Hz
+#   - if fs=48000, last bin is fs/2
+#   - if fs=44100, last bin is (fs/2)-1  ¿!? what the fuck
 #
-#   NOTA: interpolando con pydsd.lininterp tenemos garantizado que:
-#   - La longitud del nuevo semiespectro será ODD (power of 2) + 1,
-#     conveniente para computar un wholespectrum EVEN que servirá para
-#     sintetizar el IR con IFFT
-#   - El primer bin es 0 Hz y el último es Nyquist
+#   NOTE: when interpolating by using pydsd.lininterp it is guarantied:
+#   - The length of the new semispectrum will be ODD (power of 2) + 1,
+#     this is convenient to compute an EVEN whole semispectrum, which will
+#     be used to synthethise the FIR by IFFT.
+#   - The first bin is 0 Hz and last bin is Nyquist.
 #
 ##########################################################################
-print( "(i) Interpolando espectro para m = " + tools.Ktaps(m) + " @ " + str(fs) + " Hz" )
+print( "(i) Interpolating spectrum with m = " + tools.Ktaps(m) + " @ " + str(fs) + " Hz" )
 newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
 
-# 3.2 Comprobamos que sea ODD
+# 3.2 Check for ODD length
 if len(newEq) % 2 == 0:
-    raise ValueError("(!) Algo va mal debería ser un semiespectro ODD: " + str(len(newEq)))
+    raise ValueError("(!) Something is wrong it must be an ODD spectrum: " + str(len(newEq)))
     sys.exit()
 
-# 3.3 Traducimos dBs --> linear
+# 3.3 dBs --> linear
 newEqlin = 10.0**(newEq/20.0)
 
-# 3.4 Computamos el impulso calculando la IFFT de la curva 'newEq'.
-#     OjO nuestra curva semiespectro 'newEq' es una abstracción reducida a magnitudes
-#     de freqs positivas, pero la IFFT necesita un espectro causal (con phase minima)
-#     y completo (freqs positivas y negativas)
-wholespectrum = pydsd.minphsp( pydsd.wholespmp(newEqlin) ) # Ahora ya tiene phase
-# dom.F --> dom.T y enventanado
+# 3.4 Impulse is computed by doing the IFFT of the 'newEq' curve.
+#     (i) 'newEq' is an abstraction reduced to the magnitudes of positive
+#         frequencies, but IFFT needs a CAUSAL spectrum (with minimum phase)
+#         also a COMPLET one (having positive and negative frequencies).
+wholespectrum = pydsd.minphsp( pydsd.wholespmp(newEqlin) ) # min-phase is addded
+
+# freq. domain  --> time domain and windowing
 imp = np.real( np.fft.ifft( wholespectrum ) )
 imp = pydsd.semiblackmanharris(m) * imp[:m]
 
-# Ahora 'imp' tiene una respuesta causal, natural, o sea de phase mínima.
+# From now on, 'imp' has a causal response, a natural one, i.e. minimum phase
 
-# 3.5 Versión linear-phase (experimental)
+# 3.5 linear-phase version (experimental)
 impLP = tools.MP2LP(imp, windowed=True, kaiserBeta=1)
 
+
 ##########################################################################
-# 4 PLOTEOS
+# 4. PLOTTING
 ##########################################################################
 
-plt.rcParams.update({'font.size': 8})
-fig, ax = plt.subplots( figsize=(9, 4.5) )    # in inches wide aspect
-
-ax.set_xscale('log')
-
-ax.grid(True, which='both', axis='x')
-ax.grid(True, which='major', axis='y')
-
-ax.set_xlim(20, 20000)
-
-# Gráficas auxiliares de la EQ (solo si opc -dev)
+# auxiliary EQ plots ( -dev )
 if dev:
 
     ax.axvline(fScho, label='Schroeder', color='black', linestyle=':')
@@ -279,56 +324,64 @@ if dev:
     ax.axvline (f0, label='f0 = -' + str(octScho) + ' oct vs Schroeder',
                     color='orange', linestyle=':', linewidth=1)
 
-    ax.semilogx(freq, eqaux,
+    ax.plot(freq, eqaux,
                  label='eqaux', linestyle=':', color='purple')
 
-# Curva inicial sin suavizar:
-ax.semilogx(freq, mag,
-             label="raw response (" + str(len(mag)) + " bins)",
-             color="silver", linestyle=":", linewidth=.5)
+# raw response curve:
+ax.plot(freq, mag,
+                        label="raw response (" + str(len(mag)) + " bins)",
+                        color="silver", linestyle=":", linewidth=.5)
 
-# Curva suavizada target:
-ax.semilogx(freq, target,
-             label="target (smoothed response)",
-             color="blue", linestyle='-')
-
-# Curva de EQ para generar el FIR:
-ax.semilogx(newFreq, newEq,
-             label="EQ applied (" + str(len(newEq)-1) + " bins)",
-             color="red")
-
-# Curva resultado estimada:
-if dev:
-    ax.semilogx(freq, (target + eq),
-                 label='estimated result', color='green', linewidth=1.5)
-
-# Cacho de curva usada para calcular el nivel de referencia:
+# the chunk curve used for getting the ref level:
 if autoRef:
-    ax.semilogx(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
-                 label="range to estimate ref level",
-                 color="black", linestyle="--", linewidth=2)
+    ax.plot(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
+                        label="range to estimate ref level",
+                        color="black", linestyle="--", linewidth=2)
+
+# target (smoothed) curve:
+ax.plot(freq, target,
+                        label="smoothed response",
+                        color="blue", linestyle='-')
+
+# window for positive gains
+ax.plot(freq, wPos*10, label='positive-eq-window',
+                       color='grey', linestyle='dotted')
+
+# computed EQ curve:
+ax.plot(newFreq, newEq,
+                        label="EQ applied (" + str(len(newEq)-1) + " bins)",
+                        color="red")
+
+# estimated result curve:
+if dev:
+    ax.plot(freq, (target + eq),
+                        label='estimated result',
+                        color='green', linewidth=1.5)
 
 title = FRDbasename + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
 
-# Nice engineering formatting "1 K"
+# nice engineering formatting "1 K"
 ax.xaxis.set_major_formatter( EngFormatter() )
 ax.xaxis.set_minor_formatter( EngFormatter() )
 
-# Rotate_labels for both major and minor xticks
+# rotate_labels for both major and minor xticks
 for label in ax.get_xticklabels(which='both'):
     label.set_rotation(70)
     label.set_horizontalalignment('center')
+
+ax.legend()
 
 plt.title(title)
 
 plt.show()
 
+
 ##########################################################################
-# 5 Guardamos las gráficas en un PDF:
+# 5. Saving graphs to PDF:
 ##########################################################################
 #pdfName = FRDname.replace('.frd', '_eq.pdf').replace('.txt', '_eq.pdf')
-#print( "\n(i) Guardando gráfica en el archivo " + pdfName )
-# evitamos los warnings del pdf
+#print( "\n(i) Saving graph to file " + pdfName )
+# avoid warnings from pdf
 # C:\Python27\lib\site-packages\matplotlib\figure.py:1742: UserWarning:
 # This figure includes Axes that are not compatible with tight_layout, so
 # its results might be incorrect.
@@ -337,13 +390,13 @@ plt.show()
 #fig.savefig(pdfName, bbox_inches='tight')
 
 ##########################################################################
-# 6 Guardamos los impulsos en archivos .pcm
+# 6. Saving impulse to .pcm files
 ##########################################################################
 if noFIRs:
-    print( "(i) No se generan FIRs. Bye!" )
+    print( "(i) Skeeping FIR generation. Bye!" )
     sys.exit()
 
-# Separamos los FIR de salida en un directorio indicativo de la fs y la longitud en taps:
+# Do separate the outputs FIR in a meaningful folder (fs and taps length)
 
 if FRDpathname:
     dirSal = f'{FRDpathname}/{str(fs)}_{tools.Ktaps(m).replace(" ","")}'
@@ -351,28 +404,27 @@ else:
     dirSal = f'{str(fs)}_{tools.Ktaps(m).replace(" ","")}'
 os.system("mkdir -p " + dirSal)
 
-# Indicativo del canal para el nombre del .pcm de salida
+# Channel Id when naming the .pcm file
 ch = 'C'
 if FRDbasename[0].upper() in ('L','R'):
     ch = FRDbasename[0].upper()
-mpEQpcmname = f'{dirSal}/drc.{ch}_mp.pcm'
-lpEQpcmname = f'{dirSal}/drc.{ch}_lp.pcm'
+mpEQpcmname = f'{dirSal}/drc.{ch}.mp.pcm'
+lpEQpcmname = f'{dirSal}/drc.{ch}.lp.pcm'
 
-# Guardamos los FIR :
-print( "(i) Guardando los FIR de ecualización:" )
+# Saving FIR files:
+print( "(i) Saving EQ FIRs:" )
 print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + mpEQpcmname.split("/")[-1] )
-print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','')+ "/" + lpEQpcmname.split("/")[-1] )
-
+print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + lpEQpcmname.split("/")[-1] )
 tools.savePCM32(imp,   mpEQpcmname)
 tools.savePCM32(impLP, lpEQpcmname)
 
 
 ##########################################################################
-# 7 Visualización de los FIRs de EQ:
+# 7. FIR visualizer
 ##########################################################################
-if verFIRs:
-    print( "Veamos los FIR con audiotools/IRs_viewer.py ..." )
+if viewFIRs:
+    print( "FIR plotting with audiotools/IRs_viewer.py ..." )
     os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname
               + "' 20-20000 -eq -1 " + str(int(fs)))
 
-# FIN
+# ALL DONE ;-)
