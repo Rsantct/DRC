@@ -48,22 +48,24 @@ Descartar los filtros que no correspondan a los modos más importantes obtenidos
  
 ### Herramienta `rew2fir.py`
 
-- Procesa un archivo parametricos.txt obtenido con REW.
+Procesa un archivo parametricos.txt obtenido con REW.
  
-- Genera FIRs con los parámetros de los filtros obtenidos con REW.
+Genera FIRs con los parámetros de los filtros obtenidos con REW.
 
 Nota: **rew2fir.py** proporciona FIRs en versiones minimum-phase y linear-phase (experimental)
 
 
-## Aplicando FIR de DRC
+## Aplicando los FIR de DRC
 
-El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP...
+El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP ...
 
-Aquí proponemos las evoluciones pe.audio.sys o pre.di.c del proyecto original FIRtro (actualmente sin mantenimiento)
+Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c** del proyecto original **FIRtro** (actualmente sin mantenimiento), basadas en Brutefir.
 
-https://github.com/AudioHumLab
+**https://github.com/AudioHumLab/pe.audio.sys**
 
+**https://github.com/rripio/pre.di.c**
 
+**https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción**
 
 
 
