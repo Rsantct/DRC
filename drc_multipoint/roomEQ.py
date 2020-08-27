@@ -62,7 +62,7 @@ import tools
 import pydsd
 from smoothSpectrum import smoothSpectrum as smooth
 
-### standar modules
+### standard modules
 import numpy as np
 from scipy import signal
 from scipy.interpolate import interp1d
