@@ -16,8 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with 'Rsantct.DRC'.  If not, see <https://www.gnu.org/licenses/>.
 
+# CREDITS:
+# 'An Open-Source Electroacoustic Measurement System'
+# Richard Mann and John Vanderkooy
+# March 2017, Audio Research Group, University of Waterloo
+
+
 """
-    logsweep2TF.py v0.1p3 (python3)
+    logsweep2TF.py
 
     Obtiene la TF Transfer Function de un DUT (device under test) mediante
     la deconvolución de una señal de excitación (logsweep) y
