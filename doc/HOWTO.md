@@ -116,14 +116,14 @@ Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia y r
 
 ### Ejemplo para un sistema de altavoces basado en **FIRtro**
 
-Subimos los FIR pcm al sistema, en este caso **[pe.audio.sys](https://github.com/AudioHumLab/pe.audio.sys)**:
+Desde el terminal de nuestro PC de medición, subimos los FIR pcm al sistema, en este caso un sistema **[pe.audio.sys](https://github.com/AudioHumLab/pe.audio.sys)**:
     
     echo "put drc*" | sftp myUser@myFIRtroIP
     
-Y actualizamos el convolver para usarlos:
+Nos conectamos al sistema de gestión de altavoces y actualizamos el convolver para usarlos:
 
     $ ssh myUser@myFIRtroIP
-    $ cd
+    # Ahora estamos conectados en el directorio home del sistema de gestión de altavoces
 
     # Reubicamos los .pcm en la carpeta de nuestro altavoz, con un nombre conveniente:
     $ mv drc.L.mp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa_mp.pcm
@@ -158,6 +158,7 @@ En caso que el formato requerido por el plugin sea WAV stereo, podemos convertir
     $ sox  -m       -c 1 -r 44100 drc.L.mp.f32  -c 1 -r 44100 drc.R.mp.f32  -c 2 -b 16 drc.mp.wav
            (mix)    (primer stream)             (segundo stream)            (stream de salida)
 
+    3) Copiampos el .wav en el directorio necesario de la DAW para que el plugin de reverb pueda usarlo.
 
 
 
