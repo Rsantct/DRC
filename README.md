@@ -1,5 +1,6 @@
 Este software permite medir la respuesta 'in room' y calcular FIRs para correción de sala 'DRC'.
 
+
 ## Medición
 
 El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
