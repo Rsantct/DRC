@@ -125,3 +125,22 @@ Y actualizamos el convolver para usarlos:
     ["equilat_lp", "sofa_lp", "equilat_mp", "sofa_mp"]
 
 
+### Caso de una DAW
+
+Para ecualizar la salida de una DAW hacia un sistema de monitores de campo cercano, necesitamos insertar un plugin de reverb en el bus de salida a monitores de la DAW.
+
+En caso que el formato requerido por el plugin sea WAV stereo, podemos convertir nuestros archivos .pcm a .wav con la herramienta SoX:
+
+    1) hacemos copias de los pcm con la extension .f32 que necesita SoX
+
+    $ cp drc.L.mp.pcm drc.L.mp.f32
+    $ cp drc.R.mp.pcm drc.R.mp.f32
+
+    2) usamos el comando -m (mix) de SoX, deberemos indicar la Fs del filtro FIR, por ejemplo:
+
+    $ sox  -m       -c 1 -r 44100 drc.L.mp.f32  -c 1 -r 44100 drc.R.mp.f32  -c 2 -b 16 drc.mp.wav
+           (mix)    (primer stream)             (segundo stream)            (stream de salida)
+
+
+
+
