@@ -27,6 +27,9 @@
 
         roomEQ.py response.frd  [ options ]
 
+            -name=  A meaningful suffix to name the output FIR file
+                    (default current folder name)
+
             -fs=    Output FIR sampling freq (default 48000 Hz)
 
             -e=     Exponent 2^XX for FIR length in taps.
@@ -114,6 +117,9 @@ wFc     = 1000      # center freq
 wOct    = 10        # wide in octaves
 noPos   = False     # avoids positive gains
 
+# Suffix to name .pcm files
+suffix = ''
+
 
 ##########################################################################
 # 0. READING COMMAND LINE OPTIONS
@@ -188,13 +194,21 @@ for opc in sys.argv[1:]:
     elif '-dev' in opc:
         dev = True
 
+    elif opc[:6].lower() == '-name=':
+        suffix = opc[6:]
+
     else:
         print( __doc__ )
         sys.exit()
 
-# Aux to managing output files and printouts
+# Aux to managing output filenames and printouts
 FRDbasename = FRDname.split("/")[-1]
 FRDpathname = "/".join(FRDname.split("/")[:-1])
+if not suffix:
+    suffix = os.path.basename(os.path.dirname(FRDname))
+if not suffix:
+    import pathlib
+    suffix = os.path.basename(pathlib.Path().absolute())
 
 # fs information
 if fs == fs_FRD:
@@ -416,8 +430,8 @@ os.system("mkdir -p " + dirSal)
 ch = 'C'
 if FRDbasename[0].upper() in ('L','R'):
     ch = FRDbasename[0].upper()
-mpEQpcmname = f'{dirSal}/drc.{ch}.pcm'
-lpEQpcmname = f'{dirSal}/drc.{ch}.lp.pcm'
+mpEQpcmname = f'{dirSal}/drc.{ch}.{suffix}.pcm'
+lpEQpcmname = f'{dirSal}/drc.{ch}.{suffix}_lp.pcm'
 
 # Saving FIR files:
 print( "(i) Saving EQ FIRs:" )
