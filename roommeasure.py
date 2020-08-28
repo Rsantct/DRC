@@ -17,168 +17,180 @@
 # along with 'Rsantct.DRC'.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-    Script para obtener la respuesta estacionaria de una sala,
-    en varios puntos de escucha (micrófono).
+    Gets the stationary frequency response from an in-rooom loudspeaker,
+    from several microphone positions.
 
-    Se obtiene:
+    Resulting files:
 
-    'room_X.frd'             Medidas en cada punto de escucha X.
-    'room_avg.frd'           Promedio de medidas en los puntos de escucha
-    'room_avg_smoothed.frd'  Promedio suavizado 1/24 oct hasta la Freq Schroeder
-                             y progresivamente hacia 1/1 oct en Freq Nyq.
+    'room_N.frd'             Measured response in micro position #N.
+    'room_avg.frd'           Average response off all micro positions.
+    'room_avg_smoothed.frd'  Average smoothed 1/24 oct below Schroeder freq,
+                             then progressively becoming 1/1 oct at Nyquist.
 
-    Uso: python roommeasure.py  [opciones ... ...]
+    Usage:
 
-         -h                 ayuda
+        roommeasure.py  [options ... ...]
 
-         -mX                Número de medidas a realizar.
+         -h                 this help
 
-         -eXX               Potencia de 2 que determina la longitud = 2^XX
-                            en muestras de la señal de prueba. Por defecto 2^17.
+         -m=X               Number of takes (per channel)
+                            (default 2 takes)
 
-         -cX                Canal: L | R | LR  se usará como prefijo del archivo.frd.
-                            LR permite intercalar medidas de cada canal en cada posición de micro.
-                            Si se omite se usará el prefijo 'C'.
+         -e=XX              Power of two 2^XX to set the log-sweep length.
+                            (default 2^17 )
 
-         -sXX               Freq Shroeder para el suavizado, por defecto 200 Hz.
+         -c=X               Channel id:  L | R | LR
+                            This id will form the .frd filename prefix.
+                            'LR' allows interleaving both channels measures in
+                            a microphone position.
+                            (default C will be used as filename prefix)
 
-         -dev=cap,pbk,fs    Usa los números de dispositivo de sonido y la fs indicados.
-                            (Ver dispositivos con logsweep2TF.py -h)
+         -s=XX              Shroeder freq, influences the smoothing transition.
+                            (default 200 Hz)
 
-         -nobeep            No pita antes de estar listo para medir.
+         -dev=cap,pbk,fs    Capture and playback devices and Fs to use
+                            (Choose the right ones by checking logsweep2TF.py -h)
 
-    IMPORTANTE:
+         -nobeep            Avoids beep alerting during measuring position changes.
 
-    Se recomienda una prueba previa con logsweep2TF.py para verificar que:
+    IMPORTANT:
 
-    - La tarjeta de sonido no pierde muestras y los niveles son correctos.
+    Please do a preliminary test by using logsweep2TF.py, in order to verify:
 
-    - La medida es viable (Time clearance) con los parámetros usados.
+    - The sound card does not loses samples, and levels are ok.
+
+    - The measuremet is feasible (Time clearance) with the selected parameters.
 
 
-    INTERESANTE:
+    OPTIONAL:
 
-    Se pueden revisar las curvas con FRD_viewer.py del paquete audiotools, p.ej:
+    You can review the recorded responses by using audiotools/FRD_viewer.py:
 
         FRD_tool.py $(ls L_room_?.frd)
-        FRD_tool.py $(ls L_room_?.frd) -24oct -f0=200  # Para verlas suavizadas
+        FRD_tool.py $(ls L_room_?.frd) -24oct -f0=200  # FRD_tool will smooth
 
 """
-# v1.0a
-#   Se separa la función medir(secuencia)
-# v1.1
-#   Opción para intercalar medidas para cada canal en cada punto de micrófono
-# v1.1p3
-#   python3
 
+# standard modules
+import os
 import sys
 import numpy as np
 from scipy import interpolate
-from scipy.io import wavfile    # para leer beepbeep.wav (PENDIENTE GENERARLO AQUI)
+from time import sleep
 
+# logsweep2TF module (logsweep to transfer function)
 try:
     import logsweep2TF as LS
 except:
-    print( "(!) Se necesita logsweep2TF.py" )
+    print( "(!) It is needed logsweep2TF.py" )
     sys.exit()
 
-#  ~/audiotools modules
-import os
-import sys
+# audiotools modules
 HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
 import tools
 from smoothSpectrum import smoothSpectrum as smooth
-# end of /audiotools modules
 
 # A list of 148 CSS4 colors to plot measured curves
 from matplotlib import colors as mcolors
 css4_colors = list(mcolors.CSS4_COLORS.values())    # (black is index 7)
 
-# DEFAULTS
+################################################################################
+# roommeasure.py DEFAULT parameters
+################################################################################
 
-LS.N                    = 2**17     # Longitud en muestras de la señal de prueba.
-numMeas                 = 2         # Núm de medidas a realizar
-avisoBeep               = True      # pitido de aviso antes de medir
+LS.N                    = 2**17     # Sweep length in samples.
+numMeas                 = 2         # Number of measurements to perform
+doBeep                  = True      # Do beep warning sound before each measurement
 
-binsFRD                 = 2**14     # bins finales de los archivos .frd obtenidos
-channels                = 'C'       # Canales a intercalar en cada punto de medida, se usará
-                                    # como prefijo del los .frd, p.ej: "L" o "R"
+binsFRD                 = 2**14     # Bins for .frd files
+channels                = 'C'       # Channels to interleaving measurements.
 
-Scho                    = 200       # Frec de Schroeder (Hz)
-Noct                    = 24        # Suavizado 1/N oct hasta Schroeder de la medida final promediada,
-                                    # pasada la frec Scho se aumentará el suavizado progresivamente hasta 1/1 oct.
+Scho                    = 200       # Schroeder freq (Hz)
+Noct                    = 24        # Initial 1/Noct smoothing below Scho,
+                                    # then will be changed progressively until
+                                    # 1/1oct at Nyquist freq.
 
-#LS.sd.default.xxxx                 # Tiene valores por defecto en logsweep2TF
+#LS.sd.default.xxxx                 # logsweep2TF has its owns default values
 selected_card           = LS.selected_card
 
-LS.printInfo            = True      # Para que logsweep2TF informe de su  progreso
+LS.printInfo            = True      # logsweep2TF verbose
 
-LS.checkClearence       = False     # Se da por hecho que se ha comprobado previamente.
+LS.checkClearence       = False     # It is assumed that the user has check for this.
 
-LS.TFplot               = False     # Omite las gráficas por defecto del módulo logsweep2TF alias LS
+LS.TFplot               = False     # Omit default plots from the module logsweep2TF
 LS.auxPlots             = False
 LS.plotSmoothSpectrum   = False
 
 
 def interpSS(freq, mag, Nbins):
-    """ Interpola un Semi Spectro a una nueva longitud Nbins
+    """ Interpolates a semi-spectrum curve into a new Nbins length
+        linespaced frequencies vector.
     """
     freqNew  = np.linspace(0, fs/2, Nbins)
-    # Definimos la func. de interpolación para obtener las nuevas magnitudes
+    # Interpolator function
     funcI = interpolate.interp1d(freq, mag, kind="linear", bounds_error=False,
                          fill_value="extrapolate")
-    # Y obtenemos las magnitudes interpoladas en las 'frecNew':
+    # Interpolated values:
     return freqNew, funcI(freqNew)
 
 
-def medir(ch='C', secuencia=0):
-    # Hacemos la medida, tomamos el SemiSpectrum positivo
+def doMeas(ch='C', sequence=0):
+
+    # Do measure, by taken the positive semi-spectrum
     meas = abs( LS.do_meas(windosweep, sweep)[:int(N/2)] )
-    # Guardamos la curva en un archivo .frd secuenciado
+
+    # Saving the curve to a sequenced frd filename
     f, m = interpSS(freq, meas, binsFRD)
-    tools.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*np.log10(m), fs=fs,
-                   comments='roommeasure.py ch:' + ch + ' point:' + str(secuencia) )
-    # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
+    tools.saveFRD( ch + '_room_'+str(sequence)+'.frd',f, 20*np.log10(m), fs=fs,
+                   comments='roommeasure.py ch:' + ch + ' point:' + str(sequence),
+                   verbose=False )
+
+    # Smoothed curve plot (this takes a while in a slow cpu)
     m_smoo = smooth(f, m, Noct, f0=Scho)
     figIdx = 10
     canales = ('L', 'R', 'C')
     if ch in canales:
         figIdx += canales.index(ch)
-    # Recorremos la secuencia de 148 colores CSS4, empezando desde el negro que
-    # es el de índice 7.
+
+    # Looping CSS4 color sequence, from black (index 7)
     LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
-                      label = ch + '_' + str(secuencia),
-                      color=css4_colors[(7 + secuencia) % 148] )
+                      label = ch + '_' + str(sequence),
+                      color=css4_colors[(7 + sequence) % 148] )
     return meas
 
 
-def aviso_medida(ch, secuencia):
-    aviso =   '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-    aviso += f'PULSA INTRO PARA MEDIR EN CANAL  <{ch}>  ( {str(secuencia+1)}/{str(numMeas)})\n'
-    aviso +=  '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+def warning_meas(ch, sequence):
+    aviso =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    aviso += f'PRESS ENTER TO MEASURE CHANNEL  <{ch}>  ( {str(sequence+1)}/{str(numMeas)})\n'
+    aviso +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
     print(aviso)
+    if doBeep:
+        if ch in ('C', 'L'):
+            Nbeep = np.tile(beepL, 1 + sequence)
+            LS.sd.play(Nbeep, samplerate=fs)
+        else:
+            Nbeep = np.tile(beepR, 1 + sequence)
+            LS.sd.play(Nbeep, samplerate=fs)
     input()
-    if avisoBeep:
-        Nbeep = np.tile(beep, 1 + secuencia)
-        LS.sd.play(Nbeep)
 
 
-def make_beep(f=440, dur=1.0, fs=44100, dBFS=-6.0):
-    x = np.arange( fs * dur )       # a bare silence array of 'dur' seconds lenght
-    y = np.sin( 2 * np.pi * f * x / fs )
-    y *= 10 ** (dBFS/20.0)          # amplitude as per dBFS
+def make_beep(f=1000, fs=44100, dBFS=-9.0, dur=0.10, head=0.01, tail=0.03):
+    """ a simple waveform to be played as an alert before starting to measure
+    """
+    head = np.zeros( int(head * fs) )
+    tail = np.zeros( int(tail * fs) )
+    x = np.arange( fs * dur )               # a bare silence array
+    y = np.sin( 2 * np.pi * f * x / fs )    # the waveform itself
+    y = np.concatenate( [head, y, tail] )   # adding silences
+    y *= 10 ** (dBFS/20.0)                  # attenuation as per dBFS
     return y
 
 
 if __name__ == "__main__":
 
 
-    # Tono de aviso opcional antes de cada medida:
-    beep = make_beep()
-
-
-    # Leemos los argumentos command line:
+    # Reading command line arguments:
     opcsOK = True
     for opc in sys.argv[1:]:
 
@@ -187,7 +199,7 @@ if __name__ == "__main__":
             sys.exit()
 
         elif "-nobeep" in opc.lower():
-            avisoBeep = False
+            doBeep = False
 
         elif "-dev" in opc.lower():
             try:
@@ -199,17 +211,17 @@ if __name__ == "__main__":
                 print( __doc__ )
                 sys.exit()
 
-        elif "-m" in opc:
-            numMeas = int(opc[2:])
+        elif "-m=" in opc:
+            numMeas = int(opc[3:])
 
-        elif "-c" in opc:
-            channels = [x for x in opc[2:]]
+        elif "-c=" in opc:
+            channels = [x for x in opc[3:]]
 
-        elif "-s" in opc:
-            Scho = int(opc[2:])
+        elif "-s=" in opc:
+            Scho = int(opc[3:])
 
-        elif "-e" in opc:
-            LS.N = 2**int(opc[2:])
+        elif "-e=" in opc:
+            LS.N = 2**int(opc[3:])
 
         else:
             opcsOK = False
@@ -231,62 +243,74 @@ if __name__ == "__main__":
         except: pass
         if i.isdigit(): i = int(i)
         if o.isdigit(): o = int(o)
-        #  Si falla la tarjeta indicada en command line.
+        #  If command line sound device fails.
         if not LS.test_soundcard(i=i, o=o):
             sys.exit()
 
 
-    # Leemos los valores N y fs que hemos cargado en el módulo LS
-    # al leer las opciones -E.. -dev...
+    # Reading N and fs as pet set in module LS when reading command line options
     N             = LS.N
     fs            = LS.fs
 
+    # Optional beeps
+    beepL = make_beep(f=880, fs=fs)
+    beepR = make_beep(f=932, fs=fs)
 
-    # Vector de frecuencias positivas para la N elegida.
+
+    # positive frequencies vector as per the selected N value.
     freq = np.linspace(0, fs/2, N/2)
 
 
-    # 1. Preparamos el sweep
+    # 1. Log-sweep preparing
     windosweep, sweep = LS.make_sweep()
 
+    #    recovering the focus to this terminal window
+    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    print('PLEASE CLICK THIS WINDOW TO RECOVER THE FOCUS')
+    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    print
+    LS.sd.play(beepR, samplerate=fs)
+    sleep(.25)
+    LS.sd.play(beepL, samplerate=fs)
+    sleep(1)
 
-    # 2. Medimos, acumulando en una pila de promediado 'SSs'
+    # 2. Start measuring, by accumulating into an averages stack 'SSs'
     SSs = {}
     SSsAvg = {}
-    # Esperamos que se pulse INTRO
+    # Waits for pressing ENTER
     for ch in channels:
-        aviso_medida(ch=ch, secuencia=0)
-        SSs[ch] = medir(ch=ch, secuencia=0)
-    #    Añadimos el resto de medidas si las hubiera:
+        warning_meas(ch=ch, sequence=0)
+        SSs[ch] = doMeas(ch=ch, sequence=0)
+    #    Adding more measures if so:
     for i in range(1, numMeas):
         for ch in channels:
-            # Esperamos que se pulse INTRO
-            aviso_medida(ch=ch, secuencia=i)
-            meas = medir(ch=ch, secuencia=i)
-            # Seguimos acumulando en la pila 'SSs'
+            # Waits for pressing ENTER
+            warning_meas(ch=ch, sequence=i)
+            meas = doMeas(ch=ch, sequence=i)
+            # stack on 'SSs'
             SSs[ch] = np.vstack( ( SSs[ch], meas ) )
 
 
-    # 3. Calculamos el promedio de todas las medidas raw
+    # 3. Compute the average from all raw measurements
     for ch in channels:
-        print( "Calculando el promedio canal " + ch )
+        print( "Computing average of channel: " + ch )
         if numMeas > 1:
-            # Calculamos el PROMEDIO de todas las medidas realizadas
+            # All meas average
             SSsAvg[ch] = np.average(SSs[ch], axis=0)
         else:
             SSsAvg[ch] = SSs[ch]
 
 
-    # 4. Guarda el promedio raw en un archivo .frd
+    # 4. Saving average to .frd file
     i = 0
     for ch in channels:
         f, m = interpSS(freq, SSsAvg[ch], binsFRD)
         tools.saveFRD( ch + '_room_avg.frd', f, 20*np.log10(m) , fs=fs,
                        comments='roommeasure.py ch:' + ch + ' raw avg' )
 
-        # 5. También guarda una versión suavidaza del promedio en un .frd
-        print( "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + \
-                str(Scho) + " Hz y variando hasta 1/1 oct en Nyq" )
+        # 5. Also a smoothed version of average
+        print( "Smoothing average 1/" + str(Noct) + " oct up to " + \
+                str(Scho) + " Hz, then changing to 1/1 oct at Nyq" )
         m_smoothed = smooth(f, m, Noct, f0=Scho)
         tools.saveFRD( ch + '_room_avg_smoothed.frd',
                        f,
@@ -294,14 +318,17 @@ if __name__ == "__main__":
                        fs=fs,
                        comments='roommeasure.py ch:' + ch + ' smoothed avg' )
 
-        # 6. Muestra las curvas de cada punto de escucha en una figura,
-        #    y las curva promedio y promedio_suavizado en otra figura.
+        # 6. Prepare a figure with curves from all placements
         LS.plot_spectrum( m,          semi=True, fig=20+i,
                           color='blue', label=ch+' avg' )
+        #    Prepare a figure with average and smoothed average
         LS.plot_spectrum( m_smoothed, semi=True, fig=20+i,
                           color='red',  label=ch+' avg smoothed' )
         i += 1
 
 
-    # FIN
+    # 7. plotting prepared curves
     LS.plt.show()
+
+
+    # END

@@ -416,7 +416,7 @@ os.system("mkdir -p " + dirSal)
 ch = 'C'
 if FRDbasename[0].upper() in ('L','R'):
     ch = FRDbasename[0].upper()
-mpEQpcmname = f'{dirSal}/drc.{ch}.mp.pcm'
+mpEQpcmname = f'{dirSal}/drc.{ch}.pcm'
 lpEQpcmname = f'{dirSal}/drc.{ch}.lp.pcm'
 
 # Saving FIR files:
@@ -432,7 +432,7 @@ tools.savePCM32(impLP, lpEQpcmname)
 ##########################################################################
 if viewFIRs:
     print( "FIR plotting with audiotools/IRs_viewer.py ..." )
-    os.system("IRs_viewer.py '" + lpEQpcmname + "' '" + mpEQpcmname
+    os.system("IRs_viewer.py '" + mpEQpcmname + "' '" + lpEQpcmname
               + "' 20-20000 -eq -1 " + str(int(fs)))
 
 # ALL DONE ;-)

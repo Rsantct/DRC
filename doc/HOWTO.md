@@ -73,9 +73,9 @@ Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los
 
     $ roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
 
-Para cambiar entre el canal L y R podemos hacerlo a mano (o con un script para sistemas basados en FIRtro).
+Durante el proceso de medidas, se nos avisará para cambiar entre el canal L y R. Podemos hacerlo a mano o mediante un script para sistemas basados en FIRtro.
 
-Obtenderemos respuestas promedio:
+Finalmente obtenderemos las respuestas promedio:
 
     xxxx_avg.frd
 
@@ -85,7 +85,7 @@ y, a nivel informativo, unas respuestas suavizadas de la respuesta estacionaria:
 
 Se mostrarán gráficas de las curvas medidas.
 
-Más adelante podremos revisarlas:
+Más adelante podremos revisarlas, por ejemplo con la herramienta `FRD_tool.py`
 
 - Curvas raw en cada punto: `FRD_tool.py   $(ls L_room_?.frd)`
 
@@ -93,23 +93,23 @@ Más adelante podremos revisarlas:
 
 - Curva promedio de todos los puntos: `FRD_tool.py   L_room_avg.frd   L_room_avg_smoothed.frd`
 
+
 ## 6. Generar los filtros de ecualización DRC
 
-Ejecutaremos el programa para cada canal e indicando la Fs de trabajo de nuestro convolver.
+Ejecutaremos el programa para cada canal, indicando la respuesta promediada (sin suavizar) además de la Fs de trabajo de nuestro convolver.
 
     roomEQ.py L_room_avg.frd -fs=44100
     roomEQ.py R_room_avg.frd -fs=44100
     
-Se generará una carpeta con un juego en minimum phase (mp) y otro experimental en linear phase (lp).
+Se generará una carpeta para el juego de filtros, incluyendo una variante experimental en linear phase (lp).
 
     $ ls 44100_32Ktaps/
-    drc.L.lp.pcm  drc.L.mp.pcm drc.R.lp.pcm  drc.R.mp.pcm
-    $ 
+    drc.L.lp.pcm  drc.L.pcm drc.R.lp.pcm  drc.R.pcm
 
 
 Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia y retardo de grupo:
 
-    IRs_viewer.py drc.L.mp.pcm drc.L.lp.pcm 44100 -eq -1
+    IRs_viewer.py drc.L.pcm drc.L.lp.pcm 44100 -eq -1
     
 Normalmente usaremos la variante minimum-phase, la variante linear-phase es experimental, más info [aquí](https://github.com/Rsantct/DRC/blob/master/drc_multipoint/minimum%20phase.md)
 
@@ -119,19 +119,19 @@ Normalmente usaremos la variante minimum-phase, la variante linear-phase es expe
 ### Ejemplo para un sistema de altavoces basado en **FIRtro**
 
 Desde el terminal de nuestro PC de medición, subimos los FIR pcm al sistema, en este caso un sistema **[pe.audio.sys](https://github.com/AudioHumLab/pe.audio.sys)**:
+
+Subimos los archivos mediante FTP, por ejemplo desde un terminal:
     
-    echo "put drc*" | sftp myUser@myFIRtroIP
+    echo "put drc.?.pcm" | sftp myUser@myFIRtroIP
     
 Nos conectamos al sistema de gestión de altavoces y actualizamos el convolver para usarlos:
 
     $ ssh myUser@myFIRtroIP
-    # Ahora estamos conectados en el directorio home del sistema de gestión de altavoces
+    # Ahora estamos conectados al sistema de gestión de altavoces, dentro del directorio home del usuario:
 
-    # Reubicamos los .pcm en la carpeta de nuestro altavoz, con un nombre conveniente:
-    $ mv drc.L.mp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa_mp.pcm
-    $ mv drc.R.mp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.R.sofa_mp.pcm
-    $ mv drc.L.lp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa_lp.pcm
-    $ mv drc.R.lp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.R.sofa_lp.pcm
+    # Movemos los .pcm hacia la carpeta de nuestro altavoz, con un nombre conveniente:
+    $ mv drc.L.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa.pcm
+    $ mv drc.R.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.R.sofa.pcm
     
     # Editamos el convolver para que pueda usarlos:
     $ nano pe.audio.sys/loudspeakers/miAltavoz/brutefir_config
@@ -139,9 +139,9 @@ Nos conectamos al sistema de gestión de altavoces y actualizamos el convolver p
     # reiniciamos el sistema
     $ peaudiosys_restart.sh
     
-    # comprobamos
+    # comprobamos que el juego de nuevos drc aparece junto a otro previamente existente:
     $ control get_drc_sets
-    ["equilat_lp", "sofa_lp", "equilat_mp", "sofa_mp"]
+    ["equilat", "sofa"]
 
 
 ### Caso de una DAW
@@ -152,15 +152,13 @@ En caso que el formato requerido por el plugin sea WAV stereo, podemos convertir
 
     1) hacemos copias de los .pcm para tener la extension .f32 que necesita SoX
 
-    $ cp drc.L.mp.pcm drc.L.mp.f32
-    $ cp drc.R.mp.pcm drc.R.mp.f32
+    $ cp drc.L.pcm drc.L.f32
+    $ cp drc.R.pcm drc.R.f32
 
     2) usamos el comando -m (mix) de SoX, deberemos indicar la Fs del filtro FIR, por ejemplo:
 
-    $ sox  -m       -c 1 -r 44100 drc.L.mp.f32  -c 1 -r 44100 drc.R.mp.f32  -c 2 -b 16 drc.mp.wav
-           (mix)    (primer stream)             (segundo stream)            (stream de salida)
+    $ sox  -m     -c 1 -r 44100 drc.L.f32  -c 1 -r 44100 drc.R.f32  -c 2 -b 16 drc.wav
+           (mix)  (primer stream)          (segundo stream)         (stream de salida)
 
     3) Copiampos el .wav en el directorio necesario de la DAW para que el plugin de reverb pueda usarlo.
-
-
 
