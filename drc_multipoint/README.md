@@ -8,7 +8,7 @@ Tomar las distintas medidas en distintos puntos de una zona de escucha amplia en
 ## Procedimiento de EQ con `roomEQ.py`:
  
 
-### Respuesta promediada con `logsweep2TF/roommeasure.py`:
+### Respuesta promediada con `roommeasure.py`:
 
 Ejecutar `roommeasure.py` para realizar varias medidas automáticamente y guardar la respuestra promediada en un archivo `.frd`
 
@@ -49,19 +49,4 @@ Descartar los filtros que no correspondan a los modos más importantes obtenidos
 Procesa un archivo parametricos.txt obtenido con REW.
  
 Genera FIRs con los parámetros de los filtros obtenidos con REW.
-
-
-
-## Aplicando los FIR de DRC
-
-El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP ...
-
-Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c** del proyecto original **FIRtro** (actualmente sin mantenimiento), basadas en Brutefir.
-
-**https://github.com/AudioHumLab/pe.audio.sys**
-
-**https://github.com/rripio/pre.di.c**
-
-**https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción**
-
 
