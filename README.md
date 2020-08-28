@@ -2,15 +2,15 @@ Este software permite medir la respuesta 'in room' y calcular FIRs para correci�
 
 ## Medición
 
-El script de medición básico es **`logsweep2TF/logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
+El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
 
-El script **`logsweep2TF/roommeasure.py`** permite realizar **_medidas estacionarias en múltiples puntos de micrófono_**, se obtendrá una respuesta promediada en formato `.frd`.
+El script **`roommeasure.py`** permite realizar **_medidas estacionarias en múltiples puntos de micrófono_**, se obtendrá una respuesta promediada en formato `.frd`.
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
 ## Cálculo
 
-El script **`drc_multipoint/roomEQ.py`** se ocupa del cálculo del filtro de eq DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA o Room EQ Wizard. Proporciona filtros minimum phase y linear phase, ambos con idéntica respuesta en magnitud.
+El script **`roomEQ.py`** se ocupa del cálculo del filtro de eq DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA o Room EQ Wizard. Proporciona filtros minimum phase y linear phase, ambos con idéntica respuesta en magnitud.
 
 Emmo, la variante `mp` puede resultar más adecuada en escenarios 'near field' con punto de escucha muy localizado. Los accidentes en la respuesta en frecuencia por debajo de la frecuencia de Shroeder en esa localización de escucha tendrán una naturaleza minimum phase invariable, entonces la corrección `mp` será óptima. Esta variante no introduce latencia.
 
@@ -18,31 +18,25 @@ La variante `lp` puede adaptarse mejor a escenarios 'mid field' tipo Hi-Fi domé
 
 **`roomEQ.py`** permite generar FIR con distintas longitudes (resolucion) y fs. El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, pero se puede indicar manualmente otro nivel una vez vista la propuesta del programa:
 
-```
-~$ roomEQ.py 
 
-    roomEQ.py
+[ CAPTURA COMMAND LINE ]
 
-    Calcula un FIR para ecualizar la respuesta de una sala.
+[ CAPTURA PLOTS]
 
-    Uso:
-        python roomEQ.py respuesta.frd  -fs=xxxxx  [ -ref=XX  -scho=XX e=XX -v ]
 
-        -fs=    fs del FIR de salida, por defecto 48000 (Hz)
-        -e=     Longitud del FIR en taps 2^XX. Por defecto 2^15, es decir,
-                32 Ktaps con resolución de 16K bins sobre la fs.
+## Aplicando los FIR de DRC
 
-        -ref=   Nivel de referencia en XX dB (autodetectado por defecto)
-        -scho=  Frecuencia de Schroeder (por defecto 200 Hz)
-        -nofir  Solo se estima el target y la eq, no genera FIRs
+El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP ...
 
-        -v      Visualiza los impulsos FIR generados
+Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c** del proyecto original **FIRtro** (actualmente sin mantenimiento), basadas en Brutefir.
 
-        -dev    Gráficas auxiliares sobre la EQ
+**https://github.com/AudioHumLab/pe.audio.sys**
 
-    Se necesita  github.com/AudioHumLab/audiotools
-```
-<img src="https://github.com/Rsantct/DRC/blob/master/drc_multipoint/roomEQ_drc.png" width="640" height="480">
+**https://github.com/rripio/pre.di.c**
+
+**https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción**
+
+
 
 ## Instalación
 
