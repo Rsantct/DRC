@@ -128,7 +128,7 @@ Nos conectamos al sistema de gestión de altavoces y actualizamos el convolver p
     $ ssh myUser@myFIRtroIP
     # Ahora estamos conectados al sistema de gestión de altavoces, dentro del directorio home del usuario:
 
-    # Reubicamos los .pcm en la carpeta de nuestro altavoz, con un nombre conveniente:
+    # Movemos los .pcm hacia la carpeta de nuestro altavoz, con un nombre conveniente:
     $ mv drc.L.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa.pcm
     $ mv drc.R.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.R.sofa.pcm
     
