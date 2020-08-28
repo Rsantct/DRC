@@ -15,8 +15,44 @@ El script **`roomEQ.py`** se ocupa del cálculo del filtro FIR para DRC a partir
 
 **`roomEQ.py`** permite generar FIR con distintas longitudes (resolucion) y fs. El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, pero se puede indicar manualmente otro nivel una vez vista la propuesta del programa:
 
+```
+~$ roomEQ.py 
 
-[ CAPTURA COMMAND LINE ]
+    roomEQ.py
+
+    Calculates a room equalizer FIR from a given in-room response, usually an
+    averaged one as the provided from 'roommeasure.py'.
+
+    Usage:
+
+        roomEQ.py response.frd  [ options ]
+
+            -fs=    Output FIR sampling freq (default 48000 Hz)
+
+            -e=     Exponent 2^XX for FIR length in taps.
+                    (default 15, i.e. 2^15=32 Ktaps)
+
+            -ref=   Reference level in dB (default autodetected)
+
+            -scho=  Schroeder freq. (default 200 Hz)
+
+            -wFc=   Gaussian window to limit positive EQ: center freq
+                    (default 1000 Hz)
+
+            -wOct=  Gaussian window to limit positive EQ: wide in octaves
+                    (default 10 octaves 20 ~ 20 KHz)
+
+            -noPos  Does not allow positive gains at all
+
+            -doFIR  Generates the pcm FIR after estimating the final EQ.
+
+            -plot   FIR visualizer
+
+            -dev    Auxiliary plots
+
+```
+
+
 
 [ CAPTURA PLOTS]
 
