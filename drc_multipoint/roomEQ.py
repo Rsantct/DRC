@@ -54,22 +54,20 @@
     NOTE:   this tool depends on github.com/AudioHumLab/audiotools
 
 """
-
-### ~/audiotools
 import os
 import sys
-HOME = os.path.expanduser("~")
-sys.path.append(HOME + "/audiotools")
-import tools
-import pydsd
-from smoothSpectrum import smoothSpectrum as smooth
-
-### standard modules
 import numpy as np
 from scipy import signal
 from scipy.interpolate import interp1d
 from matplotlib import pyplot as plt
 from matplotlib.ticker import EngFormatter
+
+### ~/audiotools
+HOME = os.path.expanduser("~")
+sys.path.append(HOME + "/audiotools")
+import tools
+import pydsd
+from smoothSpectrum import smoothSpectrum as smooth
 
 
 ##########################################################################
@@ -89,26 +87,26 @@ ax.set_ylim(-30, 18)
 ### DEFAULTS:
 ##########################################################################
 
-# just calculates EQ, do not generates FIR
+# Just calculates EQ, do not generates FIR
 noFIRs  = True
 
-# for developers, aux plots about managing curves
+# For developers, aux plots about managing curves
 dev = False
 
-# output:
+# Output:
 m       = 2**15     # FIR length
 fs      = 48000     # FIR fs
 viewFIRs = False
 
-# reference level:
+# Reference level:
 autoRef = True
 f1, f2  = 500, 2000 # Range of freqs to get the ref level
 
 # TARGET over the original given .frd
-Noct    = 96        # initial fine smoothing 1/96 oct
+Noct    = 96        # Initial fine smoothing 1/96 oct.
 fScho   = 200       # Schroeder freq.
-octScho = 2         # octaves referred to Schoeder to initiate the transition
-                    # from fine smoothing towards a wider one 1/1 oct
+octScho = 2         # Octaves referred to Schoeder to initiate the transition
+                    # from fine smoothing towards a wider one 1/1 oct.
 Tspeed  = "medium"  # Transition speed for audiotools/smoothSpectrum.py
 
 # Gaussian window to limit positive gains:
