@@ -86,8 +86,11 @@ Quizás se necesite actualizar las herramientas de compilación y el gestor de p
     $ sudo pip install --upgrade setuptools
     $ sudo pip install sounddevice
 
+**AudioHumLab/audiotools**
+
 También se necesitan las herramientas de audio disponibles en **[AudioHumLab/audiotools](https://github.com/AudioHumLab/audiotools)**
 
+### Instalación 
 
 Para **instalar** este software en el directorio home del usuario
 
@@ -111,7 +114,7 @@ nano ~/bash_profile
 export PATH=~/audiotools:~/DRC:$PATH
 ```
 
-## Actualización
+### Actualización
 
 ```
 sh ~/DRC/update.sh
