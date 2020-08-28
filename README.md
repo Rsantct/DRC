@@ -1,5 +1,6 @@
 Este software permite medir la respuesta 'in room' y calcular FIRs para correción de sala 'DRC'.
 
+
 ## Medición
 
 El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
@@ -10,7 +11,7 @@ Es responsabilidad del usuario definir la amplitud espacial de las posiciones de
 
 ## Cálculo
 
-El script **`roomEQ.py`** se ocupa del cálculo del filtro de eq DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA o Room EQ Wizard. 
+El script **`roomEQ.py`** se ocupa del cálculo del filtro FIR para DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA o Room EQ Wizard. 
 
 **`roomEQ.py`** permite generar FIR con distintas longitudes (resolucion) y fs. El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, pero se puede indicar manualmente otro nivel una vez vista la propuesta del programa:
 
@@ -61,9 +62,7 @@ wget https://github.com/Rsantct/DRC/archive/master.zip
 unzip master
 rm master.zip
 mv DRC-master DRC
-chmod +x DRC/logsweep2TF/*.py
-chmod +x DRC/drc_multipoint/*.py
-chmod +x DRC/drc_multipoint/*.sh
+chmod +x DRC/*.py
 ```
 
 Se recomienda incluir estas utilidades en el PATH del usuario:
@@ -74,7 +73,7 @@ nano ~/bash_profile
 
 ```
 ### AUDIOTOOLS y DRC
-export PATH=~/audiotools:~/DRC/logsweep2TF:~/DRC/drc_multipoint:$PATH
+export PATH=~/audiotools:~/DRC:$PATH
 ```
 
 ## Actualización

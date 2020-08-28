@@ -1,6 +1,8 @@
-Utilidades para medir la respuesta de un altavoz en la sala.
+## Utilidades
 
-## `logsweep2TF.py`
+Se proporcionan unos scripts para medir la respuesta de un altavoz en la sala.
+
+### `logsweep2TF.py`
 
 Obtiene la TF Transfer Function de un DUT (device under test) mediante
 la deconvolución de una señal de excitación (logsweep) y
@@ -27,7 +29,7 @@ NOTA:
 Actualmente no se contempla el enventado de la medida para obtener la respuesta libre de reflexiones.
 
 
-## `roommeasure.py`
+### `roommeasure.py`
 
 Obtiene la medida de la respuesta estacionaria de una sala, mediante el **promediado de medidas en varios puntos de escucha**.
 
