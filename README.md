@@ -1,4 +1,4 @@
-Este software permite medir la respuesta 'in room' y calcular FIRs para correción de sala 'DRC'.
+Este software permite medir la respuesta 'in room' y calcular FIRs para correción de sala 'DRC', mediante el uso de un convolver insertado antes de los altavoces.
 
 
 ## Medición
