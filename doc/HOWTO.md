@@ -96,7 +96,7 @@ Más adelante podremos revisarlas, por ejemplo con la herramienta `FRD_tool.py`
 
 ## 6. Generar los filtros de ecualización DRC
 
-Ejecutaremos el programa para cada canal e indicando la Fs de trabajo de nuestro convolver.
+Ejecutaremos el programa para cada canal, indicando la respuesta promediada (sin suavizar) además de la Fs de trabajo de nuestro convolver.
 
     roomEQ.py L_room_avg.frd -fs=44100
     roomEQ.py R_room_avg.frd -fs=44100
