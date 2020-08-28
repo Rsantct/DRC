@@ -20,33 +20,35 @@
 """
     roomEQ.py
 
-    Calculates a room equalizer FIR
+    Calculates a room equalizer FIR from a given in-room response, usually an
+    averaged one as the provided from 'roommeasure.py'.
 
-    Usage
+    Usage:
 
-        roomEQ.py response.frd  -fs=xxxxx  [ -e=XX -ref=XX  -scho=XX  -doFIR -plot ]
+        roomEQ.py response.frd  [ options ]
 
+            -fs=    Output FIR sampling freq (default 48000 Hz)
 
-        -fs=    output FIR sampling freq (default 48000 Hz)
+            -e=     Exponent 2^XX for FIR length in taps.
+                    (default 15, i.e. 2^15=32 Ktaps)
 
-        -e=     exponent 2^XX for the length of the FIR in taps.
-                (default 15, i.e. 2^15=32 Ktaps)
+            -ref=   Reference level in dB (default autodetected)
 
-        -ref=   Ref lefel in dB (default autodetected)
+            -scho=  Schroeder freq. (default 200 Hz)
 
-        -scho=  Schroeder freq. (default 200 Hz)
+            -wFc=   Gaussian window to limit positive EQ: center freq
+                    (default 1000 Hz)
 
-        -wFc=   gaussian to limit positive EQ, center freq
-                (default 1000 Hz)
+            -wOct=  Gaussian window to limit positive EQ: wide in octaves
+                    (default 10 octaves 20 ~ 20 KHz)
 
-        -wOct=  gaussian to limit positive EQ, wide in octaves
-                (default 10 octaves 20 ~ 20 KHz)
+            -noPos  Does not allow positive gains at all
 
-        -doFIR  Generates the pcm FIR after estimating the final EQ.
+            -doFIR  Generates the pcm FIR after estimating the final EQ.
 
-        -plot   FIR visualizer
+            -plot   FIR visualizer
 
-        -dev    Auxiliary plots
+            -dev    Auxiliary plots
 
 
     NOTE:   this tool depends on github.com/AudioHumLab/audiotools
@@ -110,8 +112,9 @@ octScho = 2         # octaves referred to Schoeder to initiate the transition
 Tspeed  = "medium"  # Transition speed for audiotools/smoothSpectrum.py
 
 # Gaussian window to limit positive gains:
-wFc     = 1000 # center freq
-wOct    = 10   # wide in octaves
+wFc     = 1000      # center freq
+wOct    = 10        # wide in octaves
+noPos   = False     # avoids positive gains
 
 
 ##########################################################################
@@ -161,19 +164,22 @@ for opc in sys.argv[1:]:
             print( __doc__ )
             sys.exit()
 
-    elif opc[:5] == '-wFc=':
+    elif opc[:5].lower() == '-wfc=':
         try:
             wFc = float(opc[5:])
         except:
             print( __doc__ )
             sys.exit()
 
-    elif opc[:6] == '-wOct=':
+    elif opc[:6].lower() == '-woct=':
         try:
             wOct = float(opc[6:])
         except:
             print( __doc__ )
             sys.exit()
+
+    elif opc[:6].lower() == '-nopos':
+        noPos = True
 
     elif '-v' in opc:
         viewFIRs = True
@@ -255,8 +261,11 @@ eqNeg = np.clip(eq, a_min=None, a_max=0)
 # Ponderation window for positive gains
 wPos = tools.logspaced_gauss(fc=wFc, wideOct=wOct, freq=freq)
 
-# Applying the window to positive gains
-eqPos *= wPos
+# Applying the window to positive gains (noPos deactivates positive gains)
+if noPos:
+    eqPos.fill( 0.0 )
+else:
+    eqPos *= wPos
 
 # Joining hemispheres to have an updated 'eq' curve with limited positive gains
 eq = eqPos + eqNeg
@@ -344,8 +353,9 @@ ax.plot(freq, target,
                         color="blue", linestyle='-')
 
 # window for positive gains
-ax.plot(freq, wPos*10, label='positive-eq-window',
-                       color='grey', linestyle='dotted')
+if not noPos:
+    ax.plot(freq, wPos*10, label='positive eq unitary window',
+                           color='grey', linestyle='dotted')
 
 # computed EQ curve:
 ax.plot(newFreq, newEq,
