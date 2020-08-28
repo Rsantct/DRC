@@ -23,6 +23,7 @@ Ejecutar `roommeasure.py` para realizar varias medidas automáticamente y guarda
 `roomEQ.py` procesa un archivo de respuesta `Ch_xxxxxx.frd` proporcionado por `roommeasure.py` o por ejemplo por ARTA, y genera los FIRs para ecualizar dicha respuesta.
 
 
+-------------------------------------------------------
 
 ### Procedimiento alternativo con REW - Room EQ Wizard:
 
