@@ -21,8 +21,6 @@ rm -f ~/"$branch".zip*
 rm -rf ~/DRC
 mv ~/DRC-"$branch" ~/DRC
 
-chmod +x ~/DRC/drc_multipoint/*.py
-chmod +x ~/DRC/drc_multipoint/*.sh
-chmod +x ~/DRC/logsweep2TF/*.py
+chmod +x ~/DRC/*.py
 
 rm ./update.sh  > /dev/null 2>&1
