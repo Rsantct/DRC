@@ -73,9 +73,9 @@ Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los
 
     $ roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
 
-Para cambiar entre el canal L y R podemos hacerlo a mano (o con un script para sistemas basados en FIRtro).
+Durante el proceso de medidas, se nos avisará para cambiar entre el canal L y R. Podemos hacerlo a mano o mediante un script para sistemas basados en FIRtro.
 
-Obtenderemos respuestas promedio:
+Finalmente obtenderemos las respuestas promedio:
 
     xxxx_avg.frd
 
@@ -85,13 +85,14 @@ y, a nivel informativo, unas respuestas suavizadas de la respuesta estacionaria:
 
 Se mostrarán gráficas de las curvas medidas.
 
-Más adelante podremos revisarlas:
+Más adelante podremos revisarlas, por ejemplo con la herramienta `FRD_tool.py`
 
 - Curvas raw en cada punto: `FRD_tool.py   $(ls L_room_?.frd)`
 
 - Curvas suavizadas en cada punto: `FRD_tool.py   $(ls L_room_?.frd)  -f0=200  -12oct`
 
 - Curva promedio de todos los puntos: `FRD_tool.py   L_room_avg.frd   L_room_avg_smoothed.frd`
+
 
 ## 6. Generar los filtros de ecualización DRC
 
