@@ -111,6 +111,8 @@ Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia y r
 
     IRs_viewer.py drc.L.mp.pcm drc.L.lp.pcm 44100 -eq -1
     
+Normalmente usaremos la variante minimum-phase, la variante linear-phase es experimental, más info [aquí](https://github.com/Rsantct/DRC/blob/master/drc_multipoint/minimum%20phase.md)
+
 
 ## 7. Llevar los filtros al convolver
 
