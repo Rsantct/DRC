@@ -2,14 +2,10 @@
 
 PC portátil, tarjeta de sonido USB, micrófono y cables.
 
-Preparar el software de medición y ecualización, según de indica en:
-
-**https://github.com/Rsantct/DRC/tree/master/logsweep2TF**  
-
 
 ## 2. Preparar los altavoces:
 
-- Sin EQs (drc, peq, loudness, tonos)
+- Sin ecualizaciones (loudness, tonos, drc, etc)
 - Ajustar un volumen prudente
 - Seleccionar la input analógica
 
@@ -48,10 +44,25 @@ Ejecutarlo sucesivamente, ajustar volumen del altavoz y ajustar en la tarjeta de
 
 - El sweep capturado en el canal de referencia no muestra compresión (saturación).
 
+Más detalles aqui: **https://github.com/Rsantct/DRC/tree/master/logsweep2TF**  
+
+
 
 ## 4. Replantear las posiciones de micro que queremos cubrir.
 
 Se recomienda cubrir posiciones en distintas alturas de micro, a criterio del usuario.
+
+Para escuchas en campo cercano o en un punto de escucha definido, podemos medir en varias posiciones no demasiado alejadas para centrar la corrección en los fenómenos acústicos que ocurren en dicha posición de escucha.
+
+Para una ecualización generalista 'que se oiga bien en toda la sala' podemos medir en posiciones más repartidas ...
+
+Recordemos que un buen resultado DRC depende de disponer de
+
+- unos altavoces con una buena ecualización en campo libre.
+
+- una sala mínimamente tratada acústicamente.
+
+- una posición de escucha bien elegida dentro de la distribución modal y de reflexiones de la sala.
 
 
 ## 5. Medir.
