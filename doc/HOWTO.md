@@ -84,17 +84,18 @@ Más adelante podremos revisarlas:
     roomEQ.py L_room_avg.frd -fs=44100
     roomEQ.py R_room_avg.frd -fs=44100
     
-Se generará un juego en minimum phase (mp) y otro experimental en linear phase (lp).
+Se generará una carpeta con un juego en minimum phase (mp) y otro experimental en linear phase (lp).
 
     $ ls 44100_32Ktaps/
-    drc.L.lp.pcm  drc.L.mp.pcm
+    drc.L.lp.pcm  drc.L.mp.pcm drc.R.lp.pcm  drc.R.mp.pcm
     $ 
 
 
-Podemos visulizar estos IR (impulse response) y su respuesta en frecuencia y retardo de grupo:
+Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia y retardo de grupo:
 
     IRs_viewer.py drc.L.mp.pcm drc.L.lp.pcm 44100 -eq -1
     
+
 ## 5. Llevar los filtros al convolver
 
 ### Ejemplo para un sistema de altavoces basado en **FIRtro**
@@ -131,7 +132,7 @@ Para ecualizar la salida de una DAW hacia un sistema de monitores de campo cerca
 
 En caso que el formato requerido por el plugin sea WAV stereo, podemos convertir nuestros archivos .pcm a .wav con la herramienta SoX:
 
-    1) hacemos copias de los pcm con la extension .f32 que necesita SoX
+    1) hacemos copias de los .pcm para tener la extension .f32 que necesita SoX
 
     $ cp drc.L.mp.pcm drc.L.mp.f32
     $ cp drc.R.mp.pcm drc.R.mp.f32
