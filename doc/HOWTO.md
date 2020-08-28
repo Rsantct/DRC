@@ -2,12 +2,12 @@
 
 Preparar el software de medición y ecualización, según de indica en:
 
-**https://github.com/Rsantct/DRC**  
+**https://github.com/Rsantct/DRC/tree/master/logsweep2TF**  
 
-## 2. Preparar FIRtro
+## 2. Preparar los altavoces:
 
 - Sin EQs (drc, peq, loudness, tonos)
-- Ajustar un volumen prudente p.ej -10 dB
+- Ajustar un volumen prudente
 - Seleccionar la input analógica
 
 ## 3. Verificar niveles en la tarjeta de sonido y en altavoces.
@@ -33,7 +33,7 @@ Se prefiere equipar la tarjeta con un cable en Y en la salida 'Left/1' que servi
 
     $ logsweep2TF.py -dev=3,2,48000 -e17
 
-Ejecutarlo sucesivamente, ajustar volumen de FIRtro y ajustar en la tarjeta de sonido niveles de salida y de entrada (micro y loop), **verificando** que:
+Ejecutarlo sucesivamente, ajustar volumen del altavoz y ajustar en la tarjeta de sonido niveles de salida y de entrada (micro y loop), **verificando** que:
 
 - El nivel SPL en punto de escucha es suficientemente alto.
 
@@ -48,7 +48,7 @@ Ejecutarlo sucesivamente, ajustar volumen de FIRtro y ajustar en la tarjeta de s
 
 ## 4. Replantear las posiciones de micro que queremos cubrir.
 
-Se recomienda cubrir posiciones en distintas alturas de micro.
+Se recomienda cubrir posiciones en distintas alturas de micro, a criterio del usuario.
 
 
 ## 5. Medir.
@@ -59,7 +59,7 @@ Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los
 
     $ roommeasure.py -dev=3,2,48000 -e18 -cLR -m7
 
-Para cambiar el canal de entrada al sistema podemos dejar el cable en la entrada analógica izquierda e ir conmutando con ayuda del script de FIRtro `bin_custom/prueba_canal` en otro terminal accesorio conectado a FIRtro por ssh.
+Para cambiar entre el canal L y R podemos hacerlo a mano (o con un script para sistemas basados en FIRtro).
 
 Obtenderemos respuestas promedio:
 
@@ -79,58 +79,49 @@ Más adelante podremos revisarlas:
 
 - Curva promedio de todos los puntos: `FRD_tool.py   L_room_avg.frd   L_room_avg_smoothed.frd`
 
-## 4. Generar los filtros de ecualización DRC, para cada canal.
+## 4. Generar los filtros de ecualización DRC, para cada canal y con la Fs del convolver
 
-    roomEQ.py L_room_avg.frd 44100
-    roomEQ.py R_room_avg.frd 44100
+    roomEQ.py L_room_avg.frd -fs=44100
+    roomEQ.py R_room_avg.frd -fs=44100
     
-Se generará un juego en minimum phase (mp) y otro en linear phase (lp).
+Se generará un juego en minimum phase (mp) y otro experimental en linear phase (lp).
 
-    $ ls drc*
-    drc-X-L_lp_room_avg.pcm
-    drc-X-R_lp_room_avg.pcm
-    drc-X-L_mp_room_avg.pcm
-    drc-X-R_mp_room_avg.pcm
+    $ ls 44100_32Ktaps/
+    drc.L.lp.pcm  drc.L.mp.pcm
+    $ 
+
 
 Podemos visulizar estos IR (impulse response) y su respuesta en frecuencia y retardo de grupo:
 
-    IRs_viewer.py drc-X-L_mp_room_avg.pcm 44100 -eq -1
+    IRs_viewer.py drc.L.mp.pcm drc.L.lp.pcm 44100 -eq -1
     
-## 5. Llevar los filtros a FIRtro
+## 5. Llevar los filtros al convolver
 
-Si ya tenemos otros juegos, por ejemplo drc-1-... drc-2-... y drc-3..., querremos que los nuestros sean numerados desde 4
-      
-    $ numeraDRCs.sh 4
-        
-Podemos renombrarlos para mejor indicación:
-    
-    $ renombraDRCs.sh multipuntoV1
-        
-    $ ls drc*
-    drc-4-L_lp_multipuntoV1.pcm
-    drc-4-R_lp_multipuntoV1.pcm
-    drc-5-L_mp_multipuntoV1.pcm
-    drc-5-R_mp_multipuntoV1.pcm
-    
-Los subimos a la máquina FIRtro
-    
-    echo "put drc*" | sftp firtro@MyFIRtroIP
-    
-## 6. Actualizar FIRtro con el nuevo juego DRC
+### Ejemplo para un sistema de altavoces basado en **FIRtro**
 
-    ssh firtro@MyFIRtroIP
-    cd
-    mv drc* lspk/miAltavoz/44100/
-    do_brutefir_config.py lspk/miAltavoz/44100/ | less
+Subimos los FIR pcm al sistema, en este caso **[pe.audio.sys](https://github.com/AudioHumLab/pe.audio.sys)**:
     
-Veremos los coeff que cargan nuestros nuevos filtros pcm.
+    echo "put drc*" | sftp myUser@myFIRtroIP
     
-Si todo es correcto actualizamos **`brutefir_config`** y reiniciamos:
-    
-    do_brutefir_config.py lspk/miAltavoz/44100/ -w
-    initfirtro.py &
-    
-Ahora tendremos los filtros disponibles para evaluarlos:
+Y actualizamos el convolver para usarlos:
 
-![](https://github.com/AudioHumLab/FIRtro/blob/master/doc/screenshots/drc_lista.png)
+    $ ssh myUser@myFIRtroIP
+    $ cd
+
+    # Reubicamos los .pcm en la carpeta de nuestro altavoz, con un nombre conveniente:
+    $ mv drc.L.mp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa_mp.pcm
+    $ mv drc.R.mp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.R.sofa_mp.pcm
+    $ mv drc.L.lp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa_lp.pcm
+    $ mv drc.R.lp.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.R.sofa_lp.pcm
+    
+    # Editamos el convolver para que pueda usarlos:
+    $ nano pe.audio.sys/loudspeakers/miAltavoz/brutefir_config
+    
+    # reiniciamos el sistema
+    $ peaudiosys_restart.sh
+    
+    # comprobamos
+    $ control get_drc_sets
+    ["equilat_lp", "sofa_lp", "equilat_mp", "sofa_mp"]
+
 
