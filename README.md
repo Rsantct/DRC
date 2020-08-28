@@ -56,6 +56,19 @@ El script **`roomEQ.py`** se ocupa del cálculo del filtro FIR para DRC a partir
 
 
 
+## Aplicando los FIR de DRC
+
+El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP ...
+
+Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c** del proyecto original **FIRtro** (actualmente sin mantenimiento), basadas en Brutefir.
+
+#### https://github.com/AudioHumLab/pe.audio.sys
+
+#### https://github.com/rripio/pre.di.c
+
+#### https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción
+
+
 ## Instalación
 
 ### Dependencias
