@@ -55,7 +55,7 @@
 #   python3
 
 import sys
-from numpy import *
+import numpy as np
 from scipy import interpolate
 from scipy.io import wavfile    # para leer beepbeep.wav (PENDIENTE GENERARLO AQUI)
 
@@ -103,22 +103,24 @@ LS.TFplot               = False     # Omite las gráficas por defecto del módul
 LS.auxPlots             = False
 LS.plotSmoothSpectrum   = False
 
+
 def interpSS(freq, mag, Nbins):
     """ Interpola un Semi Spectro a una nueva longitud Nbins
     """
-    freqNew  = linspace(0, fs/2, Nbins)
+    freqNew  = np.linspace(0, fs/2, Nbins)
     # Definimos la func. de interpolación para obtener las nuevas magnitudes
     funcI = interpolate.interp1d(freq, mag, kind="linear", bounds_error=False,
                          fill_value="extrapolate")
     # Y obtenemos las magnitudes interpoladas en las 'frecNew':
     return freqNew, funcI(freqNew)
 
+
 def medir(ch='C', secuencia=0):
     # Hacemos la medida, tomamos el SemiSpectrum positivo
     meas = abs( LS.do_meas(windosweep, sweep)[:int(N/2)] )
     # Guardamos la curva en un archivo .frd secuenciado
     f, m = interpSS(freq, meas, binsFRD)
-    tools.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*log10(m), fs=fs,
+    tools.saveFRD( ch + '_room_'+str(secuencia)+'.frd', f, 20*np.log10(m), fs=fs,
                    comments='roommeasure.py ch:' + ch + ' point:' + str(secuencia) )
     # La ploteamos suavizada para mejor visualización (esto tarda en máquinas lentas)
     m_smoo = smooth(f, m, Noct, f0=Scho)
@@ -133,6 +135,7 @@ def medir(ch='C', secuencia=0):
                       color=css4_colors[(7 + secuencia) % 148] )
     return meas
 
+
 def aviso_medida(ch, secuencia):
     aviso =   '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
     aviso += f'PULSA INTRO PARA MEDIR EN CANAL  <{ch}>  ( {str(secuencia+1)}/{str(numMeas)})\n'
@@ -140,13 +143,23 @@ def aviso_medida(ch, secuencia):
     print(aviso)
     input()
     if avisoBeep:
-        Nbeep = tile(beep, 1 + secuencia)
+        Nbeep = np.tile(beep, 1 + secuencia)
         LS.sd.play(Nbeep)
+
+
+def make_beep(f=440, dur=1.0, fs=44100, dBFS=-6.0):
+    x = np.arange( fs * dur )       # a bare silence array of 'dur' seconds lenght
+    y = np.sin( 2 * np.pi * f * x / fs )
+    y *= 10 ** (dBFS/20.0)          # amplitude as per dBFS
+    return y
+
 
 if __name__ == "__main__":
 
-    # Cargamos un pitido por si deseamos avisar antes de cada medida:
-    fsbeep, beep = wavfile.read(HOME+"/DRC/logsweep2TF/beep.wav")
+
+    # Tono de aviso opcional antes de cada medida:
+    beep = make_beep()
+
 
     # Leemos los argumentos command line:
     opcsOK = True
@@ -184,12 +197,15 @@ if __name__ == "__main__":
         else:
             opcsOK = False
 
+
     if not opcsOK:
         print( __doc__ )
         sys.exit()
 
+
     LS.sd.default.channels     = 2
     LS.sd.default.samplerate   = float(LS.fs)
+
 
     if selected_card:
         i = selected_card.split(",")[0].strip()
@@ -198,18 +214,24 @@ if __name__ == "__main__":
         except: pass
         if i.isdigit(): i = int(i)
         if o.isdigit(): o = int(o)
-        if not LS.test_soundcard(i=i, o=o):    #  Si falla la tarjeta indicada en command line.
+        #  Si falla la tarjeta indicada en command line.
+        if not LS.test_soundcard(i=i, o=o):
             sys.exit()
 
-    # Leemos los valores N y fs que hemos cargado en el módulo LS al leer las opciones -E.. -dev...
+
+    # Leemos los valores N y fs que hemos cargado en el módulo LS
+    # al leer las opciones -E.. -dev...
     N             = LS.N
     fs            = LS.fs
 
+
     # Vector de frecuencias positivas para la N elegida.
-    freq = linspace(0, fs/2, N/2)
+    freq = np.linspace(0, fs/2, N/2)
+
 
     # 1. Preparamos el sweep
     windosweep, sweep = LS.make_sweep()
+
 
     # 2. Medimos, acumulando en una pila de promediado 'SSs'
     SSs = {}
@@ -225,36 +247,44 @@ if __name__ == "__main__":
             aviso_medida(ch=ch, secuencia=i)
             meas = medir(ch=ch, secuencia=i)
             # Seguimos acumulando en la pila 'SSs'
-            SSs[ch] = vstack( ( SSs[ch], meas ) )
+            SSs[ch] = np.vstack( ( SSs[ch], meas ) )
+
 
     # 3. Calculamos el promedio de todas las medidas raw
     for ch in channels:
         print( "Calculando el promedio canal " + ch )
         if numMeas > 1:
             # Calculamos el PROMEDIO de todas las medidas realizadas
-            SSsAvg[ch] = average(SSs[ch], axis=0)
+            SSsAvg[ch] = np.average(SSs[ch], axis=0)
         else:
             SSsAvg[ch] = SSs[ch]
+
 
     # 4. Guarda el promedio raw en un archivo .frd
     i = 0
     for ch in channels:
         f, m = interpSS(freq, SSsAvg[ch], binsFRD)
-        tools.saveFRD( ch + '_room_avg.frd', f, 20*log10(m) , fs=fs,
+        tools.saveFRD( ch + '_room_avg.frd', f, 20*np.log10(m) , fs=fs,
                        comments='roommeasure.py ch:' + ch + ' raw avg' )
 
         # 5. También guarda una versión suavidaza del promedio en un .frd
-        print( "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + str(Scho) + \
-              " Hz y variando hasta 1/1 oct en Nyq" )
+        print( "Suavizando el promedio 1/" + str(Noct) + " oct hasta " + \
+                str(Scho) + " Hz y variando hasta 1/1 oct en Nyq" )
         m_smoothed = smooth(f, m, Noct, f0=Scho)
-        tools.saveFRD( ch + '_room_avg_smoothed.frd', f, 20*log10(m_smoothed), fs=fs,
+        tools.saveFRD( ch + '_room_avg_smoothed.frd',
+                       f,
+                       20 * np.log10(m_smoothed),
+                       fs=fs,
                        comments='roommeasure.py ch:' + ch + ' smoothed avg' )
 
         # 6. Muestra las curvas de cada punto de escucha en una figura,
         #    y las curva promedio y promedio_suavizado en otra figura.
-        LS.plot_spectrum(m,          semi=True, fig=20+i, color='blue', label=ch+' avg')
-        LS.plot_spectrum(m_smoothed, semi=True, fig=20+i, color='red',  label=ch+' avg smoothed')
+        LS.plot_spectrum( m,          semi=True, fig=20+i,
+                          color='blue', label=ch+' avg' )
+        LS.plot_spectrum( m_smoothed, semi=True, fig=20+i,
+                          color='red',  label=ch+' avg smoothed' )
         i += 1
+
 
     # FIN
     LS.plt.show()
