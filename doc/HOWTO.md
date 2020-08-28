@@ -1,8 +1,11 @@
-## 1. Preparar equipo de medición: PC portátil, tarjeta de sonido USB, micrófono y cables.
+## 1. Preparar equipo de medición:
+
+PC portátil, tarjeta de sonido USB, micrófono y cables.
 
 Preparar el software de medición y ecualización, según de indica en:
 
 **https://github.com/Rsantct/DRC/tree/master/logsweep2TF**  
+
 
 ## 2. Preparar los altavoces:
 
@@ -79,7 +82,9 @@ Más adelante podremos revisarlas:
 
 - Curva promedio de todos los puntos: `FRD_tool.py   L_room_avg.frd   L_room_avg_smoothed.frd`
 
-## 4. Generar los filtros de ecualización DRC, para cada canal y con la Fs del convolver
+## 6. Generar los filtros de ecualización DRC
+
+Ejecutaremos el programa para cada canal e indicando la Fs de trabajo de nuestro convolver.
 
     roomEQ.py L_room_avg.frd -fs=44100
     roomEQ.py R_room_avg.frd -fs=44100
@@ -96,7 +101,7 @@ Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia y r
     IRs_viewer.py drc.L.mp.pcm drc.L.lp.pcm 44100 -eq -1
     
 
-## 5. Llevar los filtros al convolver
+## 7. Llevar los filtros al convolver
 
 ### Ejemplo para un sistema de altavoces basado en **FIRtro**
 
