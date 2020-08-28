@@ -71,11 +71,12 @@ Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c** del proyecto or
 
 ## Instalación
 
+Este software funciona en máquinas Linux o Mac OS (Homebrew), que dispongan de las librerias estandar que se detallan a continuación.
+
 ### Dependencias
 
-Este software necesita:
 
-- **Python: numpy, scipy, matplotlib, sounddevice**
+### Python: numpy, scipy, matplotlib, sounddevice
 
 Quizás se necesite actualizar las herramientas de compilación y el gestor de paquetes de Python:
 ```
@@ -85,10 +86,10 @@ sudo pip install --upgrade setuptools
 sudo pip install sounddevice
 ```
 
-- **https://github.com/AudioHumLab/audiotools**
+### https://github.com/AudioHumLab/audiotools
 
 
-Para **instalar** este software en el home del usuario
+Para **instalar** este software en el directorio home del usuario
 
 ```
 cd
