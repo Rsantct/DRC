@@ -22,8 +22,8 @@
 
     Resulting files:
 
-    'room_N.frd'             Measured response in micro position #N.
-    'room_avg.frd'           Average response off all micro positions.
+    'room_N.frd'             Measured response at micro position #N.
+    'room_avg.frd'           Average response from all micro positions.
     'room_avg_smoothed.frd'  Average smoothed 1/24 oct below Schroeder freq,
                              then progressively becoming 1/1 oct at Nyquist.
 
@@ -31,9 +31,9 @@
 
         roommeasure.py  [options ... ...]
 
-         -h                 this help
+         -h                 This help
 
-         -m=X               Number of takes (per channel)
+         -m=N               Number of takes (per channel)
                             (default 2 takes)
 
          -e=XX              Power of two 2^XX to set the log-sweep length.
@@ -45,13 +45,27 @@
                             a microphone position.
                             (default C will be used as filename prefix)
 
-         -s=XX              Shroeder freq, influences the smoothing transition.
+         -s=XXX             Shroeder freq, influences the smoothing transition.
                             (default 200 Hz)
 
          -dev=cap,pbk,fs    Capture and playback devices and Fs to use
                             (Choose the right ones by checking logsweep2TF.py -h)
 
+
+                            USER INTERACTION:
+
+         -timer=N           Auto Timer N seconds between measurements
+                            (default no auto timer, the user must press ENTER)
+
          -nobeep            Avoids beep alerting during measuring position changes.
+
+
+                            REMOTE MACHINE JACK MANAGER:
+
+         -jip=IP            remote IP
+         -juser=uname       remote username
+
+
 
     IMPORTANT:
 
@@ -122,6 +136,30 @@ LS.TFplot               = False     # Omit default plots from the module logswee
 LS.auxPlots             = False
 LS.plotSmoothSpectrum   = False
 
+# A timer to wait between measurements, without user interaction
+timer = 0
+
+# Remote JACK management
+jackIP      = ''
+jackUser    = ''
+manageJack  = False
+
+
+def countdown(seconds):
+
+    while seconds:
+        bar = "####  " * seconds + "      " * (timer -seconds)
+        print( f'    {seconds}   {bar}', end='\r' )
+
+        if doBeep:
+            if ch in ('C', 'L'):
+                LS.sd.play(beepL, samplerate=fs)
+            else:
+                LS.sd.play(beepR, samplerate=fs)
+        sleep(1)
+        seconds -= 1
+
+    print('\n\n')
 
 def interpSS(freq, mag, Nbins):
     """ Interpolates a semi-spectrum curve into a new Nbins length
@@ -135,44 +173,58 @@ def interpSS(freq, mag, Nbins):
     return freqNew, funcI(freqNew)
 
 
-def doMeas(ch='C', sequence=0):
+def doMeas(ch='C', seq=0):
 
     # Do measure, by taken the positive semi-spectrum
     meas = abs( LS.do_meas(windosweep, sweep)[:int(N/2)] )
 
     # Saving the curve to a sequenced frd filename
     f, m = interpSS(freq, meas, binsFRD)
-    tools.saveFRD( ch + '_room_'+str(sequence)+'.frd',f, 20*np.log10(m), fs=fs,
-                   comments='roommeasure.py ch:' + ch + ' point:' + str(sequence),
+    tools.saveFRD( ch + '_room_'+str(seq)+'.frd',f, 20*np.log10(m), fs=fs,
+                   comments='roommeasure.py ch:' + ch + ' point:' + str(seq),
                    verbose=False )
 
     # Smoothed curve plot (this takes a while in a slow cpu)
     m_smoo = smooth(f, m, Noct, f0=Scho)
     figIdx = 10
-    canales = ('L', 'R', 'C')
-    if ch in canales:
-        figIdx += canales.index(ch)
+    chs = ('L', 'R', 'C')
+    if ch in chs:
+        figIdx += chs.index(ch)
 
     # Looping CSS4 color sequence, from black (index 7)
     LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
-                      label = ch + '_' + str(sequence),
-                      color=css4_colors[(7 + sequence) % 148] )
+                      label = ch + '_' + str(seq),
+                      color=css4_colors[(7 + seq) % 148] )
     return meas
 
 
-def warning_meas(ch, sequence):
-    aviso =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-    aviso += f'PRESS ENTER TO MEASURE CHANNEL  <{ch}>  ( {str(sequence+1)}/{str(numMeas)})\n'
-    aviso +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-    print(aviso)
+def warning_meas(ch, seq):
+
+    if manageJack:
+        rjack.select_channel(ch)
+
+
     if doBeep:
         if ch in ('C', 'L'):
-            Nbeep = np.tile(beepL, 1 + sequence)
+            Nbeep = np.tile(beepL, 1 + seq)
             LS.sd.play(Nbeep, samplerate=fs)
         else:
-            Nbeep = np.tile(beepR, 1 + sequence)
+            Nbeep = np.tile(beepR, 1 + seq)
             LS.sd.play(Nbeep, samplerate=fs)
-    input()
+
+    if timer:
+        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        msg +=   f'WILL MEASURE CHANNEL  < {ch} >  ( {str(seq+1)}/{str(numMeas)})\n'
+        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        print(msg)
+        countdown(timer)
+
+    else:
+        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        msg +=   f'PRESS ENTER TO MEASURE CHANNEL  < {ch} >  ( {str(seq+1)}/{str(numMeas)})\n'
+        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        print(msg)
+        input()
 
 
 def make_beep(f=1000, fs=44100, dBFS=-9.0, dur=0.10, head=0.01, tail=0.03):
@@ -223,19 +275,26 @@ if __name__ == "__main__":
         elif "-e=" in opc:
             LS.N = 2**int(opc[3:])
 
+        elif opc[:7].lower() == '-timer=':
+            timer = int( opc[7:] )
+
+        elif opc[:5].lower() == '-jip=':
+            jackIP = opc[5:]
+
+        elif opc[:7].lower() == '-juser=':
+            jackUser = opc[7:]
+
         else:
             opcsOK = False
-
 
     if not opcsOK:
         print( __doc__ )
         sys.exit()
 
 
+    # Setting sounddevice
     LS.sd.default.channels     = 2
     LS.sd.default.samplerate   = float(LS.fs)
-
-
     if selected_card:
         i = selected_card.split(",")[0].strip()
         o = selected_card.split(",")[1].strip()
@@ -252,9 +311,28 @@ if __name__ == "__main__":
     N             = LS.N
     fs            = LS.fs
 
+
     # Optional beeps
     beepL = make_beep(f=880, fs=fs)
     beepR = make_beep(f=932, fs=fs)
+
+
+    #    recovering the focus to this terminal window
+    print('\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+    print('PLEASE CLICK THIS WINDOW TO RECOVER THE FOCUS')
+    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n')
+    print
+    LS.sd.play(beepR, samplerate=fs)
+    sleep(.25)
+    LS.sd.play(beepL, samplerate=fs)
+    sleep(1)
+
+
+    # Optional connection to a remote JACK server
+    if jackIP and jackUser:
+        from remote_jack import Remote
+        rjack = Remote(jackIP, jackUser)
+        manageJack = True
 
 
     # positive frequencies vector as per the selected N value.
@@ -264,31 +342,25 @@ if __name__ == "__main__":
     # 1. Log-sweep preparing
     windosweep, sweep = LS.make_sweep()
 
-    #    recovering the focus to this terminal window
-    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    print('PLEASE CLICK THIS WINDOW TO RECOVER THE FOCUS')
-    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    print
-    LS.sd.play(beepR, samplerate=fs)
-    sleep(.25)
-    LS.sd.play(beepL, samplerate=fs)
-    sleep(1)
 
     # 2. Start measuring, by accumulating into an averages stack 'SSs'
     SSs = {}
     SSsAvg = {}
     # Waits for pressing ENTER
     for ch in channels:
-        warning_meas(ch=ch, sequence=0)
-        SSs[ch] = doMeas(ch=ch, sequence=0)
+        warning_meas(ch=ch, seq=0)
+        SSs[ch] = doMeas(ch=ch, seq=0)
     #    Adding more measures if so:
     for i in range(1, numMeas):
         for ch in channels:
             # Waits for pressing ENTER
-            warning_meas(ch=ch, sequence=i)
-            meas = doMeas(ch=ch, sequence=i)
+            warning_meas(ch=ch, seq=i)
+            meas = doMeas(ch=ch, seq=i)
             # stack on 'SSs'
             SSs[ch] = np.vstack( ( SSs[ch], meas ) )
+
+    if manageJack:
+        rjack.select_channel('none')
 
 
     # 3. Compute the average from all raw measurements
