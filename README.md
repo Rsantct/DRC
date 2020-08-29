@@ -3,7 +3,7 @@ Este software permite medir la respuesta 'in room' de unos altavoces y calcular 
 
 ## Medición multipunto
 
-El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
+El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en el Vol 13 en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
 
 El script **`roommeasure.py`** permite realizar **_medidas estacionarias en múltiples puntos de micrófono_**, se obtendrá una respuesta promediada en formato `.frd`.
 
