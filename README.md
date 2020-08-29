@@ -1,7 +1,7 @@
-Este software permite medir la respuesta 'in room' y calcular FIRs para correción de sala 'DRC', mediante el uso de un convolver insertado antes de los altavoces.
+Este software permite medir la respuesta 'in room' de unos altavoces y calcular los FIRs para correción de sala **DRC**, mediante el uso de un convolver insertado antes de los altavoces.
 
 
-## Medición
+## Medición multipunto
 
 El script de medición básico es **`logsweep2TF.py`**. Está basado en el programa Matlab publicado por Richard Mann y John Vanderkooy en [linearaudio.net](https://linearaudio.net/downloads), portado a Python/Scipy. Aquí no se trata la respuesta quasi anecoica y otros análisis tratados en dicha publicación.
 
@@ -12,14 +12,16 @@ Es responsabilidad del usuario definir la amplitud espacial de las posiciones de
 
 ### Integración con JACK
 
-Para sistemas de altavoces gestionados con JACK, como los disponibles en [AudioHumLab](https://github.com/AudioHumLab), **`roommeasure.py`** dispone de una opción para ordenar el cambio de canal al sistema de altavoces remoto, al objeto de facilitar las medidas en un sistema estéreo.
+Para sistemas de altavoces gestionados con JACK, como los disponibles en [AudioHumLab](https://github.com/AudioHumLab), **`roommeasure.py`** dispone de una opción para ordenar el cambio de canal al sistema de altavoces remoto, al objeto de facilitar la automatización de medidas en un sistema estéreo.
 
 
 ## Cálculo
 
 El script **`roomEQ.py`** se ocupa del cálculo del filtro FIR para DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA o Room EQ Wizard. 
 
-**`roomEQ.py`** permite generar FIR con distintas longitudes (resolucion) y fs. El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, pero se puede indicar manualmente otro nivel una vez vista la propuesta del programa:
+**`roomEQ.py`** permite generar FIR con distintas longitudes (resolucion) y fs.
+
+El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, pero se puede indicar manualmente otro nivel una vez visualizadas las gráficas propuestas por el programa.
 
 ```
 ~$ roomEQ.py 
@@ -66,7 +68,7 @@ El script **`roomEQ.py`** se ocupa del cálculo del filtro FIR para DRC a partir
 
 El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP ...
 
-Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c** del proyecto original **FIRtro** (actualmente sin mantenimiento), basadas en Brutefir.
+Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c**, del proyecto original **FIRtro** (actualmente sin mantenimiento), que se basan en el convolver Brutefir.
 
 #### https://github.com/AudioHumLab/pe.audio.sys
 
