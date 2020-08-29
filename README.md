@@ -68,7 +68,7 @@ El nivel de referencia sobre el que se aplica la EQ se estima automaticamente, p
 
 El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP ...
 
-Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c**, del proyecto original **FIRtro** (actualmente sin mantenimiento), que se basan en el convolver Brutefir.
+Aquí proponemos las evoluciones **pe.audio.sys** o **pre.di.c**, del proyecto original **FIRtro** (actualmente sin mantenimiento), que se basan en el convolver Brutefir, disponibles en [AudioHumLab](https://github.com/AudioHumLab):
 
 #### https://github.com/AudioHumLab/pe.audio.sys
 
