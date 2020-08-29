@@ -43,11 +43,6 @@ Anotar los modos detectados por REW en cada IR medido.
  
 Descartar los filtros que no correspondan a los modos más importantes obtenidos arriba.
  
-4.- Exportar los parámetros de los filtros EQ finales en un archivo `.txt`
+4.- Exportar los filtros de EQ a un archivo en formato WAV que habrá que cargar en un convolver.
  
-#### Herramienta `rew2fir.py`
-
-Procesa un archivo parametricos.txt obtenido con REW.
- 
-Genera FIRs con los parámetros de los filtros obtenidos con REW.
 
