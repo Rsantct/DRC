@@ -136,8 +136,9 @@ LS.TFplot               = False     # Omit default plots from the module logswee
 LS.auxPlots             = False
 LS.plotSmoothSpectrum   = False
 
-# A timer to wait between measurements, without user interaction
-timer = 0
+# A timer to countdown between measurements, without user interaction
+timer    = 0
+last_seq = 0    # aux variable to check for measurement sequence changes
 
 # Remote JACK management
 jackIP      = ''
@@ -200,8 +201,11 @@ def doMeas(ch='C', seq=0):
 
 def warning_meas(ch, seq):
 
+    global last_seq
+
     if manageJack:
         rjack.select_channel(ch)
+        sleep(.2)
 
 
     if doBeep:
@@ -212,20 +216,29 @@ def warning_meas(ch, seq):
             Nbeep = np.tile(beepR, 1 + seq)
             LS.sd.play(Nbeep, samplerate=fs)
 
+    takeInfo = str(seq+1) + ' / ' + str(numMeas)
+    msg = '\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    msg +=   f'    TAKE: {takeInfo} \n'
+    msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    if seq != last_seq:
+        print(msg)
+
     if timer:
         msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        msg +=   f'WILL MEASURE CHANNEL  < {ch} >  ( {str(seq+1)}/{str(numMeas)})\n'
+        msg +=   f'    WILL MEASURE CHANNEL  < {ch} >\n'
         msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
         print(msg)
-        countdown(timer)
+        if seq != last_seq:
+            countdown(timer)
 
     else:
         msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        msg +=   f'PRESS ENTER TO MEASURE CHANNEL  < {ch} >  ( {str(seq+1)}/{str(numMeas)})\n'
+        msg +=   f'   PRESS ENTER TO MEASURE CHANNEL  < {ch} >\n'
         msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
         print(msg)
         input()
 
+    last_seq = seq
 
 def make_beep(f=1000, fs=44100, dBFS=-9.0, dur=0.10, head=0.01, tail=0.03):
     """ a simple waveform to be played as an alert before starting to measure
