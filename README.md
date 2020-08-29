@@ -9,6 +9,12 @@ El script **`roommeasure.py`** permite realizar **_medidas estacionarias en múl
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
+
+### Integración con JACK
+
+Para sistemas de altavoces gestionados con JACK, como los disponibles en [AudioHumLab](https://github.com/AudioHumLab), **`roommeasure.py`** dispone de una opción para ordenar el cambio de canal al sistema de altavoces remoto, al objeto de facilitar las medidas en un sistema estéreo.
+
+
 ## Cálculo
 
 El script **`roomEQ.py`** se ocupa del cálculo del filtro FIR para DRC a partir de la respuesta `.frd` de arriba, o de cualquier otra obtenida con programas como por ejemplo ARTA o Room EQ Wizard. 
@@ -56,7 +62,7 @@ El script **`roomEQ.py`** se ocupa del cálculo del filtro FIR para DRC a partir
 
 
 
-## Aplicando los FIR de DRC
+## Aplicando los FIR
 
 El FIR obtenido debe cargarse en un convolver software como Brutefir en Linux, un plugin de reverb como IR1 de waves en una DAW o un convolver hardware como miniDSP ...
 
