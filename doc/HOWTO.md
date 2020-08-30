@@ -101,18 +101,16 @@ Ejecutaremos el programa para cada canal, indicando la respuesta promediada (sin
     roomEQ.py L_room_avg.frd -fs=44100
     roomEQ.py R_room_avg.frd -fs=44100
     
-Se generará una carpeta para el juego de filtros, incluyendo una variante experimental en linear phase (lp).
+Se generará una carpeta para el juego de filtros, identificada con la Fs y número de taps definidos:
 
     $ ls 44100_32Ktaps/
-    drc.L.lp.pcm  drc.L.pcm drc.R.lp.pcm  drc.R.pcm
+    drc.L.pcm  drc.R.pcm
 
 
-Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia y retardo de grupo:
+Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia:
 
-    IRs_viewer.py drc.L.pcm drc.L.lp.pcm 44100 -eq -1
+    IRs_viewer.py drc.L.pcm 44100 -eq
     
-Normalmente usaremos la variante minimum-phase, la variante linear-phase es experimental, más info [aquí](https://github.com/Rsantct/DRC/blob/master/drc_multipoint/minimum%20phase.md)
-
 
 ## 7. Llevar los filtros al convolver
 
