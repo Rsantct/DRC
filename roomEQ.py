@@ -329,9 +329,6 @@ imp = pydsd.semiblackmanharris(m) * imp[:m]
 
 # From now on, 'imp' has a causal response, a natural one, i.e. minimum phase
 
-# 3.5 linear-phase version (experimental)
-impLP = tools.MP2LP(imp, windowed=True, kaiserBeta=1)
-
 
 ##########################################################################
 # 4. PLOTTING
@@ -430,15 +427,12 @@ os.system("mkdir -p " + dirSal)
 ch = 'C'
 if FRDbasename[0].upper() in ('L','R'):
     ch = FRDbasename[0].upper()
-mpEQpcmname = f'{dirSal}/drc.{ch}.{suffix}.pcm'
-lpEQpcmname = f'{dirSal}/drc.{ch}.{suffix}_lp.pcm'
+EQpcmname = f'{dirSal}/drc.{ch}.{suffix}.pcm'
 
-# Saving FIR files:
-print( "(i) Saving EQ FIRs:" )
-print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + mpEQpcmname.split("/")[-1] )
-print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + lpEQpcmname.split("/")[-1] )
-tools.savePCM32(imp,   mpEQpcmname)
-tools.savePCM32(impLP, lpEQpcmname)
+# Saving FIR file:
+print( "(i) Saving EQ FIR:" )
+print( "    " + str(fs) + "_" + tools.Ktaps(m).replace(' ','') + "/" + EQpcmname.split("/")[-1] )
+tools.savePCM32(imp, EQpcmname)
 
 
 ##########################################################################
@@ -446,7 +440,7 @@ tools.savePCM32(impLP, lpEQpcmname)
 ##########################################################################
 if viewFIRs:
     print( "FIR plotting with audiotools/IRs_viewer.py ..." )
-    os.system("IRs_viewer.py '" + mpEQpcmname + "' '" + lpEQpcmname
+    os.system("IRs_viewer.py '" + EQpcmname + "' '" +
               + "' 20-20000 -eq -1 " + str(int(fs)))
 
 # ALL DONE ;-)
