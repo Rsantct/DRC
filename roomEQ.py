@@ -295,13 +295,13 @@ eq = smooth(freq, eq, Noct=24)
 #
 #   The ARTA .frd files have:
 #   - a length power of 2
-#   - firts bin is 0 Hz
+#   - first bin is 0 Hz
 #   - if fs=48000, last bin is fs/2
 #   - if fs=44100, last bin is (fs/2)-1  ¿!? what the fuck
 #
 #   NOTE: when interpolating by using pydsd.lininterp it is guarantied:
 #   - The length of the new semispectrum will be ODD (power of 2) + 1,
-#     this is convenient to compute an EVEN whole semispectrum, which will
+#     this is convenient to compute an EVEN whole spectrum, which will
 #     be used to synthethise the FIR by IFFT.
 #   - The first bin is 0 Hz and last bin is Nyquist.
 #
