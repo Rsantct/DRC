@@ -439,8 +439,8 @@ tools.savePCM32(imp, EQpcmname)
 # 7. FIR visualizer
 ##########################################################################
 if viewFIRs:
-    print( "FIR plotting with audiotools/IRs_viewer.py ..." )
-    os.system("IRs_viewer.py '" + EQpcmname + "' '" +
-              + "' 20-20000 -eq -1 " + str(int(fs)))
+    print( "FIR plotting with audiotools/IR_tool.py ..." )
+    os.system("IRs_tool.py '" + EQpcmname + "' '" +
+              + "' 20-20000 -dBrange=36 -dBtop=12 -1 " + str(int(fs)))
 
 # ALL DONE ;-)
