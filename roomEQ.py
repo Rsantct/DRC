@@ -350,16 +350,16 @@ ax.plot(freq, mag,
                         label="raw response (" + str(len(mag)) + " bins)",
                         color="silver", linestyle=":", linewidth=.5)
 
+# target (smoothed) curve:
+ax.plot(freq, target,
+                        label="smoothed response",
+                        color="blue", linestyle='-')
+
 # the chunk curve used for getting the ref level:
 if autoRef:
     ax.plot(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
                         label="range to estimate ref level",
                         color="black", linestyle="--", linewidth=2)
-
-# target (smoothed) curve:
-ax.plot(freq, target,
-                        label="smoothed response",
-                        color="blue", linestyle='-')
 
 # window for positive gains
 if not noPos:
