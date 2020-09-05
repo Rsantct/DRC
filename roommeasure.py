@@ -41,8 +41,8 @@
 
          -c=X               Channel id:  L | R | LR
                             This id will form the .frd filename prefix.
-                            'LR' allows interleaving both channels measures in
-                            a microphone position.
+                            'LR' allows the measurements of both channels
+                            to be interleaved at a microphone position.
                             (default C will be used as filename prefix)
 
          -s=XXX             Shroeder freq, influences the smoothing transition.
@@ -356,21 +356,22 @@ if __name__ == "__main__":
     windosweep, sweep = LS.make_sweep()
 
 
-    # 2. Start measuring, by accumulating into an averages stack 'SSs'
-    SSs = {}
-    SSsAvg = {}
-    # Waits for pressing ENTER
+    # 2. Start measuring, by saving raw response curves into a stack
+    curves_stack = {}
+    curves_avg = {}
+
+    # First measurement (initiates the stack)
     for ch in channels:
-        warning_meas(ch=ch, seq=0)
-        SSs[ch] = doMeas(ch=ch, seq=0)
-    #    Adding more measures if so:
+        warning_meas(ch=ch, seq=0)          # a warning message or counting down
+        curves_stack[ch] = doMeas(ch=ch, seq=0)
+
+    # Do stack more measurements if so:
     for i in range(1, numMeas):
         for ch in channels:
-            # Waits for pressing ENTER
             warning_meas(ch=ch, seq=i)
             meas = doMeas(ch=ch, seq=i)
-            # stack on 'SSs'
-            SSs[ch] = np.vstack( ( SSs[ch], meas ) )
+            # stack
+            curves_stack[ch] = np.vstack( ( curves_stack[ch], meas ) )
 
     if manageJack:
         rjack.select_channel('none')
@@ -381,29 +382,30 @@ if __name__ == "__main__":
         print( "Computing average of channel: " + ch )
         if numMeas > 1:
             # All meas average
-            SSsAvg[ch] = np.average(SSs[ch], axis=0)
+            curves_avg[ch] = np.average( curves_stack[ch], axis=0 )
         else:
-            SSsAvg[ch] = SSs[ch]
+            curves_avg[ch] = curves_stack[ch]
 
 
-    # 4. Saving average to .frd file
+    # 4. Saving average to a .frd file
     i = 0
     for ch in channels:
-        f, m = interpSS(freq, SSsAvg[ch], binsFRD)
-        tools.saveFRD( ch + '_room_avg.frd', f, 20*np.log10(m) , fs=fs,
-                       comments='roommeasure.py ch:' + ch + ' raw avg' )
+
+        f, m = interpSS(freq, curves_avg[ch], binsFRD)
+        tools.saveFRD( f'{ch}_room_avg.frd', f, 20*np.log10(m) , fs=fs,
+                       comments=f'roommeasure.py ch:{ch} raw avg' )
 
         # 5. Also a smoothed version of average
-        print( "Smoothing average 1/" + str(Noct) + " oct up to " + \
-                str(Scho) + " Hz, then changing to 1/1 oct at Nyq" )
+        print( 'Smoothing average 1/' + str(Noct) + ' oct up to ' + \
+                str(Scho) + ' Hz, then changing towards 1/1 oct at Nyq' )
         m_smoothed = smooth(f, m, Noct, f0=Scho)
-        tools.saveFRD( ch + '_room_avg_smoothed.frd',
+        tools.saveFRD( f'{ch}_room_avg_smoothed.frd',
                        f,
                        20 * np.log10(m_smoothed),
                        fs=fs,
-                       comments='roommeasure.py ch:' + ch + ' smoothed avg' )
+                       comments=f'roommeasure.py ch:{ch} smoothed avg' )
 
-        # 6. Prepare a figure with curves from all placements
+        # 6. Prepare a figure with curves from all mic positions
         LS.plot_spectrum( m,          semi=True, fig=20+i,
                           color='blue', label=ch+' avg' )
         #    Prepare a figure with average and smoothed average
