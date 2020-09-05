@@ -22,8 +22,8 @@
 
     Resulting files:
 
-    'room_N.frd'             Measured response at micro position #N.
-    'room_avg.frd'           Average response from all micro positions.
+    'room_N.frd'             Measured response at mic position #N.
+    'room_avg.frd'           Average response from all mic positions.
     'room_avg_smoothed.frd'  Average smoothed 1/24 oct below Schroeder freq,
                              then progressively becoming 1/1 oct at Nyquist.
 
