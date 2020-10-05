@@ -349,7 +349,7 @@ if __name__ == "__main__":
 
 
     # positive frequencies vector as per the selected N value.
-    freq = np.linspace(0, fs/2, N/2)
+    freq = np.linspace(0, int(fs/2), int(N/2))
 
 
     # 1. Log-sweep preparing
