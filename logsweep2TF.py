@@ -225,7 +225,7 @@ def plot_spectrum(MAG, fs=fs, semi=False, fini=20, fend=20000,
     Kbins = str((N/2)/1024)
     Fresol = float(fs)/N
     #frecs = arange(0, N/2.0) * fs / N
-    frecs = linspace(0, fs/2, N/2)
+    frecs = linspace(0, int(fs/2), int(N/2))
     #top  = 20 * log10(max(abs(TF[0:int(N/2)])))  # highest dB in plot
     top = 0
     MAGdB = 20 * log10(abs( MAG[0:int(N/2)] ))
