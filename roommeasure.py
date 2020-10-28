@@ -109,6 +109,7 @@ from smoothSpectrum import smoothSpectrum as smooth
 from matplotlib import colors as mcolors
 css4_colors = list(mcolors.CSS4_COLORS.values())    # (black is index 7)
 
+
 ################################################################################
 # roommeasure.py DEFAULT parameters
 ################################################################################
@@ -118,15 +119,14 @@ numMeas                 = 2         # Number of measurements to perform
 doBeep                  = True      # Do beep warning sound before each measurement
 
 binsFRD                 = 2**14     # Bins for .frd files
-channels                = 'C'       # Channels to interleaving measurements.
+channels                = ['C']     # Channels to interleaving measurements.
 
 Scho                    = 200       # Schroeder freq (Hz)
 Noct                    = 24        # Initial 1/Noct smoothing below Scho,
                                     # then will be changed progressively until
                                     # 1/1oct at Nyquist freq.
 
-#LS.sd.default.xxxx                 # logsweep2TF has its owns default values
-selected_card           = LS.selected_card
+# (i) sd.default.device and  sd.default.samplerate have default values in LS module
 
 LS.printInfo            = True      # logsweep2TF verbose
 
@@ -161,6 +161,7 @@ def countdown(seconds):
         seconds -= 1
 
     print('\n\n')
+
 
 def interpSS(freq, mag, Nbins):
     """ Interpolates a semi-spectrum curve into a new Nbins length
@@ -240,6 +241,7 @@ def warning_meas(ch, seq):
 
     last_seq = seq
 
+
 def make_beep(f=1000, fs=44100, dBFS=-9.0, dur=0.10, head=0.01, tail=0.03):
     """ a simple waveform to be played as an alert before starting to measure
     """
@@ -252,10 +254,13 @@ def make_beep(f=1000, fs=44100, dBFS=-9.0, dur=0.10, head=0.01, tail=0.03):
     return y
 
 
-if __name__ == "__main__":
+def read_command_line():
 
+    global doBeep, numMeas, channels, Scho, timer, jackIP, jackUser
 
-    # Reading command line arguments:
+    # an string of three comma separated numbers 'CAPdev,PBKdev,fs'
+    optional_device = ''
+
     opcsOK = True
     for opc in sys.argv[1:]:
 
@@ -268,8 +273,8 @@ if __name__ == "__main__":
 
         elif "-dev" in opc.lower():
             try:
-                selected_card = opc.split("=")[1]
-                if not selected_card:
+                optional_device = opc.split("=")[1]
+                if not optional_device:
                     print( __doc__ )
                     sys.exit()
             except:
@@ -304,26 +309,57 @@ if __name__ == "__main__":
         print( __doc__ )
         sys.exit()
 
-
-    # Setting sounddevice
-    LS.sd.default.channels     = 2
-    LS.sd.default.samplerate   = float(LS.fs)
-    if selected_card:
-        i = selected_card.split(",")[0].strip()
-        o = selected_card.split(",")[1].strip()
-        try:    fs = int(selected_card.split(",")[2].strip())
-        except: pass
-        if i.isdigit(): i = int(i)
-        if o.isdigit(): o = int(o)
-        #  If command line sound device fails.
-        if not LS.test_soundcard(i=i, o=o):
-            sys.exit()
+    if optional_device:
+        set_sound_card(optional_device)
 
 
-    # Reading N and fs as pet set in module LS when reading command line options
+def set_sound_card(optional_device):
+    """ Other than LS.sd.default parameters
+        optional_device: string of three comma separated numbers 'CAPdev,PBKdev,fs'
+    """
+    global fs
+
+    # CAP device
+    i = int( optional_device.split(",")[0].strip() )
+    # PBK device
+    o = int( optional_device.split(",")[1].strip() )
+    # FS
+    try:
+        tmp = optional_device.split(",")[2].strip()
+        fs = int(tmp)
+    except:
+        fs = 48000
+
+    # test device:
+    if not LS.test_soundcard(i=i, o=o, fs=fs, ch=2):
+        sys.exit()
+
+
+def print_info():
+
+    print(f'\nsound card:\n{LS.sd.query_devices()}\n')
+    print(f'fs:                 {LS.fs}')
+    print(f'channels:           {channels}')
+    print(f'takes per ch:       {numMeas}')
+    print(f'Schroeder freq:     {Scho}')
+    print(f'sweep length (N):   {LS.N}')
+    if jackIP and jackUser:
+        print(f'JACK IP:            {jackIP}')
+        print(f'JACK user:          {jackUser}')
+    print()
+
+
+if __name__ == "__main__":
+
+    # Reading command line arguments:
+    read_command_line()
+
+    # Info
+    print_info()
+
+    # N and fs short aliases:
     N             = LS.N
     fs            = LS.fs
-
 
     # Optional beeps
     beepL = make_beep(f=880, fs=fs)
