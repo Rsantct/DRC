@@ -37,7 +37,7 @@ class RoommeasureGUI():
         self.ent_scho    = ttk.Entry(content,                     width=5)
         self.ent_scho.insert(0, '200')
 
-        # MESSAGE BOOTOM
+        # BOTTOM MESSAGES AREA
         self.lbl_msg   = ttk.Label(content, text='a message', font=(None, 20))
 
         # [Run] BUTTON
