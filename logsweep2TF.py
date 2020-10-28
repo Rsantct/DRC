@@ -100,7 +100,7 @@ import sounddevice as sd    # https://python-sounddevice.readthedocs.io
 #------------------------- DEFAULT OPTIONS: --------------------------
 #---------------------------------------------------------------------
 select_card         = False
-selected_card       = None
+selected_card       = ''
 checkClearence      = True
 
 printInfo           = True
@@ -151,49 +151,53 @@ S_adc = 1.0
 #---------------------------------------------------------------------
 
 def choose_soundcard():
-    #sd.default.device = 'Built-in Microphone', 'Built-in Output' # Mac Book
 
-    tested = False
+    result = False
+
     tries = 0
-    while not tested and tries < 3:
+    while not result and tries < 3:
         print( "\n    SYSTEM SOUND DEVICES:\n" )
         print( sd.query_devices() )
         print()
-        print( "    Select capture  device: " ); i = int(input())
-        print( "    Select playback device: " ); o = int(input())
-        tested = test_soundcard(i,o)
+        print( "    Select capture  device: ", end='' ); i = int(input())
+        print( "    Select playback device: ", end='' ); o = int(input())
+        result = test_soundcard(i,o)
         tries += 1
 
-    return tested
+    return result
 
-def test_soundcard(i="default",o="default", fs=fs):
 
-    playrecOK = False
-    dummy1sec = zeros(int(1*fs))
-    print( "\n    SYSTEM SOUND DEVICES:\n" )
-    print( sd.query_devices() )
-    print()
-    sd.default.device = i, o # Sets the default device for the sounddevide module.
-    print( "    Trying play/rec:" )
+def test_soundcard(i="default",o="default", fs=fs, ch=2):
 
-    try:
-        print( "    ", sd.query_devices(i)['name'] )
-        print( "    ", sd.query_devices(o)['name'] )
+    result = False
 
-    except:
-        print( "(!) Error accediendo a los devices " + str(i) + " / " + str(o) )
-        return  playrecOK
+    dummy1sec = zeros(int(fs))
+
+    print( 'Trying:' )
 
     try:
-        chk_rec = sd.check_input_settings(i, channels=2, samplerate=float(fs))
-        chk_pb  = sd.check_output_settings(o, channels=2, samplerate=float(fs))
-        dummy = sd.playrec(dummy1sec)
-        playrecOK = True
-        print( "    Sound device settings are supported" )
-    except:
-        print( "\n(!) FAILED to playback and recording on selected device." )
+        sd.default.device = i, o
+        print( f'    {sd.query_devices(i)["name"]}')
+        print( f'    {sd.query_devices(o)["name"]}')
+    except Exception as e:
+        print( f'(!) Error accesing devices [{i},{o}]: {e}' )
 
-    return  playrecOK
+    try:
+        chk_rec = sd.check_input_settings (i, channels=ch, samplerate=float(fs))
+        chk_pb  = sd.check_output_settings(o, channels=ch, samplerate=float(fs))
+        print( f'Sound card parameters OK' )
+    except Exception as e:
+        print( f'(!) Sound card [{i},{o}] ERROR: {e}' )
+
+    try:
+        dummy = sd.playrec(dummy1sec, samplerate=fs, channels=ch)
+        print( 'Sound device settings are supported\n' )
+        result = True
+    except Exception as e:
+        print( f'\n(!) FAILED to playback and recording on selected device: {e}\n' )
+
+    return  result
+
 
 def do_print_info():
 
@@ -212,6 +216,7 @@ def do_print_info():
     print( 'System_type:    ' + system_type )
     print()
     return
+
 
 def plot_spectrum(MAG, fs=fs, semi=False, fini=20, fend=20000,
                   fig=None, label=" ", color="blue"):
@@ -240,6 +245,7 @@ def plot_spectrum(MAG, fs=fs, semi=False, fini=20, fend=20000,
     plt.ylabel('dB')
     plt.title('Magnitude Response (' + Kbins + ' Kbins, res = ' + str(round(Fresol,2)) + ' Hz)')
     return
+
 
 def make_sweep():
     """ returns:    (windowsweep, sweep, Npad)
@@ -300,6 +306,7 @@ def make_sweep():
         plt.title('Sweeps')
 
     return windosweep, sweep
+
 
 def get_offset_xcorr(sweep, dut, ref):
     """
@@ -368,6 +375,7 @@ def get_offset_xcorr(sweep, dut, ref):
         TimeClearanceOK = True
 
     return offset, TimeClearanceOK
+
 
 def do_meas(windosweep, sweep):
     """
@@ -514,6 +522,7 @@ def do_meas(windosweep, sweep):
         return DUT_SWEEP
     else:
         return zeros(N)
+
 
 #-----------------------------------------------------------------------------
 #--------------------------------- MAIN PROGRAM ------------------------------
