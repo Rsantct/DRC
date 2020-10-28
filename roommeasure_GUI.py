@@ -32,15 +32,32 @@ class RoommeasureGUI():
         self.combo_meas  = ttk.Combobox(content, values=takes,    width=4)
         lbl_sweep        = ttk.Label(content, text='sweep length:')
         self.combo_sweep = ttk.Combobox(content, values=sweeplen, width=7)
-        self.combo_sweep.set('32768')
         lbl_scho         = ttk.Label(content, text='Schoeder freq:')
         self.ent_scho    = ttk.Entry(content,                     width=5)
+
+        self.combo_ch.set('LR')
+        self.combo_meas.set('3')
+        self.combo_sweep.set('32768')
         self.ent_scho.insert(0, '200')
 
-        # BOTTOM MESSAGES AREA
-        self.lbl_msg   = ttk.Label(content, text='a message', font=(None, 20))
+        # REMOTE JACK SECTION
+        lbl_rjack        = ttk.Label(content, text='Remote JACK:')
+        lbl_rjaddr       = ttk.Label(content, text='addr:')
+        self.ent_rjaddr  = ttk.Entry(content,                     width=12)
+        lbl_rjuser       = ttk.Label(content, text='user:')
+        self.ent_rjuser  = ttk.Entry(content,                     width=12)
+        self.ent_rjuser.insert(0, 'paudio')
 
-        # [Run] BUTTON
+
+        # BOTTOM MESSAGES AREA
+        self.lbl_msg     = ttk.Label(content, text='...', font=(None, 20))
+
+        # [Run] BUTTON AREA
+        lbl_run          = ttk.Label(content, text='RUN:')
+        self.noBeep      = BooleanVar()
+        self.chk_noBeep  = ttk.Checkbutton(content, text=' no beep',
+                                           variable=self.noBeep,
+                                           onvalue=True, offvalue=False)
         self.btn_go    = ttk.Button(content, text='Go!', command=self.go)
 
         # GRID ARRANGEMENT
@@ -62,8 +79,17 @@ class RoommeasureGUI():
         lbl_scho.grid(          row=4, column=4, sticky=E )
         self.ent_scho.grid(     row=4, column=5, sticky=W )
 
-        self.btn_go.grid(       row=6, column=5 )
-        self.lbl_msg.grid(      row=7, column=1, columnspan=3, sticky=W )
+        lbl_rjack.grid(         row=5, column=0, sticky=W )
+        lbl_rjaddr.grid(        row=6, column=0, sticky=E )
+        self.ent_rjaddr.grid(   row=6, column=1, sticky=W )
+        lbl_rjuser.grid(        row=6, column=2, sticky=E )
+        self.ent_rjuser.grid(   row=6, column=3, sticky=W )
+
+        lbl_run.grid(           row=7, column=0, sticky=W )
+        self.chk_noBeep.grid(   row=7, column=2 )
+        self.btn_go.grid(       row=7, column=5 )
+
+        self.lbl_msg.grid(      row=8, column=0, columnspan=6, sticky=W )
 
         # RESIZING BEHAVIOR
         root.rowconfigure(      0, weight=1)
@@ -85,6 +111,9 @@ class RoommeasureGUI():
         print(f'ch:         {self.combo_ch.get()}')
         print(f'takes:      {self.combo_meas.get()}')
         print(f'Schroeder:  {self.ent_scho.get()}')
+        print(f'noBeep:     {self.noBeep.get()}')
+        print(f'rjaddr:     {self.ent_rjaddr.get()}')
+        print(f'rjuser:     {self.ent_rjuser.get()}')
 
 
 if __name__ == '__main__':
