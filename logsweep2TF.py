@@ -114,7 +114,8 @@ plotSmoothSpectrum  = False  # añadir gráfica TF suavizada (OjO esto tarda)
 sig_frac    = 0.5               # Fraction of full scale applied to play the sweep.
 fs          = 48000             # Must ensure that sound driver accepts.
 N           = 2**18             # Lenght of the total sequence, make this
-                                # larger if there is insufficient time clearance
+                                # Larger if there is insufficient time clearance
+
 system_type = 'electronic'      # 'acoustic', 'electronic', 'level-dependent'
 Po          = 2e-5              # SPL reference pressure
 c           = 343               # speed of sound
@@ -247,17 +248,20 @@ def plot_spectrum(MAG, fs=fs, semi=False, fini=20, fend=20000,
     return
 
 
-def make_sweep():
-    """ returns:    (windowsweep, sweep, Npad)
-                    The sequence to be played: faded sweep + end pad zeroes
-                    The raw one.
+def prepare_sweep():
+    """ prepare globals to work:
+            sweep:      A raw sweep.
+            tapsweep:   The sequence to be played: faded sweep + a zeroes tail
+            indexf1:    Index of pre-tapper end freq in tapsweep
     """
-    global Npad, indexf1, indexf2           # necesarias en otros procedimientos
+    global sweep, tapsweep, indexf1
 
-    # La secuencia total enviada tendrá longitud N (2**xx) muestras , pero
-    # el sweep no las ocupará todas, se deja al final un tramo de 'Npad' zeros
-    Npad = int(N/4)                         # zeros at the end of the total sequence
-    Ns   = N - Npad                         # most of array is used for sweep
+
+    # The played tapsweep (len=N) will be compund of
+    # a logsweep (len=N-Npad) plus a zeros tail (len=Npad).
+    Npad = int(N/4.0)
+    Ns   = N - Npad                         # most of array is used for sweep ;-)
+
     ts   = linspace(0, Ns/float(fs), Ns)    # array de tiempos del sweep
     # Al sweep se le aplica una 'windo' para 'fade in/out' en f1 y f2
     f_start     = 5.0                       # beginning of turnon half-Hann
@@ -285,7 +289,7 @@ def make_sweep():
     windo[indexf2:Ns] = 0.5 * (1 + cos(pi * arange(0, Ns-indexf2) / (Ns-indexf2)) )
     windo[Ns:N]       = 0       # Zeropad end of sweep. (i) Esto creo que es redundante
                                 # porque el sweep ya tiene zeros ahí.
-    windosweep = windo * sweep  # Here the LOGSWEEP tapered at each end for output to DAC
+    tapsweep = windo * sweep    # Here the LOGSWEEP tapered at each end for output to DAC
 
     # NOTA no tengo claro el interés de pritar esto:
     print( "f_start * Ls: " + str(round(f_start*Ls, 2)) + \
@@ -299,13 +303,11 @@ def make_sweep():
         vTimes   = vSamples / float(fs)     # samples a tiempos para visualización
         plt.plot(vTimes, sweep,      color='red',  label='raw sweep')
         plt.grid()
-        plt.plot(vTimes, windosweep, color='blue', label='windowed sweep')
+        plt.plot(vTimes, tapsweep, color='blue', label='windowed sweep')
         plt.ylim(-1.5, 1.5)
         plt.xlabel('time[s]')
         plt.legend()
         plt.title('Sweeps')
-
-    return windosweep, sweep
 
 
 def get_offset_xcorr(sweep, dut, ref):
@@ -367,6 +369,7 @@ def get_offset_xcorr(sweep, dut, ref):
     if offset < 0:
         print( '(i) Negative offset means player lags recorder!' )
 
+    Npad=int(N/4.0)
     if abs(offset) > Npad:
         print( '******INSUFFICIENT TIME CLEARANCE!******' )
         print( '******INSUFFICIENT TIME CLEARANCE!******' )
@@ -377,7 +380,7 @@ def get_offset_xcorr(sweep, dut, ref):
     return offset, TimeClearanceOK
 
 
-def do_meas(windosweep, sweep):
+def do_meas():
     """
     returns:    DUT_SWEEP (The Transfer Function of the DUT),
                     If errors, returns zeros(N)
@@ -402,9 +405,12 @@ def do_meas(windosweep, sweep):
     print( '(i) Some sound cards act strangely. Check carefully!' )
     # Antiphased signals on channels avoids codec midtap modulation.
     # Se aplica atenuación según 'sig_frac'
-    stereo = array([sig_frac * windosweep, sig_frac * -windosweep]) # [ch0, ch1]
+    stereo = array([sig_frac * tapsweep, sig_frac * -tapsweep]) # [ch0, ch1]
     sd.default.samplerate = fs
     sd.default.channels = 2
+    rec_dev_name = sd.query_devices(sd.default.device[0])['name']
+    pbk_dev_name = sd.query_devices(sd.default.device[1])['name']
+    print(f'    in: {rec_dev_name}, out: {pbk_dev_name}, fs: {sd.default.samplerate}')
     # (i) .transpose pq el player necesita una array con cada canal en una COLUMNA.
     z = sd.playrec(stereo.transpose(), blocking=True) # 'blocking' waits to finish.
     dut = z[:, 0]   # we use LEFT  CHANNEL as DUT
@@ -462,7 +468,7 @@ def do_meas(windosweep, sweep):
     #                   All frequency variables are meant to be voltage spectra
     #-----------------------------------------------------------------------------
     lwindo = ones(N)
-    lwindo[0:indexf1] = 0.5 * ( 1- cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
+    lwindo[0:indexf1] = 0.5 * ( 1 - cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
     lwindosweep = lwindo * sweep
     # remove play-record delay by shifting computer sweep array:
     ## %sweep=circshift(sweep,-offset);             # Esto aparece comentado en el cód. original,
@@ -605,9 +611,10 @@ if __name__ == "__main__":
     if printInfo:
         do_print_info()
 
-    windosweep, sweep = make_sweep()
+    # Do create the needed raw and tapered sweeps
+    prepare_sweep()
 
-    TF = do_meas(windosweep, sweep)
+    TF = do_meas()
 
     if auxPlots or TFplot:
         print( "--- Showing the graphs..." )
