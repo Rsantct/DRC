@@ -113,7 +113,6 @@ class RoommeasureGUI():
 
         self.lbl_msg['text'] = 'RUNNING ...'
 
-
         cap         =   self.combo_cap.get()
         pbk         =   self.combo_pbk.get()
         ch          =   self.combo_ch.get()
@@ -165,7 +164,6 @@ class RoommeasureGUI():
 
         # END
         self.lbl_msg['text'] = '- DONE -'
-
 
 
 if __name__ == '__main__':
