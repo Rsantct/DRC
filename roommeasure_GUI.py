@@ -23,6 +23,8 @@ class RoommeasureGUI():
         self.combo_cap = ttk.Combobox(content, values=cap_devs)
         lbl_pbk        = ttk.Label(content, text='OUT:')
         self.combo_pbk = ttk.Combobox(content, values=pbk_devs)
+        lbl_fs         = ttk.Label(content, text='rate:')
+        self.combo_fs  = ttk.Combobox(content, values=srates, width=8)
 
         # MEASURE SECTION
         lbl_meastitle    = ttk.Label(content, text='MEASURE:')
@@ -35,9 +37,10 @@ class RoommeasureGUI():
         lbl_scho         = ttk.Label(content, text='Schoeder freq:')
         self.ent_scho    = ttk.Entry(content,                     width=5)
 
+        self.combo_fs.set('48000')
         self.combo_ch.set('LR')
         self.combo_meas.set('3')
-        self.combo_sweep.set('32768')
+        self.combo_sweep.set(str(2**17))
         self.ent_scho.insert(0, '200')
 
         # REMOTE JACK SECTION
@@ -50,7 +53,7 @@ class RoommeasureGUI():
 
 
         # BOTTOM MESSAGES AREA
-        self.lbl_msg     = ttk.Label(content, text='...', font=(None, 20))
+        self.lbl_msg     = ttk.Label(content, text='...', font=(None, 30))
 
         # [Run] BUTTON AREA
         lbl_run          = ttk.Label(content, text='RUN:')
@@ -68,6 +71,8 @@ class RoommeasureGUI():
         self.combo_cap.grid(    row=1, column=1)
         lbl_pbk.grid(           row=1, column=2, sticky=E )
         self.combo_pbk.grid(    row=1, column=3)
+        lbl_fs.grid(            row=1, column=4, sticky=E )
+        self.combo_fs.grid(     row=1, column=5)
 
         lbl_meastitle.grid(     row=2, column=0, sticky=W )
         lbl_ch.grid(            row=3, column=0, sticky=E )
@@ -86,7 +91,7 @@ class RoommeasureGUI():
         self.ent_rjuser.grid(   row=6, column=3, sticky=W )
 
         lbl_run.grid(           row=7, column=0, sticky=W )
-        self.chk_noBeep.grid(   row=7, column=2 )
+        self.chk_noBeep.grid(   row=7, column=4 )
         self.btn_go.grid(       row=7, column=5 )
 
         self.lbl_msg.grid(      row=8, column=0, columnspan=6, sticky=W )
@@ -105,15 +110,62 @@ class RoommeasureGUI():
 
 
     def go(self):
-        self.lbl_msg['text'] = 'running ...'
-        print(f'cap:        {self.combo_cap.get()}')
-        print(f'pbk:        {self.combo_pbk.get()}')
-        print(f'ch:         {self.combo_ch.get()}')
-        print(f'takes:      {self.combo_meas.get()}')
-        print(f'Schroeder:  {self.ent_scho.get()}')
-        print(f'noBeep:     {self.noBeep.get()}')
-        print(f'rjaddr:     {self.ent_rjaddr.get()}')
-        print(f'rjuser:     {self.ent_rjuser.get()}')
+
+        self.lbl_msg['text'] = 'RUNNING ...'
+
+
+        cap         =   self.combo_cap.get()
+        pbk         =   self.combo_pbk.get()
+        ch          =   self.combo_ch.get()
+        fs          =   int(self.combo_fs.get())
+        takes       =   int(self.combo_meas.get())
+        Scho        =   float(self.ent_scho.get())
+        noBeep      =   self.noBeep.get()
+        rjaddr      =   self.ent_rjaddr.get()
+        rjuser      =   self.ent_rjuser.get()
+
+        print(f'cap:        {cap}')
+        print(f'pbk:        {pbk}')
+        print(f'ch:         {ch}')
+        print(f'fs:         {fs}')
+        print(f'takes:      {takes}')
+        print(f'Schroeder:  {Scho}')
+        print(f'noBeep:     {noBeep}')
+        print(f'rjaddr:     {rjaddr}')
+        print(f'rjuser:     {rjuser}')
+
+        rm.LS.fs = fs
+
+        # PREPARING things as per given options:
+        # - Preparing beeps:
+        rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
+        rm.beepR = rm.tools.make_beep(f=932, fs=rm.LS.fs)
+
+        # - Preparing log-sweep as per the updated LS parameters
+        rm.LS.prepare_sweep()
+
+        # - Prepare a positive frequencies vector as per the selected N value.
+        rm.freq = rm.np.linspace(0, int(rm.LS.fs/2), int(rm.LS.N/2))
+
+        # Requesting the user to focus on this window
+        #if not timer:
+        #    user_focus_request()
+
+        # MAIN measure procedure and SAVING
+        rm.do_meas_loop()
+
+        # COMPUTE the average from all raw measurements
+        rm.do_averages()
+
+        # SAVING averages
+        rm.do_save_averages()
+
+        # Plotting prepared curves
+        rm.LS.plt.show()
+
+        # END
+        self.lbl_msg['text'] = '- DONE -'
+
 
 
 if __name__ == '__main__':
@@ -122,9 +174,10 @@ if __name__ == '__main__':
                            if x['max_input_channels'] >= 2 ]
     pbk_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
                            if x['max_output_channels'] >= 2 ]
+    srates   = ['44100', '48000']
     channels = ['C', 'L', 'R', 'LR']
     takes    = list(range(1,21))
-    sweeplen = [2**14, 2**15, 2**16]
+    sweeplen = [2**14, 2**15, 2**16, 2**17]
 
     root = Tk()
     app = RoommeasureGUI(root)
