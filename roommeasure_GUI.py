@@ -7,6 +7,7 @@ from tkinter import ttk
 
 import roommeasure as rm
 from time import sleep
+import threading
 
 
 class RoommeasureGUI():
@@ -15,18 +16,18 @@ class RoommeasureGUI():
     def __init__(self, root):
         self.root = root
         self.root.title('DRC/roommeasure.py GUI')
+        self.root.geometry('+400+250')
         content =  ttk.Frame( root, padding=(10,10,12,12) )
 
         ### AVAILABLE COMBOBOX OPTIONS
         cap_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
                                if x['max_input_channels'] >= 2 ]
-        cap_devs.append('kk')
         pbk_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
                                if x['max_output_channels'] >= 2 ]
         srates   = ['44100', '48000']
         channels = ['C', 'L', 'R', 'LR']
         takes    = list(range(1,21))
-        sweeps   = [2**14, 2**15, 2**16, 2**17]
+        sweeps   = [2**15, 2**16, 2**17]
         timers   = ['1','2','3','4','5','manual']
 
         ### VARS
@@ -70,21 +71,19 @@ class RoommeasureGUI():
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
 
         # - BOTTOM MESSAGES SECTION
-        frm_msg          = ttk.Frame(content, borderwidth=15,
-                                     relief='ridge')
+        frm_msg          = ttk.Frame(content, borderwidth=2, relief='solid')
         self.lbl_msg     = ttk.Label(frm_msg, text='', font=(None, 20))
 
         ### DEFAULT VALUES
         self.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
         self.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1] )['name'])
         self.cmb_fs.set('48000')
-        self.cmb_ch.set('LR')
-        self.cmb_meas.set('3')
-        self.cmb_sweep.set(str(2**17))
+        self.cmb_ch.set('L')
+        self.cmb_meas.set('2')
+        self.cmb_sweep.set(str(2**15))
         self.ent_scho.insert(0, '200')
-        self.cmb_timer.set('manual')
+        self.cmb_timer.set('1')
         self.beep_var.set(1)
-        self.lbl_msg.configure(text = 'READY')
 
         ### GRID ARRANGEMENT
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
@@ -142,8 +141,8 @@ class RoommeasureGUI():
             pbk = rm.LS.sd.query_devices(rm.LS.sd.default.device[1])["name"]
             print(f'cap:            {cap}')
             print(f'pbk:            {pbk}')
-            print(f'ch:             {rm.LS.channels}')
             print(f'fs:             {rm.LS.fs}')
+            print(f'ch to meas:     {rm.LS.channels}')
             print(f'takes:          {rm.LS.numMeas}')
             print(f'sweep length:   {rm.LS.N}')
             print(f'Schroeder:      {rm.Scho}')
@@ -151,9 +150,7 @@ class RoommeasureGUI():
             print(f'rjaddr:         {rjaddr}')
             print(f'rjuser:         {rjuser}')
 
-
-        self.lbl_msg.configure(text = 'RUNNING ...')
-
+        # READING OPTIONS from main window
         cap         =   self.cmb_cap.get()
         pbk         =   self.cmb_pbk.get()
         fs          =   int(self.cmb_fs.get())
@@ -205,20 +202,22 @@ class RoommeasureGUI():
 
         #print_LS_info(); return               # CONSOLE DEBUG
 
-        # MAIN measure procedure and SAVING
-        rm.do_meas_loop()
-
-        # COMPUTE the average from all raw measurements
-        self.lbl_msg.configure(text = 'COMPUTING AVERAGES ...')
-        rm.do_averages()
-        rm.do_save_averages()
-
-        # Plotting prepared curves
-        self.lbl_msg.configure(text = 'DISPLAY GRAPHS ...')
-        rm.LS.plt.show()
+        # THREADING MEAS PROCRESS (long running must not block)
+        job = threading.Thread( target=do_measure_process, daemon=True )
+        job.start()
 
         # END
         self.lbl_msg.configure(text = 'DONE')
+
+
+###################################
+# MAIN measure procedure and SAVING
+###################################
+def do_measure_process():
+        rm.do_meas_loop()
+        #rm.do_averages()
+        #rm.do_save_averages()
+        #rm.LS.plt.show()
 
 
 if __name__ == '__main__':
