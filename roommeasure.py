@@ -184,7 +184,7 @@ def read_command_line():
             channels = [x for x in opc[3:]]
 
         elif "-s=" in opc:
-            Scho = int(opc[3:])
+            Scho = float(opc[3:])
 
         elif "-e=" in opc:
             LS.N = 2**int(opc[3:])
