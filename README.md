@@ -85,14 +85,15 @@ Este software funciona en máquinas Linux o Mac OS (Homebrew), que dispongan de 
 
 **python3**
 
-    $ sudo apt install python3-numpy python3-matplotlib python3-scipy
+    sudo apt install python3-numpy python3-matplotlib python3-scipy
 
 Quizás se necesite actualizar las herramientas de compilación y el gestor de paquetes de Python:
 
-    $ sudo apt install build-essential libssl-dev libffi-dev python-dev
-    $ sudo pip install --upgrade pip
-    $ sudo pip install --upgrade setuptools
-    $ sudo pip install sounddevice
+    sudo apt install python3-pip
+    sudo apt install build-essential libssl-dev libffi-dev python-dev
+    sudo pip3 install --upgrade pip
+    sudo pip3 install --upgrade setuptools
+    sudo pip3 install sounddevice
 
 **AudioHumLab/audiotools**
 
