@@ -242,39 +242,39 @@ def user_focus_request():
     sleep(1)
 
 
+def do_meas(ch='C', seq=0):
+
+    # Do measure, by taken the positive semi-spectrum
+    meas = abs( LS.do_meas()[:int(LS.N/2)] )
+
+    # Saving the curve to a sequenced frd filename
+    f, m = tools.interp_semispectrum(freq, meas, LS.fs/2, binsFRD)
+    tools.saveFRD(  fname   = f'{ch}_room_{str(seq)}.frd',
+                    freq    = f,
+                    mag     = 20 * np.log10(m),
+                    fs      = LS.fs,
+                    comments= f'roommeasure.py ch:{ch} point:{str(seq)}',
+                    verbose = False
+                  )
+
+    # Smoothed curve plot (this takes a while in a slow cpu)
+    m_smoo = smooth(f, m, Noct, f0=Scho)
+    figIdx = 10
+    chs = ('L', 'R', 'C')
+    if ch in chs:
+        figIdx += chs.index(ch)
+
+    # Looping CSS4 color sequence, from black (index 7)
+    LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
+                      label = f'{ch}_{str(seq)}',
+                      color=css4_colors[(7 + seq) % 148] )
+
+    return meas
+
+
 def do_meas_loop():
     """ Meas for every channel and stores them into the <curves> stack
     """
-
-    def do_meas(ch='C', seq=0):
-
-        # Do measure, by taken the positive semi-spectrum
-        meas = abs( LS.do_meas()[:int(LS.N/2)] )
-
-        # Saving the curve to a sequenced frd filename
-        f, m = tools.interp_semispectrum(freq, meas, LS.fs/2, binsFRD)
-        tools.saveFRD(  fname   = f'{ch}_room_{str(seq)}.frd',
-                        freq    = f,
-                        mag     = 20 * np.log10(m),
-                        fs      = LS.fs,
-                        comments= f'roommeasure.py ch:{ch} point:{str(seq)}',
-                        verbose = False
-                      )
-
-        # Smoothed curve plot (this takes a while in a slow cpu)
-        m_smoo = smooth(f, m, Noct, f0=Scho)
-        figIdx = 10
-        chs = ('L', 'R', 'C')
-        if ch in chs:
-            figIdx += chs.index(ch)
-
-        # Looping CSS4 color sequence, from black (index 7)
-        LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
-                          label = f'{ch}_{str(seq)}',
-                          color=css4_colors[(7 + seq) % 148] )
-
-        return meas
-
 
     global curves
 
