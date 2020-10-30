@@ -138,9 +138,11 @@ class RoommeasureGUI():
         print(f'rjaddr:     {rjaddr}')
         print(f'rjuser:     {rjuser}')
 
+        # PREPARING things as per given options:
+
+        # - Preparing sound card
         rm.LS.fs = fs
 
-        # PREPARING things as per given options:
         # - Preparing beeps:
         rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
         rm.beepR = rm.tools.make_beep(f=932, fs=rm.LS.fs)
@@ -150,10 +152,6 @@ class RoommeasureGUI():
 
         # - Prepare a positive frequencies vector as per the selected N value.
         rm.freq = rm.np.linspace(0, int(rm.LS.fs/2), int(rm.LS.N/2))
-
-        # Requesting the user to focus on this window
-        #if not timer:
-        #    user_focus_request()
 
         # MAIN measure procedure and SAVING
         rm.do_meas_loop()
