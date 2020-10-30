@@ -85,7 +85,7 @@ Este software funciona en máquinas Linux o Mac OS (Homebrew), que dispongan de 
 
 **python3**
 
-    $ sudo apt install numpy scipy matplotlib sounddevice
+    $ sudo apt install python3-numpy python3-matplotlib python3-scipy
 
 Quizás se necesite actualizar las herramientas de compilación y el gestor de paquetes de Python:
 
