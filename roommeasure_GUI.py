@@ -34,7 +34,7 @@ class RoommeasureGUI():
         self.combo_meas  = ttk.Combobox(content, values=takes,    width=4)
         lbl_sweep        = ttk.Label(content, text='sweep length:')
         self.combo_sweep = ttk.Combobox(content, values=sweeplen, width=7)
-        lbl_scho         = ttk.Label(content, text='Schoeder freq:')
+        lbl_scho         = ttk.Label(content, text='Schroeder freq:')
         self.ent_scho    = ttk.Entry(content,                     width=5)
 
         # REMOTE JACK SECTION
