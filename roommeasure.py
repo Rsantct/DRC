@@ -439,7 +439,7 @@ if __name__ == "__main__":
     # Connecting to remote JACK loudspeakers system:
     if jackIP and jackUser:
         from remote_jack import Remote
-        # (i) Here the user will be promted to enter the remote password
+        # (i) Here the user will be prompted to enter the remote password
         rjack = Remote(jackIP, jackUser)
         manageJack = True
 
