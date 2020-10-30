@@ -17,6 +17,21 @@ class RoommeasureGUI():
         self.root.title('DRC/roommeasure.py GUI')
         content =  ttk.Frame( root, padding=(10,10,12,12) )
 
+        ### AVAILABLE COMBOBOX OPTIONS
+        cap_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
+                               if x['max_input_channels'] >= 2 ]
+        cap_devs.append('kk')
+        pbk_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
+                               if x['max_output_channels'] >= 2 ]
+        srates   = ['44100', '48000']
+        channels = ['C', 'L', 'R', 'LR']
+        takes    = list(range(1,21))
+        sweeps   = [2**14, 2**15, 2**16, 2**17]
+        timers   = ['1','2','3','4','5','manual']
+
+        ### VARS
+        self.beep_var   = IntVar()
+
         ### WIDGETS
         # - SOUND CARD SECTION
         lbl_scard      = ttk.Label(content, text='SOUND CARD:')
@@ -50,16 +65,14 @@ class RoommeasureGUI():
         lbl_run          = ttk.Label(content, text='RUN:')
         lbl_timer        = ttk.Label(content, text='auto timer (s):')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=7)
-        self.noBeep      = BooleanVar()
-        self.chk_noBeep  = ttk.Checkbutton(content, text=' no beep',
-                                           variable=self.noBeep,
-                                           onvalue=True, offvalue=False)
+        self.chk_beep    = ttk.Checkbutton(content, text='beep',
+                                                    variable=self.beep_var)
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
 
         # - BOTTOM MESSAGES SECTION
         frm_msg          = ttk.Frame(content, borderwidth=15,
                                      relief='ridge')
-        self.lbl_msg     = ttk.Label(frm_msg, text='READY', font=(None, 20))
+        self.lbl_msg     = ttk.Label(frm_msg, text='', font=(None, 20))
 
         ### DEFAULT VALUES
         self.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
@@ -70,6 +83,8 @@ class RoommeasureGUI():
         self.cmb_sweep.set(str(2**17))
         self.ent_scho.insert(0, '200')
         self.cmb_timer.set('manual')
+        self.beep_var.set(1)
+        self.lbl_msg.configure(text = 'READY')
 
         ### GRID ARRANGEMENT
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
@@ -101,7 +116,7 @@ class RoommeasureGUI():
         lbl_run.grid(           row=7,  column=0, sticky=W, pady=5 )
         lbl_timer.grid(         row=8,  column=2, sticky=E )
         self.cmb_timer.grid(    row=8,  column=3, sticky=W )
-        self.chk_noBeep.grid(   row=8,  column=4 )
+        self.chk_beep.grid(     row=8,  column=4 )
         self.btn_go.grid(       row=8,  column=5 )
 
         frm_msg.grid(           row=9,  column=0, columnspan=6, pady=5, sticky=W+E )
@@ -122,7 +137,7 @@ class RoommeasureGUI():
 
     def go(self):
 
-        def print_info():
+        def print_LS_info():
             cap = rm.LS.sd.query_devices(rm.LS.sd.default.device[0])["name"]
             pbk = rm.LS.sd.query_devices(rm.LS.sd.default.device[1])["name"]
             print(f'cap:            {cap}')
@@ -137,7 +152,7 @@ class RoommeasureGUI():
             print(f'rjuser:         {rjuser}')
 
 
-        self.lbl_msg['text'] = 'RUNNING ...'
+        self.lbl_msg.configure(text = 'RUNNING ...')
 
         cap         =   self.cmb_cap.get()
         pbk         =   self.cmb_pbk.get()
@@ -152,7 +167,6 @@ class RoommeasureGUI():
         rjuser      =   self.ent_rjuser.get()
 
         timer       =   self.cmb_timer.get()
-        noBeep      =   self.noBeep.get()
 
 
         # PREPARING things as per given options:
@@ -160,7 +174,7 @@ class RoommeasureGUI():
         # - sound card
         rm.LS.fs = fs
         if not rm.LS.test_soundcard(cap, pbk):
-            self.lbl_msg['text'] = 'SOUND CARD ERROR :-/'
+            self.lbl_msg.configure(text = 'SOUND CARD ERROR :-/')
             return
 
         # - measure
@@ -186,40 +200,28 @@ class RoommeasureGUI():
             rm.timer = int(timer)
 
         # - alert beeps
-        if noBeep:
+        if not self.beep_var.get():
             rm.doBeep = False
 
-
-        print_info()
-        return
+        #print_LS_info(); return               # CONSOLE DEBUG
 
         # MAIN measure procedure and SAVING
         rm.do_meas_loop()
 
         # COMPUTE the average from all raw measurements
-        self.lbl_msg['text'] = 'COMPUTING AVERAGES ...'
+        self.lbl_msg.configure(text = 'COMPUTING AVERAGES ...')
         rm.do_averages()
         rm.do_save_averages()
 
         # Plotting prepared curves
-        self.lbl_msg['text'] = 'GRAPHS ...'
+        self.lbl_msg.configure(text = 'DISPLAY GRAPHS ...')
         rm.LS.plt.show()
 
         # END
-        self.lbl_msg['text'] = 'DONE'
+        self.lbl_msg.configure(text = 'DONE')
 
 
 if __name__ == '__main__':
-
-    cap_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
-                           if x['max_input_channels'] >= 2 ]
-    pbk_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
-                           if x['max_output_channels'] >= 2 ]
-    srates   = ['44100', '48000']
-    channels = ['C', 'L', 'R', 'LR']
-    takes    = list(range(1,21))
-    sweeps   = [2**14, 2**15, 2**16, 2**17]
-    timers   = ['1','2','3','4','5','manual']
 
     root = Tk()
     app = RoommeasureGUI(root)
