@@ -113,18 +113,24 @@ curves = {}
 # Resulting averaged curves for every channel
 channels_avg= {}
 
-
 ################################################################################
 # roommeasure.py DEFAULT parameters
 ################################################################################
 
+# Disabling plotting when rommeasure.py is used as a module
+doPlot = False
+
 LS.N                    = 2**17     # Sweep length in samples.
 numMeas                 = 2         # Number of measurements to perform
 doBeep                  = True      # Do beep warning sound before each measurement
-
-binsFRD                 = 2**14     # Bins for .frd files
+timer    = 0                        # A timer to countdown between measurements,
+                                    # without user interaction
 channels                = ['C']     # Channels to interleaving measurements.
 
+# Result:
+binsFRD                 = 2**14     # Bins for .frd files
+
+# Smoothing the resulting response
 Scho                    = 200       # Schroeder freq (Hz)
 Noct                    = 24        # Initial 1/Noct smoothing below Scho,
                                     # then will be changed progressively until
@@ -134,15 +140,11 @@ Noct                    = 24        # Initial 1/Noct smoothing below Scho,
 
 LS.printInfo            = True      # logsweep2TF verbose
 
-LS.checkClearence       = False     # It is assumed that the user has check for this.
+# It is assumed that the user has check previously for soundacard and levels setup.
+LS.checkClearence       = False
 
-LS.TFplot               = False     # Omit default plots from the module logsweep2TF
-LS.auxPlots             = False
-LS.plotSmoothSpectrum   = False
-
-# A timer to countdown between measurements, without user interaction
-timer    = 0
-last_seq = 0    # aux variable to check for measurement sequence changes
+# aux variable to check for measurement sequence changes
+last_seq = 0
 
 # Remote JACK management
 jackIP      = ''
@@ -257,17 +259,19 @@ def do_meas(ch='C', seq=0):
                     verbose = False
                   )
 
-    # Smoothed curve plot (this takes a while in a slow cpu)
-    m_smoo = smooth(f, m, Noct, f0=Scho)
-    figIdx = 10
-    chs = ('L', 'R', 'C')
-    if ch in chs:
-        figIdx += chs.index(ch)
+    if doPlot:
+        # Smoothed curve plot (this takes a while in a slow cpu)
+        m_smoo = smooth(f, m, Noct, f0=Scho)
+        figIdx = 10
+        chs = ('L', 'R', 'C')
+        if ch in chs:
+            figIdx += chs.index(ch)
 
-    # Looping CSS4 color sequence, from black (index 7)
-    LS.plot_spectrum( m_smoo, semi=True, fig = figIdx,
-                      label = f'{ch}_{str(seq)}',
-                      color=css4_colors[(7 + seq) % 148] )
+        # Looping CSS4 color sequence, from black (index 7)
+        LS.plot_TF( m_smoo, semi=True,  label  = f'{ch}_{str(seq)}',
+                                        color  = css4_colors[(7 + seq) % 148],
+                                        figure = figIdx
+                  )
 
     return meas
 
@@ -327,20 +331,26 @@ def do_save_averages():
         print( 'Smoothing average 1/' + str(Noct) + ' oct up to ' + \
                 str(Scho) + ' Hz, then changing towards 1/1 oct at Nyq' )
 
-        m_smoothed = smooth(f, m, Noct, f0=Scho)
+        m_smoo = smooth(f, m, Noct, f0=Scho)
+
         tools.saveFRD(  fname   = f'{ch}_room_avg_smoothed.frd',
                         freq    = f,
-                        mag     = 20 * np.log10(m_smoothed),
+                        mag     = 20 * np.log10(m_smoo),
                         fs      = LS.fs,
                         comments= f'roommeasure.py ch:{ch} smoothed avg' )
 
-        # Prepare a figure with curves from all mic positions
-        LS.plot_spectrum( m,          semi=True, fig=20+i,
-                          color='blue', label=ch+' avg' )
+        if doPlot:
+            # Prepare a figure with curves from all mic positions
+            LS.plot_TF( m,      semi=True,  label  = f'{ch} avg',
+                                            color  = 'blue',
+                                            figure = 20+i
+                      )
+            # Prepare a figure with average and smoothed average
+            LS.plot_TF( m_smoo, semi=True,  label  = f'{ch} avg smoothed',
+                                            color  = 'red',
+                                            figure = 20+i
+                      )
 
-        # Prepare a figure with average and smoothed average
-        LS.plot_spectrum( m_smoothed, semi=True, fig=20+i,
-                          color='red',  label=ch+' avg smoothed' )
         i += 1
 
 
@@ -428,6 +438,9 @@ def set_sound_card(optional_device):
 
 if __name__ == "__main__":
 
+    # Enables plotting when rommeasure.py is used from command line
+    doPlot = True
+
     # Reading command line arguments, then will update:
     #   - LS config: device, fs, and N;
     #   - doBeep, numMeas, channels, Scho, timer, jackIP, jackUser
@@ -472,6 +485,7 @@ if __name__ == "__main__":
     do_save_averages()
 
     # Plotting prepared curves
-    LS.plt.show()
+    if doPlot:
+        LS.plt.show()
 
     # END
