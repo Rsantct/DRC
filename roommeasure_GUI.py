@@ -134,6 +134,7 @@ class RoommeasureGUI():
     # MAIN MEAS procedure and SAVING of curves
     def do_measure_process(self):
             self.lbl_msg.configure(text = 'RUNNING ...')
+            rm.doPlot = False   # This is already disabled in rm, just a reminder.
             rm.do_meas_loop()
             rm.do_averages()
             rm.do_save_averages()
@@ -141,15 +142,15 @@ class RoommeasureGUI():
 
     def go(self):
 
-        # Optional printing LS after configured
-        def print_LS_info():
+        # Optional printing rm.LS after configured
+        def print_rm_LS_info():
             cap = rm.LS.sd.query_devices(rm.LS.sd.default.device[0])["name"]
             pbk = rm.LS.sd.query_devices(rm.LS.sd.default.device[1])["name"]
             print(f'cap:            {cap}')
             print(f'pbk:            {pbk}')
             print(f'fs:             {rm.LS.fs}')
-            print(f'ch to meas:     {rm.LS.channels}')
-            print(f'takes:          {rm.LS.numMeas}')
+            print(f'ch to meas:     {rm.channels}')
+            print(f'takes:          {rm.numMeas}')
             print(f'sweep length:   {rm.LS.N}')
             print(f'Schroeder:      {rm.Scho}')
             print(f'Beep:           {rm.doBeep}')
@@ -173,7 +174,7 @@ class RoommeasureGUI():
         timer       =   self.cmb_timer.get()
 
 
-        # PREPARING things as per given options:
+        # PREPARING roommeasure.LS STUFF as per given options:
 
         # - sound card
         rm.LS.fs = fs
@@ -182,9 +183,9 @@ class RoommeasureGUI():
             return
 
         # - measure
-        rm.LS.channels  = channels
-        rm.LS.numMeas   = takes
-        rm.LS.N         = sweeplength
+        rm.channels  = [c for c in channels]
+        rm.numMeas   = takes
+        rm.LS.N      = sweeplength
 
         # - smoothing
         rm.Scho         = Scho
@@ -207,8 +208,8 @@ class RoommeasureGUI():
         if not self.beep_var.get():
             rm.doBeep = False
 
-        #print_LS_info(); return               # CONSOLE DEBUG
-
+        # Console info
+        print_rm_LS_info()
 
         # THREADING MEAS PROCRESS (avoids blocking the Tk event loop)
         job_meas = threading.Thread( target=self.do_measure_process, daemon=True )
