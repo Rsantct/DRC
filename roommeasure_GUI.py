@@ -1,23 +1,20 @@
 #!/usr/bin/env python3
 """ This is a Tkinter based GUI to running DRC/roommeasure.py
 """
-
 from tkinter import *
 from tkinter import ttk
-
-import roommeasure as rm
-from time import sleep
 import threading
+import roommeasure as rm
 
 
 class RoommeasureGUI():
 
-
+    ### MAIN WINDOW
     def __init__(self, root):
         self.root = root
         self.root.title('DRC/roommeasure.py GUI')
         self.root.geometry('+400+250')
-        content =  ttk.Frame( root, padding=(10,10,12,12) )
+        content =  ttk.Frame( self.root, padding=(10,10,12,12) )
 
         ### AVAILABLE COMBOBOX OPTIONS
         cap_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
@@ -78,7 +75,7 @@ class RoommeasureGUI():
         self.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
         self.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1] )['name'])
         self.cmb_fs.set('48000')
-        self.cmb_ch.set('L')
+        self.cmb_ch.set('LR')
         self.cmb_meas.set('2')
         self.cmb_sweep.set(str(2**15))
         self.ent_scho.insert(0, '200')
@@ -122,8 +119,8 @@ class RoommeasureGUI():
         self.lbl_msg.grid(                        sticky=W )
 
         ### RESIZING BEHAVIOR
-        root.rowconfigure(      0, weight=1)
-        root.columnconfigure(   0, weight=1)
+        self.root.rowconfigure(      0, weight=1)
+        self.root.columnconfigure(   0, weight=1)
         for i in range(8):
             content.rowconfigure(   i, weight=1)
         for i in range(3):
@@ -134,8 +131,17 @@ class RoommeasureGUI():
         print(f'a key "{event.char}" was pressed')
 
 
+    # MAIN MEAS procedure and SAVING of curves
+    def do_measure_process(self):
+            self.lbl_msg.configure(text = 'RUNNING ...')
+            rm.do_meas_loop()
+            rm.do_averages()
+            rm.do_save_averages()
+            self.lbl_msg.configure(text = 'DONE')
+
     def go(self):
 
+        # Optional printing LS after configured
         def print_LS_info():
             cap = rm.LS.sd.query_devices(rm.LS.sd.default.device[0])["name"]
             pbk = rm.LS.sd.query_devices(rm.LS.sd.default.device[1])["name"]
@@ -149,6 +155,7 @@ class RoommeasureGUI():
             print(f'Beep:           {rm.doBeep}')
             print(f'rjaddr:         {rjaddr}')
             print(f'rjuser:         {rjuser}')
+
 
         # READING OPTIONS from main window
         cap         =   self.cmb_cap.get()
@@ -202,22 +209,12 @@ class RoommeasureGUI():
 
         #print_LS_info(); return               # CONSOLE DEBUG
 
-        # THREADING MEAS PROCRESS (long running must not block)
-        job = threading.Thread( target=do_measure_process, daemon=True )
-        job.start()
+
+        # THREADING MEAS PROCRESS (avoids blocking the Tk event loop)
+        job_meas = threading.Thread( target=self.do_measure_process, daemon=True )
+        job_meas.start()
 
         # END
-        self.lbl_msg.configure(text = 'DONE')
-
-
-###################################
-# MAIN measure procedure and SAVING
-###################################
-def do_measure_process():
-        rm.do_meas_loop()
-        #rm.do_averages()
-        #rm.do_save_averages()
-        #rm.LS.plt.show()
 
 
 if __name__ == '__main__':
