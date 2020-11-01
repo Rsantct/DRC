@@ -276,7 +276,7 @@ def do_meas(ch='C', seq=0):
     return meas
 
 
-def do_meas_loop():
+def do_meas_loop(trigger=None, gui_msg=None):
     """ Meas for every channel and stores them into the <curves> stack
     """
 
@@ -284,14 +284,41 @@ def do_meas_loop():
 
     # First measurement (initiates the stack)
     for ch in channels:
-        warning_meas(ch=ch, seq=0)          # a warning message or counting down
+
+        # a warning message or counting down
+        if not trigger:
+            warning_msg(ch=ch, seq=0)
+        else:
+            print(f'(rm) WAITING FOR TRIGGER meas #{0}_ch:{ch}')
+            trigger.wait()
+            print(f'(rm) RESUMING, meas #{0}_ch:{ch}')
+            trigger.clear()
+            if gui_msg:
+                gui_msg.set('')
+
         curves[ch] = do_meas(ch=ch, seq=0)
+        if gui_msg:
+            gui_msg.set('PRESS ANY KEY')
 
     # Do stack more measurements if so:
     for i in range(1, numMeas):
+
         for ch in channels:
-            warning_meas(ch=ch, seq=i)
+
+            if not trigger:
+                warning_msg(ch=ch, seq=i)
+            else:
+                print(f'(rm) WAITING FOR TRIGGER meas #{i}_ch:{ch}')
+                trigger.wait()
+                print(f'(rm) RESUMING, meas #{i}_ch:{ch}')
+                trigger.clear()
+                if gui_msg:
+                    gui_msg.set('')
+
             meas = do_meas(ch=ch, seq=i)
+            if gui_msg:
+                gui_msg.set('PRESS ANY KEY')
+
             # stack
             curves[ch] = np.vstack( ( curves[ch], meas ) )
 
@@ -354,7 +381,7 @@ def do_save_averages():
         i += 1
 
 
-def warning_meas(ch, seq):
+def warning_msg(ch, seq):
 
     global last_seq
 
