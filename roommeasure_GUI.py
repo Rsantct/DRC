@@ -11,10 +11,14 @@ class RoommeasureGUI():
 
     ### MAIN WINDOW
     def __init__(self, root):
+
         self.root = root
         self.root.title('DRC/roommeasure.py GUI')
-        self.root.geometry('+400+250')
+        self.root.geometry('+250+100')
         content =  ttk.Frame( self.root, padding=(10,10,12,12) )
+
+        ### EVENTS HANDLING
+        self.root.bind('<Key>', self.handle_keypressed)
 
         ### AVAILABLE COMBOBOX OPTIONS
         cap_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
@@ -28,7 +32,11 @@ class RoommeasureGUI():
         timers   = ['1','2','3','4','5','manual']
 
         ### VARS
-        self.beep_var   = IntVar()
+        self.var_beep     = IntVar()
+
+        ### VARS SHARED WITH rm.do_meas_loop()
+        self.meas_trigger = threading.Event()
+        self.var_msg      = StringVar()
 
         ### WIDGETS
         # - SOUND CARD SECTION
@@ -64,12 +72,13 @@ class RoommeasureGUI():
         lbl_timer        = ttk.Label(content, text='auto timer (s):')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=7)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
-                                                    variable=self.beep_var)
+                                                    variable=self.var_beep)
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
 
         # - BOTTOM MESSAGES SECTION
         frm_msg          = ttk.Frame(content, borderwidth=2, relief='solid')
-        self.lbl_msg     = ttk.Label(frm_msg, text='', font=(None, 20))
+        self.lbl_msg     = ttk.Label(frm_msg, textvariable=self.var_msg,
+                                              font=(None, 20))
 
         ### DEFAULT VALUES
         self.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
@@ -80,7 +89,7 @@ class RoommeasureGUI():
         self.cmb_sweep.set(str(2**15))
         self.ent_scho.insert(0, '200')
         self.cmb_timer.set('1')
-        self.beep_var.set(1)
+        self.var_beep.set(1)
 
         ### GRID ARRANGEMENT
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
@@ -128,17 +137,19 @@ class RoommeasureGUI():
 
 
     def handle_keypressed(self, event):
-        print(f'a key "{event.char}" was pressed')
+        print(f'(GUI) A key "{event.char}" was pressed: setting meas_trigger')
+        self.meas_trigger.set()
 
 
     # MAIN MEAS procedure and SAVING of curves
-    def do_measure_process(self):
-            self.lbl_msg.configure(text = 'RUNNING ...')
+    def do_measure_process(self, e_trigger, msg):
+            self.var_msg.set('PRESS ANY KEY')
             rm.doPlot = False   # This is already disabled in rm, just a reminder.
-            rm.do_meas_loop()
+            rm.do_meas_loop(e_trigger, msg)
             rm.do_averages()
             rm.do_save_averages()
-            self.lbl_msg.configure(text = 'DONE')
+            self.var_msg.set('DONE')
+
 
     def go(self):
 
@@ -154,68 +165,72 @@ class RoommeasureGUI():
             print(f'sweep length:   {rm.LS.N}')
             print(f'Schroeder:      {rm.Scho}')
             print(f'Beep:           {rm.doBeep}')
-            print(f'rjaddr:         {rjaddr}')
-            print(f'rjuser:         {rjuser}')
 
 
-        # READING OPTIONS from main window
-        cap         =   self.cmb_cap.get()
-        pbk         =   self.cmb_pbk.get()
-        fs          =   int(self.cmb_fs.get())
+        def configure_rm_LS():
 
-        channels    =   self.cmb_ch.get()
-        takes       =   int(self.cmb_meas.get())
-        sweeplength =   int(self.cmb_sweep.get())
-        Scho        =   float(self.ent_scho.get())
+            # READING OPTIONS from main window
+            cap         =   self.cmb_cap.get()
+            pbk         =   self.cmb_pbk.get()
+            fs          =   int(self.cmb_fs.get())
 
-        rjaddr      =   self.ent_rjaddr.get()
-        rjuser      =   self.ent_rjuser.get()
+            channels    =   self.cmb_ch.get()
+            takes       =   int(self.cmb_meas.get())
+            sweeplength =   int(self.cmb_sweep.get())
+            Scho        =   float(self.ent_scho.get())
 
-        timer       =   self.cmb_timer.get()
+            rjaddr      =   self.ent_rjaddr.get()
+            rjuser      =   self.ent_rjuser.get()
+
+            timer       =   self.cmb_timer.get()
 
 
-        # PREPARING roommeasure.LS STUFF as per given options:
+            # PREPARING roommeasure.LS STUFF as per given options:
 
-        # - sound card
-        rm.LS.fs = fs
-        if not rm.LS.test_soundcard(cap, pbk):
-            self.lbl_msg.configure(text = 'SOUND CARD ERROR :-/')
-            return
+            # - sound card
+            rm.LS.fs = fs
+            if not rm.LS.test_soundcard(cap, pbk):
+                self.meas_running.set('SOUND CARD ERROR :-/')
+                return
 
-        # - measure
-        rm.channels  = [c for c in channels]
-        rm.numMeas   = takes
-        rm.LS.N      = sweeplength
+            # - measure
+            rm.channels  = [c for c in channels]
+            rm.numMeas   = takes
+            rm.LS.N      = sweeplength
 
-        # - smoothing
-        rm.Scho         = Scho
+            # - smoothing
+            rm.Scho         = Scho
 
-        # - beeps:
-        rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
-        rm.beepR = rm.tools.make_beep(f=932, fs=rm.LS.fs)
+            # - beeps:
+            rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
+            rm.beepR = rm.tools.make_beep(f=932, fs=rm.LS.fs)
 
-        # - log-sweep as per the updated LS parameters
-        rm.LS.prepare_sweep()
+            # - log-sweep as per the updated LS parameters
+            rm.LS.prepare_sweep()
 
-        # - a positive frequencies vector as per the selected N value.
-        rm.freq = rm.np.linspace(0, int(rm.LS.fs/2), int(rm.LS.N/2))
+            # - a positive frequencies vector as per the selected N value.
+            rm.freq = rm.np.linspace(0, int(rm.LS.fs/2), int(rm.LS.N/2))
 
-        # - timer
-        if timer.isdigit():
-            rm.timer = int(timer)
+            # - timer
+            if timer.isdigit():
+                rm.timer = int(timer)
 
-        # - alert beeps
-        if not self.beep_var.get():
-            rm.doBeep = False
+            # - alert beeps
+            if not self.var_beep.get():
+                rm.doBeep = False
+
+        # Configure roommeasure.LS STUFF as per given options
+        configure_rm_LS()
 
         # Console info
         print_rm_LS_info()
 
-        # THREADING MEAS PROCRESS (avoids blocking the Tk event loop)
-        job_meas = threading.Thread( target=self.do_measure_process, daemon=True )
+        # THREADING THE MEAS PROCRESS (threading avoids blocking the Tk event loop)
+        job_meas = threading.Thread( target = self.do_measure_process,
+                                     args   = (self.meas_trigger,
+                                               self.var_msg),
+                                     daemon = True )
         job_meas.start()
-
-        # END
 
 
 if __name__ == '__main__':
