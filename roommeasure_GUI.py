@@ -150,6 +150,8 @@ class RoommeasureGUI(Tk):
         # Re enabling the GO button
         self.btn_go['state'] = 'normal'
 
+
+    # CONFIGURE OPTIONS AND START MEASURING
     def go(self):
 
         # Optional printing rm.LS after configured
@@ -165,7 +167,7 @@ class RoommeasureGUI(Tk):
             print(f'Schroeder:      {rm.Scho}')
             print(f'Beep:           {rm.doBeep}')
 
-
+        # Configure roommeasure.LS STUFF as per given options
         def configure_rm_LS():
 
             # READING OPTIONS from main window
