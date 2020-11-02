@@ -322,6 +322,11 @@ def do_meas_loop(trigger=None, gui_msg=None):
             # stack
             curves[ch] = np.vstack( ( curves[ch], meas ) )
 
+    if gui_msg:
+        gui_msg.set('MEAS END')
+        sleep(1)
+
+
 
 def do_averages():
     """ Compute the average from all raw measurements
