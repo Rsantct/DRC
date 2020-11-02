@@ -232,6 +232,29 @@ def print_info():
     print()
 
 
+def set_sound_card(optional_device):
+    """ Other than LS.sd.default parameters
+        optional_device: string of three comma separated numbers 'CAPdev,PBKdev,fs'
+    """
+
+    # Setting LS.fs
+    try:
+        tmp = optional_device.split(",")[2].strip()
+        fs = int(tmp)
+        LS.fs = fs
+    except:
+        pass
+
+    # CAP device
+    i = int( optional_device.split(",")[0].strip() )
+    # PBK device
+    o = int( optional_device.split(",")[1].strip() )
+
+    # configure LS device:
+    if not LS.test_soundcard(i=i, o=o):
+        sys.exit()
+
+
 def user_focus_request():
     # Requesting the user to focus on this window
     print('\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
@@ -244,7 +267,66 @@ def user_focus_request():
     sleep(1)
 
 
-def do_meas(ch='C', seq=0):
+def warning_msg(ch, seq):
+
+    global last_seq
+
+
+    def countdown(seconds):
+
+        while seconds >= 0:
+            bar = "####  " * seconds + "      " * (timer -seconds)
+            print( f'    {seconds}   {bar}', end='\r' )
+
+            if doBeep:
+                if ch in ('C', 'L'):
+                    LS.sd.play(beepL, samplerate=LS.fs)
+                else:
+                    LS.sd.play(beepR, samplerate=LS.fs)
+            sleep(1)
+            seconds -= 1
+
+        print('\n\n')
+
+    if manageJack:
+        rjack.select_channel(ch)
+        sleep(.2)
+
+
+    if doBeep:
+        if ch in ('C', 'L'):
+            Nbeep = np.tile(beepL, 1 + seq)
+            LS.sd.play(Nbeep, samplerate=LS.fs)
+        else:
+            Nbeep = np.tile(beepR, 1 + seq)
+            LS.sd.play(Nbeep, samplerate=LS.fs)
+
+    takeInfo = str(seq+1) + ' / ' + str(numMeas)
+    msg = '\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    msg +=   f'    TAKE: {takeInfo} \n'
+    msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    if seq != last_seq:
+        print(msg)
+
+    if timer:
+        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        msg +=   f'    WILL MEASURE CHANNEL  < {ch} >\n'
+        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        print(msg)
+        if seq != last_seq:
+            countdown(timer)
+
+    else:
+        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        msg +=   f'   PRESS ENTER TO MEASURE CHANNEL  < {ch} >\n'
+        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+        print(msg)
+        input()
+
+    last_seq = seq
+
+
+def do_meas(ch, seq):
 
     # Do measure, by taken the positive semi-spectrum
     meas = abs( LS.do_meas()[:int(LS.N/2)] )
@@ -276,51 +358,58 @@ def do_meas(ch='C', seq=0):
     return meas
 
 
-def do_meas_loop(trigger=None, gui_msg=None):
+def do_meas_loop(gui_trigger=None, gui_msg=None):
     """ Meas for every channel and stores them into the <curves> stack
+        Optional:
+            gui_trigger:    a threading.Event flag from the GUI to trigger to meas.
+            gui_msg:        string to be displayed into the GUI.
     """
 
     global curves
 
-    # First measurement (initiates the stack)
+
+    # First take (initiates the stack)
     for ch in channels:
 
-        # a warning message or counting down
-        if not trigger:
+        if not gui_trigger:
+            # a warning message or counting down
             warning_msg(ch=ch, seq=0)
         else:
-            print(f'(rm) WAITING FOR TRIGGER meas #{0}_ch:{ch}')
-            trigger.wait()
-            print(f'(rm) RESUMING, meas #{0}_ch:{ch}')
-            trigger.clear()
+            if not timer:
+                gui_msg.set(f'PRESS ANY KEY to meas at location: 1/{numMeas} ch: {ch}')
+                print(f'(rm) WAITING FOR TRIGGER meas #{1}_ch:{ch}')
+                gui_trigger.wait()
+                print(f'(rm) RESUMING, meas #{0}_ch:{ch}')
+                gui_trigger.clear()
             if gui_msg:
                 gui_msg.set('')
 
+        # 1st meas
         curves[ch] = do_meas(ch=ch, seq=0)
-        if gui_msg:
-            gui_msg.set('PRESS ANY KEY')
 
-    # Do stack more measurements if so:
+    # Do stack more takes if so:
     for i in range(1, numMeas):
 
         for ch in channels:
 
-            if not trigger:
+            if not gui_trigger:
                 warning_msg(ch=ch, seq=i)
             else:
-                print(f'(rm) WAITING FOR TRIGGER meas #{i}_ch:{ch}')
-                trigger.wait()
-                print(f'(rm) RESUMING, meas #{i}_ch:{ch}')
-                trigger.clear()
+                if not timer:
+                    gui_msg.set(f'PRESS ANY KEY to meas at location: {i+1}/{numMeas} ch: {ch}')
+                    print(f'(rm) WAITING FOR TRIGGER meas #{i+1}_ch:{ch}')
+                    gui_trigger.wait()
+                    print(f'(rm) RESUMING, meas #{i}_ch:{ch}')
+                    gui_trigger.clear()
                 if gui_msg:
                     gui_msg.set('')
 
+            # Do stack next meas
             meas = do_meas(ch=ch, seq=i)
+            curves[ch] = np.vstack( ( curves[ch], meas ) )
+
             if gui_msg:
                 gui_msg.set('PRESS ANY KEY')
-
-            # stack
-            curves[ch] = np.vstack( ( curves[ch], meas ) )
 
     if gui_msg:
         gui_msg.set('MEAS END')
@@ -384,88 +473,6 @@ def do_save_averages():
                       )
 
         i += 1
-
-
-def warning_msg(ch, seq):
-
-    global last_seq
-
-
-    def countdown(seconds):
-
-        while seconds >= 0:
-            bar = "####  " * seconds + "      " * (timer -seconds)
-            print( f'    {seconds}   {bar}', end='\r' )
-
-            if doBeep:
-                if ch in ('C', 'L'):
-                    LS.sd.play(beepL, samplerate=LS.fs)
-                else:
-                    LS.sd.play(beepR, samplerate=LS.fs)
-            sleep(1)
-            seconds -= 1
-
-        print('\n\n')
-
-    if manageJack:
-        rjack.select_channel(ch)
-        sleep(.2)
-
-
-    if doBeep:
-        if ch in ('C', 'L'):
-            Nbeep = np.tile(beepL, 1 + seq)
-            LS.sd.play(Nbeep, samplerate=LS.fs)
-        else:
-            Nbeep = np.tile(beepR, 1 + seq)
-            LS.sd.play(Nbeep, samplerate=LS.fs)
-
-    takeInfo = str(seq+1) + ' / ' + str(numMeas)
-    msg = '\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-    msg +=   f'    TAKE: {takeInfo} \n'
-    msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-    if seq != last_seq:
-        print(msg)
-
-    if timer:
-        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        msg +=   f'    WILL MEASURE CHANNEL  < {ch} >\n'
-        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        print(msg)
-        if seq != last_seq:
-            countdown(timer)
-
-    else:
-        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        msg +=   f'   PRESS ENTER TO MEASURE CHANNEL  < {ch} >\n'
-        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        print(msg)
-        input()
-
-    last_seq = seq
-
-
-def set_sound_card(optional_device):
-    """ Other than LS.sd.default parameters
-        optional_device: string of three comma separated numbers 'CAPdev,PBKdev,fs'
-    """
-
-    # Setting LS.fs
-    try:
-        tmp = optional_device.split(",")[2].strip()
-        fs = int(tmp)
-        LS.fs = fs
-    except:
-        pass
-
-    # CAP device
-    i = int( optional_device.split(",")[0].strip() )
-    # PBK device
-    o = int( optional_device.split(",")[1].strip() )
-
-    # configure LS device:
-    if not LS.test_soundcard(i=i, o=o):
-        sys.exit()
 
 
 if __name__ == "__main__":
