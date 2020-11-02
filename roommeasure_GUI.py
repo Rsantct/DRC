@@ -75,12 +75,13 @@ class RoommeasureGUI(Tk):
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=7)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
                                                     variable=self.var_beep)
+        self.btn_close   = ttk.Button(content, text='close', command=self.destroy)
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
 
         # - BOTTOM MESSAGES SECTION
         frm_msg          = ttk.Frame(content, borderwidth=2, relief='solid')
         self.lbl_msg     = ttk.Label(frm_msg, textvariable=self.var_msg,
-                                              font=(None, 20))
+                                              font=(None, 32))
 
         ### GRID ARRANGEMENT
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
@@ -110,9 +111,10 @@ class RoommeasureGUI(Tk):
         self.ent_rjuser.grid(   row=6,  column=3, sticky=W )
 
         lbl_run.grid(           row=7,  column=0, sticky=W, pady=5 )
-        lbl_timer.grid(         row=8,  column=2, sticky=E )
-        self.cmb_timer.grid(    row=8,  column=3, sticky=W )
-        self.chk_beep.grid(     row=8,  column=4 )
+        lbl_timer.grid(         row=8,  column=1, sticky=E )
+        self.cmb_timer.grid(    row=8,  column=2, sticky=W )
+        self.chk_beep.grid(     row=8,  column=3 )
+        self.btn_close.grid(    row=8,  column=4 )
         self.btn_go.grid(       row=8,  column=5 )
 
         frm_msg.grid(           row=9,  column=0, columnspan=6, pady=5, sticky=W+E )
@@ -136,19 +138,27 @@ class RoommeasureGUI(Tk):
     # MAIN MEAS procedure and SAVING of curves
     def do_measure_process(self, e_trigger, msg):
 
-        # Disabling the GO button while measuring
+        # Disabling the GO! & CLOSE buttons while measuring
         self.btn_go['state'] = 'disabled'
+        self.btn_close['state'] = 'disabled'
 
-        self.var_msg.set('PRESS ANY KEY')
-        rm.doPlot = False   # This is already disabled in rm, just a reminder.
+        # This is already disabled in rm, just a reminder,
+        # becasue matplotlib cannot be threaded.
+        rm.doPlot = False
+
+        # Ordering the meas loop:
         rm.do_meas_loop(e_trigger, msg)
-        self.var_msg.set('SAVING TO DISK ...')
+
+        # Smoothing curve and saving to disk:
+        self.var_msg.set('SMOOTHING AND SAVING TO DISK ...')
         rm.do_averages()
         rm.do_save_averages()
         self.var_msg.set('DONE')
 
-        # Re enabling the GO button
+        # Re enabling the GO! & CLOSE button
         self.btn_go['state'] = 'normal'
+        self.btn_close['state'] = 'normal'
+        self.btn_close.focus_set()
 
 
     # CONFIGURE OPTIONS AND START MEASURING
@@ -161,11 +171,12 @@ class RoommeasureGUI(Tk):
             print(f'cap:            {cap}')
             print(f'pbk:            {pbk}')
             print(f'fs:             {rm.LS.fs}')
+            print(f'sweep length:   {rm.LS.N}')
             print(f'ch to meas:     {rm.channels}')
             print(f'takes:          {rm.numMeas}')
-            print(f'sweep length:   {rm.LS.N}')
-            print(f'Schroeder:      {rm.Scho}')
+            print(f'auto timer:     {rm.timer}')
             print(f'Beep:           {rm.doBeep}')
+            print(f'Schroeder:      {rm.Scho} (for smoothed meas curve)')
 
         # Configure roommeasure.LS STUFF as per given options
         def configure_rm_LS():
@@ -186,7 +197,7 @@ class RoommeasureGUI(Tk):
             timer       =   self.cmb_timer.get()
 
 
-            # PREPARING roommeasure.LS STUFF as per given options:
+            # PREPARING roommeasure.LS stuff as per given options:
 
             # - sound card
             rm.LS.fs = fs
@@ -215,6 +226,8 @@ class RoommeasureGUI(Tk):
             # - timer
             if timer.isdigit():
                 rm.timer = int(timer)
+            elif timer == 'manual':
+                rm.timer = 0
 
             # - alert beeps
             if not self.var_beep.get():
@@ -239,16 +252,23 @@ if __name__ == '__main__':
 
     app = RoommeasureGUI()
 
-    ### DEFAULT GUI VALUES
+    ### DEFAULT GUI PARAMETERS
+    # - Sound card:
     app.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
     app.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1] )['name'])
     app.cmb_fs.set('48000')
-    app.cmb_ch.set('LR')
-    app.cmb_meas.set('2')
+    # - Logsweep length:
     app.cmb_sweep.set(str(2**15))
-    app.ent_scho.insert(0, '200')
+    # - Channels to measure:
+    app.cmb_ch.set('LR')
+    # - Takes per channel:
+    app.cmb_meas.set('2')
+    # - Auto timer for measuring progress:
     app.cmb_timer.set('1')
+    # - Alert before measuring:
     app.var_beep.set(1)
+    # - Schroeder freq for smoothing result curve:
+    app.ent_scho.insert(0, '200')
 
     # LAUNCH GUI
     app.mainloop()
