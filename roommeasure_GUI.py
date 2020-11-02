@@ -7,18 +7,20 @@ import threading
 import roommeasure as rm
 
 
-class RoommeasureGUI():
+class RoommeasureGUI(Tk):
 
     ### MAIN WINDOW
-    def __init__(self, root):
+    def __init__(self):
 
-        self.root = root
-        self.root.title('DRC/roommeasure.py GUI')
-        self.root.geometry('+250+100')
-        content =  ttk.Frame( self.root, padding=(10,10,12,12) )
+        super().__init__()  # this initiates the parent class Tk in order to
+                            # make self a typical root = Tk()
+
+        self.title('DRC/roommeasure.py GUI')
+        self.geometry('+250+100')
+        content =  ttk.Frame( self, padding=(10,10,12,12) )
 
         ### EVENTS HANDLING
-        self.root.bind('<Key>', self.handle_keypressed)
+        self.bind('<Key>', self.handle_keypressed)
 
         ### AVAILABLE COMBOBOX OPTIONS
         cap_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
@@ -80,17 +82,6 @@ class RoommeasureGUI():
         self.lbl_msg     = ttk.Label(frm_msg, textvariable=self.var_msg,
                                               font=(None, 20))
 
-        ### DEFAULT VALUES
-        self.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
-        self.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1] )['name'])
-        self.cmb_fs.set('48000')
-        self.cmb_ch.set('LR')
-        self.cmb_meas.set('2')
-        self.cmb_sweep.set(str(2**15))
-        self.ent_scho.insert(0, '200')
-        self.cmb_timer.set('1')
-        self.var_beep.set(1)
-
         ### GRID ARRANGEMENT
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
 
@@ -128,8 +119,8 @@ class RoommeasureGUI():
         self.lbl_msg.grid(                        sticky=W )
 
         ### RESIZING BEHAVIOR
-        self.root.rowconfigure(      0, weight=1)
-        self.root.columnconfigure(   0, weight=1)
+        self.rowconfigure(      0, weight=1)
+        self.columnconfigure(   0, weight=1)
         for i in range(8):
             content.rowconfigure(   i, weight=1)
         for i in range(3):
@@ -143,13 +134,19 @@ class RoommeasureGUI():
 
     # MAIN MEAS procedure and SAVING of curves
     def do_measure_process(self, e_trigger, msg):
-            self.var_msg.set('PRESS ANY KEY')
-            rm.doPlot = False   # This is already disabled in rm, just a reminder.
-            rm.do_meas_loop(e_trigger, msg)
-            rm.do_averages()
-            rm.do_save_averages()
-            self.var_msg.set('DONE')
 
+        # Disabling the GO button
+        self.btn_go['state'] = 'disabled'
+
+        self.var_msg.set('PRESS ANY KEY')
+        rm.doPlot = False   # This is already disabled in rm, just a reminder.
+        rm.do_meas_loop(e_trigger, msg)
+        rm.do_averages()
+        rm.do_save_averages()
+        self.var_msg.set('DONE')
+
+        # Enabling the GO button
+        self.btn_go['state'] = 'normal'
 
     def go(self):
 
@@ -219,6 +216,7 @@ class RoommeasureGUI():
             if not self.var_beep.get():
                 rm.doBeep = False
 
+
         # Configure roommeasure.LS STUFF as per given options
         configure_rm_LS()
 
@@ -235,6 +233,18 @@ class RoommeasureGUI():
 
 if __name__ == '__main__':
 
-    root = Tk()
-    app = RoommeasureGUI(root)
-    root.mainloop()
+    app = RoommeasureGUI()
+
+    ### DEFAULT GUI VALUES
+    app.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
+    app.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1] )['name'])
+    app.cmb_fs.set('48000')
+    app.cmb_ch.set('LR')
+    app.cmb_meas.set('2')
+    app.cmb_sweep.set(str(2**15))
+    app.ent_scho.insert(0, '200')
+    app.cmb_timer.set('1')
+    app.var_beep.set(1)
+
+    # LAUNCH GUI
+    app.mainloop()
