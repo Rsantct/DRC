@@ -109,9 +109,9 @@ from matplotlib import colors as mcolors
 css4_colors = list(mcolors.CSS4_COLORS.values())    # (black is index 7)
 
 # Resulting measurements (all measured points for every channel)
-curves = {}
+curves = {'L':None, 'R':None}
 # Resulting averaged curves for every channel
-channels_avg= {}
+channels_avg= {'L':None, 'R':None}
 
 ################################################################################
 # roommeasure.py DEFAULT parameters
@@ -267,6 +267,38 @@ def user_focus_request():
     sleep(1)
 
 
+def do_meas(ch, seq):
+
+    # Do measure, by taken the positive semi-spectrum
+    meas = abs( LS.do_meas()[:int(LS.N/2)] )
+
+    # Saving the curve to a sequenced frd filename
+    f, m = tools.interp_semispectrum(freq, meas, LS.fs/2, binsFRD)
+    tools.saveFRD(  fname   = f'{ch}_room_{str(seq)}.frd',
+                    freq    = f,
+                    mag     = 20 * np.log10(m),
+                    fs      = LS.fs,
+                    comments= f'roommeasure.py ch:{ch} point:{str(seq)}',
+                    verbose = False
+                  )
+
+    if doPlot:
+        # Smoothed curve plot (this takes a while in a slow cpu)
+        m_smoo = smooth(f, m, Noct, f0=Scho)
+        figIdx = 10
+        chs = ('L', 'R', 'C')
+        if ch in chs:
+            figIdx += chs.index(ch)
+
+        # Looping CSS4 color sequence, from black (index 7)
+        LS.plot_TF( m_smoo, semi=True,  label  = f'{ch}_{str(seq)}',
+                                        color  = css4_colors[(7 + seq) % 148],
+                                        figure = figIdx
+                  )
+
+    return meas
+
+
 def warning_msg(ch, seq):
 
     global last_seq
@@ -326,38 +358,6 @@ def warning_msg(ch, seq):
     last_seq = seq
 
 
-def do_meas(ch, seq):
-
-    # Do measure, by taken the positive semi-spectrum
-    meas = abs( LS.do_meas()[:int(LS.N/2)] )
-
-    # Saving the curve to a sequenced frd filename
-    f, m = tools.interp_semispectrum(freq, meas, LS.fs/2, binsFRD)
-    tools.saveFRD(  fname   = f'{ch}_room_{str(seq)}.frd',
-                    freq    = f,
-                    mag     = 20 * np.log10(m),
-                    fs      = LS.fs,
-                    comments= f'roommeasure.py ch:{ch} point:{str(seq)}',
-                    verbose = False
-                  )
-
-    if doPlot:
-        # Smoothed curve plot (this takes a while in a slow cpu)
-        m_smoo = smooth(f, m, Noct, f0=Scho)
-        figIdx = 10
-        chs = ('L', 'R', 'C')
-        if ch in chs:
-            figIdx += chs.index(ch)
-
-        # Looping CSS4 color sequence, from black (index 7)
-        LS.plot_TF( m_smoo, semi=True,  label  = f'{ch}_{str(seq)}',
-                                        color  = css4_colors[(7 + seq) % 148],
-                                        figure = figIdx
-                  )
-
-    return meas
-
-
 def do_meas_loop(gui_trigger=None, gui_msg=None):
     """ Meas for every channel and stores them into the <curves> stack
         Optional:
@@ -367,49 +367,47 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
 
     global curves
 
-
-    # First take (initiates the stack)
-    for ch in channels:
-
-        if not gui_trigger:
-            # a warning message or counting down
-            warning_msg(ch=ch, seq=0)
-        else:
-            if not timer:
-                gui_msg.set(f'PRESS ANY KEY to meas at location: 1/{numMeas} ch: {ch}')
-                print(f'(rm) WAITING FOR TRIGGER meas #{1}_ch:{ch}')
-                gui_trigger.wait()
-                print(f'(rm) RESUMING, meas #{0}_ch:{ch}')
-                gui_trigger.clear()
-            if gui_msg:
-                gui_msg.set('')
-
-        # 1st meas
-        curves[ch] = do_meas(ch=ch, seq=0)
-
-    # Do stack more takes if so:
-    for i in range(1, numMeas):
+    # Do stack meas per channel:
+    for i in range(numMeas):
 
         for ch in channels:
 
-            if not gui_trigger:
-                warning_msg(ch=ch, seq=i)
-            else:
+            # GUI
+            if gui_trigger:
+
+                # PROMPT THE USER BEFORE MEASURING
                 if not timer:
-                    gui_msg.set(f'PRESS ANY KEY to meas at location: {i+1}/{numMeas} ch: {ch}')
+                    gui_msg.set(f'will meas at location #{i+1}  [{ch}] <<< PRESS ANY KEY >>>')
                     print(f'(rm) WAITING FOR TRIGGER meas #{i+1}_ch:{ch}')
                     gui_trigger.wait()
                     print(f'(rm) RESUMING, meas #{i}_ch:{ch}')
                     gui_trigger.clear()
+
+                # AUTO TIMED MEASURING
+                else:
+                    c = timer
+                    while c:
+                        if gui_msg:
+                            msg = f'will meas at location #{i+1}  [{ch}]  <<< {c} s >>>'
+                            gui_msg.set(msg)
+                        sleep(1)
+                        c -=1
+
                 if gui_msg:
-                    gui_msg.set('')
+                    gui_msg.set(f'measuring at location #{i+1}  [{ch}]')
 
-            # Do stack next meas
+            # CONSOLE
+            else:
+                warning_msg(ch=ch, seq=i)
+
+            # Do meas
             meas = do_meas(ch=ch, seq=i)
-            curves[ch] = np.vstack( ( curves[ch], meas ) )
 
-            if gui_msg:
-                gui_msg.set('PRESS ANY KEY')
+            # Do stack
+            if i == 0:
+                curves[ch] = meas
+            else:
+                curves[ch] = np.vstack( ( curves[ch], meas ) )
 
     if gui_msg:
         gui_msg.set('MEAS END')
