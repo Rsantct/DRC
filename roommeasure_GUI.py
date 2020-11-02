@@ -42,13 +42,13 @@ class RoommeasureGUI(Tk):
 
         ### WIDGETS
         # - SOUND CARD SECTION
-        lbl_scard      = ttk.Label(content, text='SOUND CARD:')
-        lbl_cap        = ttk.Label(content, text='IN')
-        self.cmb_cap   = ttk.Combobox(content, values=cap_devs, width=15)
-        lbl_pbk        = ttk.Label(content, text='OUT')
-        self.cmb_pbk   = ttk.Combobox(content, values=pbk_devs, width=15)
-        lbl_fs         = ttk.Label(content, text='rate')
-        self.cmb_fs    = ttk.Combobox(content, values=srates, width=8)
+        lbl_scard        = ttk.Label(content, text='SOUND CARD:')
+        lbl_cap          = ttk.Label(content, text='IN')
+        self.cmb_cap     = ttk.Combobox(content, values=cap_devs, width=15)
+        lbl_pbk          = ttk.Label(content, text='OUT')
+        self.cmb_pbk     = ttk.Combobox(content, values=pbk_devs, width=15)
+        lbl_fs           = ttk.Label(content, text='rate')
+        self.cmb_fs      = ttk.Combobox(content, values=srates, width=8)
 
         # - MEASURE SECTION
         lbl_meastitle    = ttk.Label(content, text='MEASURE:')
@@ -118,12 +118,13 @@ class RoommeasureGUI(Tk):
         frm_msg.grid(           row=9,  column=0, columnspan=6, pady=5, sticky=W+E )
         self.lbl_msg.grid(                        sticky=W )
 
-        ### RESIZING BEHAVIOR
+        ### GRID RESIZING BEHAVIOR
         self.rowconfigure(      0, weight=1)
         self.columnconfigure(   0, weight=1)
-        for i in range(8):
+        ncolumns, nrows = content.grid_size()
+        for i in range(nrows):
             content.rowconfigure(   i, weight=1)
-        for i in range(3):
+        for i in range(ncolumns):
             content.columnconfigure(i, weight=1)
 
 
@@ -135,17 +136,18 @@ class RoommeasureGUI(Tk):
     # MAIN MEAS procedure and SAVING of curves
     def do_measure_process(self, e_trigger, msg):
 
-        # Disabling the GO button
+        # Disabling the GO button while measuring
         self.btn_go['state'] = 'disabled'
 
         self.var_msg.set('PRESS ANY KEY')
         rm.doPlot = False   # This is already disabled in rm, just a reminder.
         rm.do_meas_loop(e_trigger, msg)
+        self.var_msg.set('SAVING TO DISK ...')
         rm.do_averages()
         rm.do_save_averages()
         self.var_msg.set('DONE')
 
-        # Enabling the GO button
+        # Re enabling the GO button
         self.btn_go['state'] = 'normal'
 
     def go(self):
