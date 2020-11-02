@@ -31,7 +31,7 @@ class RoommeasureGUI(Tk):
         channels = ['C', 'L', 'R', 'LR']
         takes    = list(range(1,21))
         sweeps   = [2**15, 2**16, 2**17]
-        timers   = ['1','2','3','4','5','manual']
+        timers   = ['manual', '3', '5', '10']
 
         ### VARS
         self.var_beep     = IntVar()
@@ -264,7 +264,7 @@ if __name__ == '__main__':
     # - Takes per channel:
     app.cmb_meas.set('2')
     # - Auto timer for measuring progress:
-    app.cmb_timer.set('1')
+    app.cmb_timer.set('3')
     # - Alert before measuring:
     app.var_beep.set(1)
     # - Schroeder freq for smoothing result curve:
