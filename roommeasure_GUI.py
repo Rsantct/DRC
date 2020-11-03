@@ -5,7 +5,7 @@ from tkinter import *
 from tkinter import ttk
 import threading
 import roommeasure as rm
-
+from time import sleep
 
 class RoommeasureGUI(Tk):
 
@@ -212,7 +212,7 @@ class RoommeasureGUI(Tk):
             # - sound card
             rm.LS.fs = fs
             if not rm.LS.test_soundcard(cap, pbk):
-                self.meas_running.set('SOUND CARD ERROR :-/')
+                self.var_msg.set('SOUND CARD ERROR :-/')
                 return
 
             # - measure
@@ -245,11 +245,17 @@ class RoommeasureGUI(Tk):
 
             # - Remote Jack enabling
             if rjaddr and rjuser and rjpass:
-                rm.connect_to_remote_JACK(rjaddr, rjuser, rjpass)
+                if rm.connect_to_remote_JACK(rjaddr, rjuser, rjpass):
+                    self.var_msg.set('CONNECTED TO REMOTE JACK')
+                else:
+                    self.var_msg.set('UNABLE TO CONNECT TO REMOTE JACK')
+                    return False
 
+            return True
 
         # Configure roommeasure.LS STUFF as per given options
-        configure_rm()
+        if not configure_rm():
+            return
 
         # Console info
         print_rm_info()
