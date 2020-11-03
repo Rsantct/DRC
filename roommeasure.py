@@ -348,6 +348,10 @@ def gui_prompt(ch, seq, gui_trigger, gui_msg):
             sleep(1)
             s -=1
 
+    if manageJack:
+        rjack.select_channel(ch)
+        sleep(.2)
+
     if doBeep:
         do_beep(ch, seq)
 
@@ -375,10 +379,10 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
 
     # Alerting the user
     if gui_msg:
-        gui_msg.set('GOING TO MEASURE ...')
+        gui_msg.set(f'GOING TO MEASURE AT  {numMeas}  LOCATIONS ...')
         sleep(1)
     else:
-        print_console_msg('GOING TO MEASURE ...')
+        print_console_msg(f'GOING TO MEASURE AT  {numMeas}  LOCATIONS ...')
     if doBeep:
         for i in range(3):
             do_beep('L')
@@ -392,7 +396,7 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
             gui_msg.set(f'LOCATION: {str(seq+1)} / {str(numMeas)}')
             sleep(3)
         else:
-            print_console_msg(f'LOCATION: {str(seq+1)}/{str(numMeas)}')
+            print_console_msg(f'MIC LOCATION: {str(seq+1)}/{str(numMeas)}')
 
         for ch in channels:
 
@@ -478,6 +482,19 @@ def do_save_averages():
         i += 1
 
 
+def connect_to_remote_JACK(jackIP, jackUser, pwd=None):
+    global manageJack, rjack
+    from remote_jack import Remote
+    # (i) Here the user will be prompted to enter the remote password
+    try:
+        rjack = Remote(jackIP, jackUser, password=pwd)
+        manageJack = True
+        print_console_msg(f'Connected to remote Jack machine {jackIP}')
+    except Exception as e:
+        print_console_msg(f'ERROR connecting to remote Jack machine {jackIP}')
+        manageJack = False
+
+
 if __name__ == "__main__":
 
     # Enables plotting when rommeasure.py is used from command line
@@ -493,10 +510,7 @@ if __name__ == "__main__":
 
     # Connecting to remote JACK loudspeakers system:
     if jackIP and jackUser:
-        from remote_jack import Remote
-        # (i) Here the user will be prompted to enter the remote password
-        rjack = Remote(jackIP, jackUser)
-        manageJack = True
+        connect_to_remote_JACK(jackIP, jackUser)
 
     # PREPARING things as per given options:
     # - Preparing beeps:
