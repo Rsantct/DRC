@@ -54,7 +54,7 @@ class RoommeasureGUI(Tk):
         lbl_meastitle    = ttk.Label(content, text='MEASURE:')
         lbl_ch           = ttk.Label(content, text='channels')
         self.cmb_ch      = ttk.Combobox(content, values=channels, width=4)
-        lbl_meas         = ttk.Label(content, text='meas / ch')
+        lbl_meas         = ttk.Label(content, text='mic locations / ch')
         self.cmb_meas    = ttk.Combobox(content, values=takes,    width=4)
         lbl_sweep        = ttk.Label(content, text='sweep length')
         self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
@@ -68,6 +68,8 @@ class RoommeasureGUI(Tk):
         lbl_rjuser       = ttk.Label(content, text='user:')
         self.ent_rjuser  = ttk.Entry(content,                     width=15)
         self.ent_rjuser.insert(0, 'paudio')
+        lbl_rjpass       = ttk.Label(content, text='passwd:')
+        self.ent_rjpass  = ttk.Entry(content, show='*',           width=15)
 
         # - RUN AREA
         lbl_run          = ttk.Label(content, text='RUN:')
@@ -75,6 +77,7 @@ class RoommeasureGUI(Tk):
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=7)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
                                                     variable=self.var_beep)
+        self.btn_help    = ttk.Button(content, text='help', command=self.help)
         self.btn_close   = ttk.Button(content, text='close', command=self.destroy)
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
 
@@ -109,11 +112,14 @@ class RoommeasureGUI(Tk):
         self.ent_rjaddr.grid(   row=6,  column=1, sticky=W )
         lbl_rjuser.grid(        row=6,  column=2, sticky=E )
         self.ent_rjuser.grid(   row=6,  column=3, sticky=W )
+        lbl_rjpass.grid(        row=6,  column=4, sticky=E )
+        self.ent_rjpass.grid(   row=6,  column=5, sticky=W )
 
         lbl_run.grid(           row=7,  column=0, sticky=W, pady=5 )
-        lbl_timer.grid(         row=8,  column=1, sticky=E )
-        self.cmb_timer.grid(    row=8,  column=2, sticky=W )
-        self.chk_beep.grid(     row=8,  column=3 )
+        lbl_timer.grid(         row=8,  column=0, sticky=E )
+        self.cmb_timer.grid(    row=8,  column=1, sticky=W )
+        self.chk_beep.grid(     row=8,  column=2 )
+        self.btn_help.grid(     row=8,  column=3 )
         self.btn_close.grid(    row=8,  column=4 )
         self.btn_go.grid(       row=8,  column=5 )
 
@@ -129,6 +135,9 @@ class RoommeasureGUI(Tk):
         for i in range(ncolumns):
             content.columnconfigure(i, weight=1)
 
+
+    def help(self):
+        print('HELP wanted ;-)')
 
     def handle_keypressed(self, event):
         print(f'(GUI) A key "{event.char}" was pressed: setting meas_trigger')
@@ -164,8 +173,8 @@ class RoommeasureGUI(Tk):
     # CONFIGURE OPTIONS AND START MEASURING
     def go(self):
 
-        # Optional printing rm.LS after configured
-        def print_rm_LS_info():
+        # Optional printing rm after configured
+        def print_rm_info():
             cap = rm.LS.sd.query_devices(rm.LS.sd.default.device[0])["name"]
             pbk = rm.LS.sd.query_devices(rm.LS.sd.default.device[1])["name"]
             print(f'cap:            {cap}')
@@ -178,8 +187,8 @@ class RoommeasureGUI(Tk):
             print(f'Beep:           {rm.doBeep}')
             print(f'Schroeder:      {rm.Scho} (for smoothed meas curve)')
 
-        # Configure roommeasure.LS STUFF as per given options
-        def configure_rm_LS():
+        # Configure roommeasure stuff as per given options
+        def configure_rm():
 
             # READING OPTIONS from main window
             cap         =   self.cmb_cap.get()
@@ -193,6 +202,7 @@ class RoommeasureGUI(Tk):
 
             rjaddr      =   self.ent_rjaddr.get()
             rjuser      =   self.ent_rjuser.get()
+            rjpass      =   self.ent_rjpass.get()
 
             timer       =   self.cmb_timer.get()
 
@@ -233,12 +243,16 @@ class RoommeasureGUI(Tk):
             if not self.var_beep.get():
                 rm.doBeep = False
 
+            # - Remote Jack enabling
+            if rjaddr and rjuser and rjpass:
+                rm.connect_to_remote_JACK(rjaddr, rjuser, rjpass)
+
 
         # Configure roommeasure.LS STUFF as per given options
-        configure_rm_LS()
+        configure_rm()
 
         # Console info
-        print_rm_LS_info()
+        print_rm_info()
 
         # THREADING THE MEAS PROCRESS (threading avoids blocking the Tk event loop)
         job_meas = threading.Thread( target = self.do_measure_process,
