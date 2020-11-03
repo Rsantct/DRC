@@ -252,18 +252,6 @@ def set_sound_card(optional_device):
         sys.exit()
 
 
-def user_focus_request():
-    # Requesting the user to focus on this window
-    print('\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-    print('PLEASE CLICK THIS WINDOW TO RECOVER THE FOCUS')
-    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n')
-    print
-    LS.sd.play(beepR, samplerate=LS.fs)
-    sleep(.25)
-    LS.sd.play(beepL, samplerate=LS.fs)
-    sleep(1)
-
-
 def do_meas(ch, seq):
 
     # Do measure, by taken the positive semi-spectrum
@@ -297,19 +285,21 @@ def do_meas(ch, seq):
 
 
 def print_console_msg(msg):
-    tmp = '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    tmp = '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
     tmp +=  f'{msg}\n'
-    tmp +=   '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    tmp +=  '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
     print(tmp)
 
 
-def do_beep(ch, seq):
+def do_beep(ch='C', times=1, blocking=True):
+
     if ch in ('C', 'L'):
-        Nbeep = np.tile(beepL, 1 + seq)
-        LS.sd.play(Nbeep, samplerate=LS.fs)
+        Nbeep = np.tile(beepL, times)
+        LS.sd.play(Nbeep, samplerate=LS.fs, blocking=blocking)
+
     elif ch in ('R'):
-        Nbeep = np.tile(beepR, 1 + seq)
-        LS.sd.play(Nbeep, samplerate=LS.fs)
+        Nbeep = np.tile(beepR, times)
+        LS.sd.play(Nbeep, samplerate=LS.fs, blocking=blocking)
 
 
 def console_prompt(ch, seq):
@@ -321,7 +311,7 @@ def console_prompt(ch, seq):
             bar = "####  " * s + "      " * (timer - s)
             print( f'    {s}   {bar}', end='\r' )
             if doBeep:
-                do_beep(ch, seq)
+                do_beep(ch)
             sleep(1)
             s -= 1
         print('\n\n')
@@ -332,7 +322,7 @@ def console_prompt(ch, seq):
         sleep(.2)
 
     if doBeep:
-        do_beep(ch, seq)
+        do_beep(ch, seq + 1)
 
     if timer:
         print_console_msg(f'WILL MEASURE CHANNEL  < {ch} >')
@@ -354,10 +344,9 @@ def gui_prompt(ch, seq, gui_trigger, gui_msg):
                 tmp = f'will meas at location #{seq+1}  [ {ch} ]  <<< {s} s >>>'
                 gui_msg.set(tmp)
                 if doBeep:
-                    do_beep(ch, seq)
+                    do_beep(ch)
             sleep(1)
             s -=1
-
 
     if doBeep:
         do_beep(ch, seq)
@@ -384,6 +373,19 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
     # 'curves' is a numpy stack of measurements per channel
     global curves
 
+    # Alerting the user
+    if gui_msg:
+        gui_msg.set('GOING TO MEASURE ...')
+        sleep(1)
+    else:
+        print_console_msg('GOING TO MEASURE ...')
+    if doBeep:
+        for i in range(3):
+            do_beep('L')
+            do_beep('R')
+    sleep(1)
+
+
     for seq in range(numMeas):
 
         if gui_trigger:
@@ -400,10 +402,10 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
 
             # CONSOLE
             else:
-                console_prompt(ch=ch, seq=seq)
+                console_prompt(ch, seq)
 
             # Do measure
-            meas = do_meas(ch=ch, seq=seq)
+            meas = do_meas(ch, seq)
 
             # Do stack the measurement
             if seq == 0:
@@ -498,18 +500,14 @@ if __name__ == "__main__":
 
     # PREPARING things as per given options:
     # - Preparing beeps:
-    beepL = tools.make_beep(f=880, fs=LS.fs)
-    beepR = tools.make_beep(f=932, fs=LS.fs)
+    beepL = tools.make_beep(f=880, fs=LS.fs, duration=0.05)
+    beepR = tools.make_beep(f=932, fs=LS.fs, duration=0.05)
 
     # - Preparing log-sweep as per the updated LS parameters
     LS.prepare_sweep()
 
     # - Prepare a positive frequencies vector as per the selected N value.
     freq = np.linspace(0, int(LS.fs/2), int(LS.N/2))
-
-    # Requesting the user to focus on this window
-    if not timer:
-        user_focus_request()
 
     # MAIN measure procedure and SAVING
     do_meas_loop()
