@@ -493,7 +493,7 @@ def connect_to_remote_JACK(jackIP, jackUser, pwd=None):
     except Exception as e:
         print_console_msg(f'ERROR connecting to remote Jack machine {jackIP}')
         manageJack = False
-
+    return manageJack
 
 if __name__ == "__main__":
 
