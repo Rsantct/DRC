@@ -143,9 +143,6 @@ LS.printInfo            = True      # logsweep2TF verbose
 # It is assumed that the user has check previously for soundacard and levels setup.
 LS.checkClearence       = False
 
-# aux variable to check for measurement sequence changes
-last_seq = 0
-
 # Remote JACK management
 jackIP      = ''
 jackUser    = ''
@@ -299,120 +296,126 @@ def do_meas(ch, seq):
     return meas
 
 
-def warning_msg(ch, seq):
+def print_console_msg(msg):
+    tmp = '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    tmp +=  f'{msg}\n'
+    tmp +=   '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
+    print(tmp)
 
-    global last_seq
+
+def do_beep(ch, seq):
+    if ch in ('C', 'L'):
+        Nbeep = np.tile(beepL, 1 + seq)
+        LS.sd.play(Nbeep, samplerate=LS.fs)
+    elif ch in ('R'):
+        Nbeep = np.tile(beepR, 1 + seq)
+        LS.sd.play(Nbeep, samplerate=LS.fs)
 
 
-    def countdown(seconds):
+def console_prompt(ch, seq):
+    """ Promts the user through by the console
+    """
 
-        while seconds >= 0:
-            bar = "####  " * seconds + "      " * (timer -seconds)
-            print( f'    {seconds}   {bar}', end='\r' )
-
+    def countdown(s):
+        while s:
+            bar = "####  " * s + "      " * (timer - s)
+            print( f'    {s}   {bar}', end='\r' )
             if doBeep:
-                if ch in ('C', 'L'):
-                    LS.sd.play(beepL, samplerate=LS.fs)
-                else:
-                    LS.sd.play(beepR, samplerate=LS.fs)
+                do_beep(ch, seq)
             sleep(1)
-            seconds -= 1
-
+            s -= 1
         print('\n\n')
+
 
     if manageJack:
         rjack.select_channel(ch)
         sleep(.2)
 
-
     if doBeep:
-        if ch in ('C', 'L'):
-            Nbeep = np.tile(beepL, 1 + seq)
-            LS.sd.play(Nbeep, samplerate=LS.fs)
-        else:
-            Nbeep = np.tile(beepR, 1 + seq)
-            LS.sd.play(Nbeep, samplerate=LS.fs)
-
-    takeInfo = str(seq+1) + ' / ' + str(numMeas)
-    msg = '\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-    msg +=   f'    TAKE: {takeInfo} \n'
-    msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-    if seq != last_seq:
-        print(msg)
+        do_beep(ch, seq)
 
     if timer:
-        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        msg +=   f'    WILL MEASURE CHANNEL  < {ch} >\n'
-        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        print(msg)
-        if seq != last_seq:
-            countdown(timer)
-
+        print_console_msg(f'WILL MEASURE CHANNEL  < {ch} >')
+        countdown(timer)
     else:
-        msg =   '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        msg +=   f'   PRESS ENTER TO MEASURE CHANNEL  < {ch} >\n'
-        msg +=    '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
-        print(msg)
+        print_console_msg(f'PRESS ENTER TO MEASURE CHANNEL  < {ch} >')
         input()
 
-    last_seq = seq
+
+def gui_prompt(ch, seq, gui_trigger, gui_msg):
+    """ Prompts the user through by the GUI
+        gui_trigger:    a GUI.threading.Event flag that trigger to meas.
+        gui_msg:        a GUI.label_string_variable to prompt the user.
+    """
+
+    def countdown(s):
+        while s:
+            if gui_msg:
+                tmp = f'will meas at location #{seq+1}  [ {ch} ]  <<< {s} s >>>'
+                gui_msg.set(tmp)
+                if doBeep:
+                    do_beep(ch, seq)
+            sleep(1)
+            s -=1
+
+
+    if doBeep:
+        do_beep(ch, seq)
+
+    if timer:
+        countdown(timer)
+    else:
+        gui_msg.set(f'will meas at location #{seq+1}  [{ch}]  < PRESS ANY KEY >')
+        print(f'(rm) WAITING FOR TRIGGER meas #{seq+1}_ch:{ch}')
+        gui_trigger.wait()
+        print(f'(rm) RESUMING, meas #{seq+1}_ch:{ch}')
+        gui_trigger.clear()
+
+    gui_msg.set(f'measuring at location #{seq+1}  [ {ch} ]')
 
 
 def do_meas_loop(gui_trigger=None, gui_msg=None):
     """ Meas for every channel and stores them into the <curves> stack
         Optional:
-            gui_trigger:    a threading.Event flag from the GUI to trigger to meas.
-            gui_msg:        string to be displayed into the GUI.
+            gui_trigger:    a GUI.threading.Event flag that trigger to meas.
+            gui_msg:        a GUI.label_string_variable to prompt the user.
     """
 
+    # 'curves' is a numpy stack of measurements per channel
     global curves
 
-    # Do stack meas per channel:
-    for i in range(numMeas):
+    for seq in range(numMeas):
+
+        if gui_trigger:
+            gui_msg.set(f'LOCATION: {str(seq+1)} / {str(numMeas)}')
+            sleep(3)
+        else:
+            print_console_msg(f'LOCATION: {str(seq+1)}/{str(numMeas)}')
 
         for ch in channels:
 
             # GUI
             if gui_trigger:
-
-                # PROMPT THE USER BEFORE MEASURING
-                if not timer:
-                    gui_msg.set(f'will meas at location #{i+1}  [{ch}] <<< PRESS ANY KEY >>>')
-                    print(f'(rm) WAITING FOR TRIGGER meas #{i+1}_ch:{ch}')
-                    gui_trigger.wait()
-                    print(f'(rm) RESUMING, meas #{i}_ch:{ch}')
-                    gui_trigger.clear()
-
-                # AUTO TIMED MEASURING
-                else:
-                    c = timer
-                    while c:
-                        if gui_msg:
-                            msg = f'will meas at location #{i+1}  [{ch}]  <<< {c} s >>>'
-                            gui_msg.set(msg)
-                        sleep(1)
-                        c -=1
-
-                if gui_msg:
-                    gui_msg.set(f'measuring at location #{i+1}  [{ch}]')
+                gui_prompt(ch, seq, gui_trigger, gui_msg)
 
             # CONSOLE
             else:
-                warning_msg(ch=ch, seq=i)
+                console_prompt(ch=ch, seq=seq)
 
-            # Do meas
-            meas = do_meas(ch=ch, seq=i)
+            # Do measure
+            meas = do_meas(ch=ch, seq=seq)
 
-            # Do stack
-            if i == 0:
+            # Do stack the measurement
+            if seq == 0:
                 curves[ch] = meas
             else:
                 curves[ch] = np.vstack( ( curves[ch], meas ) )
 
     if gui_msg:
-        gui_msg.set('MEAS END')
+        gui_msg.set('MEASURING COMPLETED.')
         sleep(1)
-
+    else:
+        print_console_msg('MEASURING COMPLETED.')
 
 
 def do_averages():
