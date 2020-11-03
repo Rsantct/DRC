@@ -20,6 +20,10 @@
     This module helps on routing the soundcard LEFT input channel
     towards the convenient loudspeaker channel for testing purposes
     on JACK based audio systems.
+
+    (!) Be aware that you'll need a good network link,
+        other ways you may experience delayed responses from remote.
+
 """
 
 import sys
@@ -27,66 +31,59 @@ import paramiko
 from getpass import getpass, getuser
 from time import sleep
 
-########################## CUSTOM JACK PORTS ###############################
 
+###################### CUSTOM JACK DESTINATION PORTS ###########################
 jack_dest_L = 'brutefir:in.L'
 jack_dest_R = 'brutefir:in.R'
+################################################################################
 
-############################################################################
 
 class Remote(object):
 
     def __init__(self, ip='localhost', user=getuser(), password=''):
 
-
         def ssh_connection():
-
             if not self.ip:
                 self.ip       = input("Please enter remote IP: ")
             if not self.user:
                 self.user     = input("Please enter remote user name: ")
             if not self.password:
                 self.password = getpass(prompt=f"remote JACK server {user}'s password: ")
-
             cli = paramiko.SSHClient()
             cli.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             cli.connect(hostname=self.ip, username=self.user, password=self.password)
-            c = cli.invoke_shell()
-            _ = c.recv(10240)            # flushing welcome message
-
-            return c
+            return cli
 
         self.ip         = ip
         self.user       = user
         self.password   = password
-        self.conn       = ssh_connection()
+        self.cli        = ssh_connection()
 
 
-    def send(self, cmd):
+    # hiding this class method for safety purposes
+    def _run(self, cmd):
 
-        self.conn.send(f'{cmd}\n'.encode())
+        stdin, stdout, stderr = self.cli.exec_command( f'{cmd}\n'.encode(),
+                                                       timeout=1 )
         sleep(.1)
-        return self.conn.recv(2048).decode()
+        return stdout.read().decode()
 
 
     def select_channel(self, ch=''):
-
-        me = 'remote_jack.py'
-
+        """ selects the destination channel for system:capture_1 (LEFT ANALOG IN)
+        """
         # disconnect all
-        # print(f'({me}) clearing all connections')
-        self.send(f'jack_disconnect system:capture_1 {jack_dest_L}')
-        self.send(f'jack_disconnect system:capture_1 {jack_dest_R}')
-        self.send(f'jack_disconnect system:capture_2 {jack_dest_L}')
-        self.send(f'jack_disconnect system:capture_2 {jack_dest_R}')
-
+        self._run(f'jack_disconnect system:capture_1 {jack_dest_L}')
+        self._run(f'jack_disconnect system:capture_1 {jack_dest_R}')
+        self._run(f'jack_disconnect system:capture_2 {jack_dest_L}')
+        self._run(f'jack_disconnect system:capture_2 {jack_dest_R}')
+        # connect to channel
         if ch.upper() == 'L':
-            self.send(f'jack_connect system:capture_1 {jack_dest_L}')
-            print(f'({me}) connecting analog L ----> channel L')
+            self._run(f'jack_connect system:capture_1 {jack_dest_L}')
+            print(f'(remote_jack) connecting analog L ----> channel L')
         elif ch.upper() == 'R':
-            self.send(f'jack_connect system:capture_1 {jack_dest_R}')
-            print(f'({me}) connecting analog L ----> channel R')
-
+            self._run(f'jack_connect system:capture_1 {jack_dest_R}')
+            print(f'(remote_jack) connecting analog L ----> channel R')
         return
 
 
