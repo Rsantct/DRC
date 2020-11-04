@@ -77,8 +77,8 @@ roommeasure.py
 
     ABOUT REMOTE MACHINE JACK MANAGEMENT:
 
-    When measuring a JACK based audio system, this script can help on routing your
-    stereo loudspeaker analog input towards the convenient loudspeaker channel.
+    When measuring a JACK based loudspeaker system, this script can help on routing
+    your stereo soundcard analog input towards the convenient loudspeaker channel.
     So you don't need to rewire your cable from L to R and so on.
 
     (i) Default remote sound card analog port: 'system:capture_1'
