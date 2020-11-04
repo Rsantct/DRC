@@ -307,7 +307,8 @@ class RoommeasureGUI(Tk):
         # Console info
         print_rm_info()
 
-        # THREADING THE MEAS PROCRESS (threading avoids blocking the Tk event loop)
+        # THREADING THE MEAS PROCRESS
+        # (i) threading avoids blocking the Tk event-listen mainloop
         job_meas = threading.Thread( target = self.do_measure_process,
                                      args   = (self.meas_trigger,
                                                self.var_msg),
