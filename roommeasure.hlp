@@ -1,3 +1,4 @@
+
 roommeasure.py
 
     Gets the stationary frequency response from an in-rooom loudspeaker,
@@ -5,12 +6,16 @@ roommeasure.py
 
     The resulting files for every CHannel are as follow:
 
-    'CH_room_N.frd'             Measured response at mic location #N.
-    'CH_room_avg.frd'           Average response from all mic locations.
-    'CH_room_avg_smoothed.frd'  Average smoothed 1/24 oct below Schroeder freq,
-                                then progressively smoothed up to 1/1 oct at Nyquist.
+    'CH_N.frd'              Measured response at mic location #N.
+    'CH_avg.frd'            Average response from all mic locations.
+    'CH_avg_smoothed.frd'   Average smoothed 1/24 oct below Schroeder freq,
+                            then progressively smoothed up to 1/1 oct at Nyquist.
 
     Usage:
+
+        roommeasure_GUI.py  Launchs a graphic user interface
+
+      or
 
         roommeasure.py  [options ... ...]
 
@@ -35,6 +40,9 @@ roommeasure.py
          -dev=cap,pbk,fs    Capture and playback devices and Fs to use
                             (Choose the right ones by checking logsweep2TF.py -h)
 
+         -folder=path       A folder to store the measured FRD files,
+                            relative to your $HOME (default ~/roommeasure)
+
 
                             USER INTERACTION:
 
@@ -50,7 +58,6 @@ roommeasure.py
          -juser=uname       remote username
 
 
-
     IMPORTANT:
 
     Please do a preliminary test by using logsweep2TF.py, in order to verify:
@@ -60,9 +67,37 @@ roommeasure.py
     - The measuremet is feasible (Time clearance) with the selected parameters.
 
 
-    OPTIONAL:
+    RESULTS:
 
     You can review the recorded responses by using audiotools/FRD_viewer.py:
 
-        FRD_tool.py $(ls L_room_?.frd)
-        FRD_tool.py $(ls L_room_?.frd) -24oct -f0=200  # FRD_tool can smooth
+        FRD_tool.py $(ls L_?.frd)
+        FRD_tool.py $(ls L_?.frd) -24oct -f0=200  # FRD_tool can smooth
+
+
+    ABOUT REMOTE MACHINE JACK MANAGEMENT:
+
+    When measuring a JACK based audio system, this script can help on routing your
+    stereo loudspeaker analog input towards the convenient loudspeaker channel.
+    So you don't need to rewire your cable from L to R and so on.
+
+    (i) Default remote sound card analog port: 'system:capture_1'
+        Default loudspeaker jack ports:        'brutefir:L.in', 'brutefir:R.in'
+
+        You can modify them by editing remote_jack.yml
+
+    (!) Be aware that you'll need a good network link,
+        otherwise you may experience delayed responses from remote.
+
+
+    WIRING:
+
+    Just wire your roommeasure sound card:
+
+      out L ------>-------  Loudspeaker analog line input
+
+      in  L ------<-------  MIC
+
+      out R --->---
+                   |        Optional reference loop for logsweep2TF.py
+      in  R ---<---         time clearance checkup.
