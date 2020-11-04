@@ -138,9 +138,9 @@ class RoommeasureGUI(Tk):
     # Display help in a new window
     def help(self):
 
-        def managebuttons():
+        def arakiri():
             self.btn_help['state'] = 'normal'
-            wh.destroy()
+            whlp.destroy()
 
         bgcolor     = 'light grey'
         bgcolortxt  = 'snow2'
@@ -148,21 +148,21 @@ class RoommeasureGUI(Tk):
         with open('roommeasure.hlp', 'r') as f:
             tmp = f.read()
 
-        wh = Toplevel(bg=bgcolor)
-        wh.geometry('+250+100')
+        whlp = Toplevel(bg=bgcolor)
+        whlp.geometry('+250+100')
 
-        fh = Frame(wh, bg=bgcolor)
-        fh.grid(row=0, column=0)
+        fhlp = Frame(whlp, bg=bgcolor)
+        fhlp.grid(row=0, column=0)
 
-        txt_help    = Text( fh, width=100, height=40, wrap=None, bg=bgcolortxt)
+        txt_help = Text( fhlp, width=100, height=40, wrap=None, bg=bgcolortxt)
         txt_help.insert('end', tmp)
-        ys          = ttk.Scrollbar(fh, orient='vertical',   command=txt_help.yview)
-        xs          = ttk.Scrollbar(fh, orient='horizontal', command=txt_help.xview)
-        txt_help['yscrollcommand'] = ys.set
-        txt_help['xscrollcommand'] = xs.set
+        yscroll  = ttk.Scrollbar(fhlp, orient='vertical',   command=txt_help.yview)
+        xscroll  = ttk.Scrollbar(fhlp, orient='horizontal', command=txt_help.xview)
+        txt_help['yscrollcommand'] = yscroll.set
+        txt_help['xscrollcommand'] = xscroll.set
 
-        but_ok      = Button(fh, text='OK', command=managebuttons,
-                                            highlightbackground=bgcolor)
+        but_ok   = Button(fhlp, text='OK', command=arakiri,
+                                           highlightbackground=bgcolor)
 
         txt_help.grid(  row=0,  column=0,   pady=5 )
         but_ok.grid(    row=1,  column=0,   pady=5 )
