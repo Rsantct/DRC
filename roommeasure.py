@@ -18,14 +18,14 @@
 
 """
     Gets the stationary frequency response from an in-rooom loudspeaker,
-    from several microphone positions.
+    from several microphone locations.
 
-    Resulting files for every CHannel
+    The resulting files for every CHannel are as follow:
 
-    'CH_room_N.frd'             Measured response at mic position #N.
-    'CH_room_avg.frd'           Average response from all mic positions.
+    'CH_room_N.frd'             Measured response at mic location #N.
+    'CH_room_avg.frd'           Average response from all mic locations.
     'CH_room_avg_smoothed.frd'  Average smoothed 1/24 oct below Schroeder freq,
-                                then progressively becoming 1/1 oct at Nyquist.
+                                then progressively smoothed up to 1/1 oct at Nyquist.
 
     Usage:
 
@@ -33,19 +33,20 @@
 
          -h                 This help
 
-         -m=N               Number of takes (per channel)
-                            (default 2 takes)
+         -m=N               Number of mic locations per channel.
+                            (default 2 mic takes)
 
          -e=XX              Power of two 2^XX to set the log-sweep length.
-                            (default 2^17 )
+                            (default 2^17 == 128 K samples ~ 2 s at fs 48KHz)
 
          -c=X               Channel id:  L | R | LR
-                            This id will form the .frd filename prefix.
+                            This id will form the avobe .frd filename prefix.
                             'LR' allows the measurements of both channels
-                            to be interleaved at a microphone position.
-                            (default C will be used as filename prefix)
+                            to be interleaved at a microphone location.
+                            (default 'C' will be used as filename prefix)
 
-         -s=XXX             Shroeder freq, influences the smoothing transition.
+         -s=XXX             Shroeder freq, influences the smoothing transition
+                            for the resulting smoothed freq response file.
                             (default 200 Hz)
 
          -dev=cap,pbk,fs    Capture and playback devices and Fs to use
@@ -55,9 +56,9 @@
                             USER INTERACTION:
 
          -timer=N           Auto Timer N seconds between measurements
-                            (default no auto timer, the user must press ENTER)
+                            (default is 0, then will promt the user to press ENTER)
 
-         -nobeep            Avoids beep alerting during measuring position changes.
+         -nobeep            Avoids beep alerting during measuring location changes.
 
 
                             REMOTE MACHINE JACK MANAGER:
@@ -81,7 +82,7 @@
     You can review the recorded responses by using audiotools/FRD_viewer.py:
 
         FRD_tool.py $(ls L_room_?.frd)
-        FRD_tool.py $(ls L_room_?.frd) -24oct -f0=200  # FRD_tool will smooth
+        FRD_tool.py $(ls L_room_?.frd) -24oct -f0=200  # FRD_tool can smooth
 
 """
 
