@@ -1,0 +1,7 @@
+
+# Sound card analog jack port to be routed to loudspeakers ports
+in      :   system:capture_1
+
+# Loudspeaker entry point jack ports
+lspk_L  :   brutefir:in.L
+lspk_R  :   brutefir:in.R
