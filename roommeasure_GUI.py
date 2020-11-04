@@ -54,7 +54,7 @@ class RoommeasureGUI(Tk):
         lbl_meastitle    = ttk.Label(content, text='MEASURE:')
         lbl_ch           = ttk.Label(content, text='channels')
         self.cmb_ch      = ttk.Combobox(content, values=channels, width=4)
-        lbl_meas         = ttk.Label(content, text='mic locations / ch')
+        lbl_meas         = ttk.Label(content, text='mic locations')
         self.cmb_meas    = ttk.Combobox(content, values=takes,    width=4)
         lbl_sweep        = ttk.Label(content, text='sweep length')
         self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
@@ -63,17 +63,17 @@ class RoommeasureGUI(Tk):
 
         # - REMOTE JACK SECTION
         lbl_rjack        = ttk.Label(content, text='Remote JACK:')
-        lbl_rjaddr       = ttk.Label(content, text='addr:')
+        lbl_rjaddr       = ttk.Label(content, text='addr')
         self.ent_rjaddr  = ttk.Entry(content,                     width=15)
-        lbl_rjuser       = ttk.Label(content, text='user:')
+        lbl_rjuser       = ttk.Label(content, text='user')
         self.ent_rjuser  = ttk.Entry(content,                     width=15)
         self.ent_rjuser.insert(0, 'paudio')
-        lbl_rjpass       = ttk.Label(content, text='passwd:')
+        lbl_rjpass       = ttk.Label(content, text='passwd')
         self.ent_rjpass  = ttk.Entry(content, show='*',           width=15)
 
         # - RUN AREA
         lbl_run          = ttk.Label(content, text='RUN:')
-        lbl_timer        = ttk.Label(content, text='auto timer (s):')
+        lbl_timer        = ttk.Label(content, text='auto timer (s)')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=7)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
                                                     variable=self.var_beep)
