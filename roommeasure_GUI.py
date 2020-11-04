@@ -137,7 +137,17 @@ class RoommeasureGUI(Tk):
 
 
     def help(self):
-        print('HELP wanted ;-)')
+
+        with open('roommeasure.hlp', 'r') as f:
+            tmp = f.read()
+
+        wh = Toplevel(bg='lightgrey')
+        wh.geometry('+250+100')
+        msg_help = Message(wh, text=tmp, bg='lightgrey')
+        msg_help.pack()
+        but_ok = Button(wh, text='OK', command=wh.destroy, bg='lightgrey')
+        but_ok.pack()
+
 
     def handle_keypressed(self, event):
         print(f'(GUI) A key "{event.char}" was pressed: setting meas_trigger')
