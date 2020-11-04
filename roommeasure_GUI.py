@@ -6,6 +6,8 @@ from tkinter import ttk
 import threading
 import roommeasure as rm
 from time import sleep
+from os.path import expanduser
+UHOME = expanduser("~")
 
 class RoommeasureGUI(Tk):
 
@@ -30,7 +32,7 @@ class RoommeasureGUI(Tk):
         srates   = ['44100', '48000']
         channels = ['C', 'L', 'R', 'LR']
         takes    = list(range(1,21))
-        sweeps   = [2**15, 2**16, 2**17]
+        sweeps   = [2**15, 2**16, 2**17, 2**18]
         timers   = ['manual', '3', '5', '10']
 
         ### VARS
@@ -73,8 +75,10 @@ class RoommeasureGUI(Tk):
 
         # - RUN AREA
         lbl_run          = ttk.Label(content, text='RUN:')
+        lbl_folder       = ttk.Label(content, text='output folder ~/')
+        self.ent_folder  = ttk.Entry(content,                     width=15)
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
-        self.cmb_timer   = ttk.Combobox(content, values=timers, width=7)
+        self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
                                                     variable=self.var_beep)
         self.btn_help    = ttk.Button(content, text='help', command=self.help)
@@ -119,11 +123,13 @@ class RoommeasureGUI(Tk):
         lbl_timer.grid(         row=8,  column=0, sticky=E )
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
         self.chk_beep.grid(     row=8,  column=2 )
-        self.btn_help.grid(     row=8,  column=3 )
-        self.btn_close.grid(    row=8,  column=4 )
-        self.btn_go.grid(       row=8,  column=5 )
+        lbl_folder.grid(        row=9,  column=0, sticky=E )
+        self.ent_folder.grid(   row=9,  column=1, sticky=W )
+        self.btn_help.grid(     row=9,  column=3 )
+        self.btn_close.grid(    row=9,  column=4 )
+        self.btn_go.grid(       row=9,  column=5 )
 
-        frm_msg.grid(           row=9,  column=0, columnspan=6, pady=5, sticky=W+E )
+        frm_msg.grid(           row=10, column=0, columnspan=6, pady=15, sticky=W+E )
         self.lbl_msg.grid(                        sticky=W )
 
         ### GRID RESIZING BEHAVIOR
@@ -135,6 +141,7 @@ class RoommeasureGUI(Tk):
         for i in range(ncolumns):
             content.columnconfigure(i, weight=1)
 
+
     # Display help in a new window
     def help(self):
 
@@ -145,7 +152,7 @@ class RoommeasureGUI(Tk):
         bgcolor     = 'light grey'
         bgcolortxt  = 'snow2'
 
-        with open('roommeasure.hlp', 'r') as f:
+        with open(__file__.replace('_GUI.py', '.hlp'), 'r') as f:
             tmp = f.read()
 
         whlp = Toplevel(bg=bgcolor)
@@ -170,7 +177,8 @@ class RoommeasureGUI(Tk):
 
 
     def handle_keypressed(self, event):
-        print(f'(GUI) A key "{event.char}" was pressed: setting meas_trigger')
+        # Sets to True the event flag 'meas_trigger', so that a threaded
+        # measuring in awaiting state could be triggered.
         self.meas_trigger.set()
 
 
@@ -216,6 +224,8 @@ class RoommeasureGUI(Tk):
             print(f'auto timer:     {rm.timer}')
             print(f'Beep:           {rm.doBeep}')
             print(f'Schroeder:      {rm.Scho} (for smoothed meas curve)')
+            print(f'Output folder   {rm.folder}')
+
 
         # Configure roommeasure stuff as per given options
         def configure_rm():
@@ -229,6 +239,7 @@ class RoommeasureGUI(Tk):
             takes       =   int(self.cmb_meas.get())
             sweeplength =   int(self.cmb_sweep.get())
             Scho        =   float(self.ent_scho.get())
+            folder      =   self.ent_folder.get()
 
             rjaddr      =   self.ent_rjaddr.get()
             rjuser      =   self.ent_rjuser.get()
@@ -252,6 +263,11 @@ class RoommeasureGUI(Tk):
 
             # - smoothing
             rm.Scho         = Scho
+
+            # - output folder
+            if folder:
+                rm.folder = f'{UHOME}/{folder}'
+            rm.prepare_frd_folder()
 
             # - beeps:
             rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
@@ -283,6 +299,7 @@ class RoommeasureGUI(Tk):
 
             return True
 
+
         # Configure roommeasure.LS STUFF as per given options
         if not configure_rm():
             return
@@ -308,17 +325,19 @@ if __name__ == '__main__':
     app.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1] )['name'])
     app.cmb_fs.set('48000')
     # - Logsweep length:
-    app.cmb_sweep.set(str(2**15))
-    # - Channels to measure:
+    app.cmb_sweep.set(str(2**17))
+    # - Channels to measure ('L' or 'R' or 'LR')
     app.cmb_ch.set('LR')
-    # - Takes per channel:
-    app.cmb_meas.set('2')
-    # - Auto timer for measuring progress:
-    app.cmb_timer.set('3')
-    # - Alert before measuring:
+    # - Locations per channel:
+    app.cmb_meas.set('5')
+    # - Auto timer for measuring progress ('manual' or 'N' seconds)
+    app.cmb_timer.set('manual')
+    # - Alert before measuring: ('1' or '0')
     app.var_beep.set(1)
     # - Schroeder freq for smoothing result curve:
     app.ent_scho.insert(0, '200')
+    # - Output folder
+    app.ent_folder.insert(0, 'roommeasure')
 
     # LAUNCH GUI
     app.mainloop()
