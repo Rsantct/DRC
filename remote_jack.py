@@ -17,7 +17,7 @@
 # along with 'Rsantct.DRC'.  If not, see <https://www.gnu.org/licenses/>.
 
 """
-    This module helps on routing the soundcard LEFT input channel
+    This module helps on routing a soundcard input channel (default L)
     towards the convenient loudspeaker channel for testing purposes
     on JACK based audio systems.
 
@@ -30,12 +30,21 @@ import sys
 import paramiko
 from getpass import getpass, getuser
 from time import sleep
+import yaml
 
 
-###################### CUSTOM JACK DESTINATION PORTS ###########################
-jack_dest_L = 'brutefir:in.L'
-jack_dest_R = 'brutefir:in.R'
-################################################################################
+try:
+    with open('remote_jack.yml', 'r') as f:
+        CFG = yaml.safe_load(f.read())
+    in_port = CFG['in']
+    lspk_L  = CFG['lspk_L']
+    lspk_R  = CFG['lspk_R']
+
+except:
+    print(f'(remote_jack) ERROR reading \'remote_jack.yml\' config file')
+    in_port = 'system:capture_1'
+    lspk_L  = 'brutefir:in.L'
+    lspk_R  = 'brutefir:in.R'
 
 
 class Remote(object):
@@ -73,17 +82,17 @@ class Remote(object):
         """ selects the destination channel for system:capture_1 (LEFT ANALOG IN)
         """
         # disconnect all
-        self._run(f'jack_disconnect system:capture_1 {jack_dest_L}')
-        self._run(f'jack_disconnect system:capture_1 {jack_dest_R}')
-        self._run(f'jack_disconnect system:capture_2 {jack_dest_L}')
-        self._run(f'jack_disconnect system:capture_2 {jack_dest_R}')
+        self._run(f'jack_disconnect system:capture_1 {lspk_L}')
+        self._run(f'jack_disconnect system:capture_1 {lspk_R}')
+        self._run(f'jack_disconnect system:capture_2 {lspk_L}')
+        self._run(f'jack_disconnect system:capture_2 {lspk_R}')
         # connect to channel
         if ch.upper() == 'L':
-            self._run(f'jack_connect system:capture_1 {jack_dest_L}')
-            print(f'(remote_jack) connecting analog L ----> channel L')
+            self._run(f'jack_connect {in_port} {lspk_L}')
+            print(f'(remote_jack) connecting analog {in_port} ----> {lspk_L}')
         elif ch.upper() == 'R':
-            self._run(f'jack_connect system:capture_1 {jack_dest_R}')
-            print(f'(remote_jack) connecting analog L ----> channel R')
+            self._run(f'jack_connect {in_port} {lspk_R}')
+            print(f'(remote_jack) connecting analog {in_port} ----> {lspk_R}')
         return
 
 
