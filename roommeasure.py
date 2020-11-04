@@ -92,7 +92,7 @@ folder = f'{UHOME}/roommeasure'
 
 
 def print_help_and_exit():
-    with open('roommeasure.hlp', 'r') as f:
+    with open(__file__.replace('.py', '.hlp'), 'r') as f:
         print( f.read() )
     sys.exit()
 
