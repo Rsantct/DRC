@@ -34,7 +34,7 @@ import yaml
 
 
 try:
-    with open('remote_jack.yml', 'r') as f:
+    with open(__file__.replace('.py', '.yml'), 'r') as f:
         CFG = yaml.safe_load(f.read())
     in_port = CFG['in']
     lspk_L  = CFG['lspk_L']
