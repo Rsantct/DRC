@@ -20,69 +20,7 @@
     Gets the stationary frequency response from an in-rooom loudspeaker,
     from several microphone locations.
 
-    The resulting files for every CHannel are as follow:
-
-    'CH_room_N.frd'             Measured response at mic location #N.
-    'CH_room_avg.frd'           Average response from all mic locations.
-    'CH_room_avg_smoothed.frd'  Average smoothed 1/24 oct below Schroeder freq,
-                                then progressively smoothed up to 1/1 oct at Nyquist.
-
-    Usage:
-
-        roommeasure.py  [options ... ...]
-
-         -h                 This help
-
-         -m=N               Number of mic locations per channel.
-                            (default 2 mic takes)
-
-         -e=XX              Power of two 2^XX to set the log-sweep length.
-                            (default 2^17 == 128 K samples ~ 2 s at fs 48KHz)
-
-         -c=X               Channel id:  L | R | LR
-                            This id will form the avobe .frd filename prefix.
-                            'LR' allows the measurements of both channels
-                            to be interleaved at a microphone location.
-                            (default 'C' will be used as filename prefix)
-
-         -s=XXX             Shroeder freq, influences the smoothing transition
-                            for the resulting smoothed freq response file.
-                            (default 200 Hz)
-
-         -dev=cap,pbk,fs    Capture and playback devices and Fs to use
-                            (Choose the right ones by checking logsweep2TF.py -h)
-
-
-                            USER INTERACTION:
-
-         -timer=N           Auto Timer N seconds between measurements
-                            (default is 0, then will promt the user to press ENTER)
-
-         -nobeep            Avoids beep alerting during measuring location changes.
-
-
-                            REMOTE MACHINE JACK MANAGER:
-
-         -jip=IP            remote IP
-         -juser=uname       remote username
-
-
-
-    IMPORTANT:
-
-    Please do a preliminary test by using logsweep2TF.py, in order to verify:
-
-    - The sound card does not loses samples, and levels are ok.
-
-    - The measuremet is feasible (Time clearance) with the selected parameters.
-
-
-    OPTIONAL:
-
-    You can review the recorded responses by using audiotools/FRD_viewer.py:
-
-        FRD_tool.py $(ls L_room_?.frd)
-        FRD_tool.py $(ls L_room_?.frd) -24oct -f0=200  # FRD_tool can smooth
+    For more info see 'roommeasure.hlp'
 
 """
 
@@ -100,8 +38,8 @@ except:
     sys.exit()
 
 # audiotools modules
-HOME = os.path.expanduser("~")
-sys.path.append(HOME + "/audiotools")
+UHOME = os.path.expanduser("~")
+sys.path.append(UHOME + "/audiotools")
 import tools
 from smoothSpectrum import smoothSpectrum as smooth
 
@@ -149,10 +87,20 @@ jackIP      = ''
 jackUser    = ''
 manageJack  = False
 
+# Folder for resulting FRD files:
+folder = f'{UHOME}/roommeasure'
+
+
+def print_help_and_exit():
+    with open('roommeasure.hlp', 'r') as f:
+        print( f.read() )
+    sys.exit()
+
 
 def read_command_line():
 
-    global doBeep, numMeas, channels, Scho, timer, jackIP, jackUser
+    global doBeep, numMeas,  channels, Scho, timer, \
+           jackIP, jackUser, folder
 
     # an string of three comma separated numbers 'CAPdev,PBKdev,fs'
     optional_device = ''
@@ -161,8 +109,7 @@ def read_command_line():
     for opc in sys.argv[1:]:
 
         if "-h" in opc.lower():
-            print( __doc__ )
-            sys.exit()
+            print_help_and_exit()
 
         elif "-nobeep" in opc.lower():
             doBeep = False
@@ -198,12 +145,14 @@ def read_command_line():
         elif opc[:7].lower() == '-juser=':
             jackUser = opc[7:]
 
+        elif '-f' in opc:
+            folder = f'{UHOME}/{opc.split("=")[-1]}'
+
         else:
             opcsOK = False
 
     if not opcsOK:
-        print( __doc__ )
-        sys.exit()
+        print_help_and_exit()
 
     if optional_device:
         set_sound_card(optional_device)
@@ -227,6 +176,8 @@ def print_info():
         print(f'JACK IP:            {jackIP}')
         print(f'JACK user:          {jackUser}')
 
+
+    print(f'FRDs folder:        {folder}')
     print()
 
 
@@ -260,11 +211,11 @@ def do_meas(ch, seq):
 
     # Saving the curve to a sequenced frd filename
     f, m = tools.interp_semispectrum(freq, meas, LS.fs/2, binsFRD)
-    tools.saveFRD(  fname   = f'{ch}_room_{str(seq)}.frd',
+    tools.saveFRD(  fname   = f'{folder}/{ch}_{str(seq)}.frd',
                     freq    = f,
                     mag     = 20 * np.log10(m),
                     fs      = LS.fs,
-                    comments= f'roommeasure.py ch:{ch} point:{str(seq)}',
+                    comments= f'roommeasure.py ch:{ch} loc:{str(seq)}',
                     verbose = False
                   )
 
@@ -318,10 +269,6 @@ def console_prompt(ch, seq):
         print('\n\n')
 
 
-    if manageJack:
-        rjack.select_channel(ch)
-        sleep(.2)
-
     if doBeep:
         do_beep(ch, seq + 1)
 
@@ -348,10 +295,6 @@ def gui_prompt(ch, seq, gui_trigger, gui_msg):
                     do_beep(ch)
             sleep(1)
             s -=1
-
-    if manageJack:
-        rjack.select_channel(ch)
-        sleep(.2)
 
     if doBeep:
         do_beep(ch, seq)
@@ -401,6 +344,10 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
 
         for ch in channels:
 
+            if manageJack:
+                rjack.select_channel(ch)
+                sleep(.2)
+
             # GUI
             if gui_trigger:
                 gui_prompt(ch, seq, gui_trigger, gui_msg)
@@ -417,6 +364,9 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
                 curves[ch] = meas
             else:
                 curves[ch] = np.vstack( ( curves[ch], meas ) )
+
+    if manageJack:
+        rjack.select_channel('')
 
     if gui_msg:
         gui_msg.set('MEASURING COMPLETED.')
@@ -449,7 +399,7 @@ def do_save_averages():
     for ch in channels:
 
         f, m = tools.interp_semispectrum(freq, channels_avg[ch], LS.fs/2, binsFRD)
-        tools.saveFRD(  fname   = f'{ch}_room_avg.frd',
+        tools.saveFRD(  fname   = f'{folder}/{ch}_avg.frd',
                         freq    = f,
                         mag     = 20 * np.log10(m),
                         fs      = LS.fs,
@@ -462,7 +412,7 @@ def do_save_averages():
 
         m_smoo = smooth(f, m, Noct, f0=Scho)
 
-        tools.saveFRD(  fname   = f'{ch}_room_avg_smoothed.frd',
+        tools.saveFRD(  fname   = f'{folder}/{ch}_avg_smoothed.frd',
                         freq    = f,
                         mag     = 20 * np.log10(m_smoo),
                         fs      = LS.fs,
@@ -496,6 +446,31 @@ def connect_to_remote_JACK(jackIP, jackUser, pwd=None):
         manageJack = False
     return manageJack
 
+
+def prepare_frd_folder():
+
+    global folder
+
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+        print_console_msg(f'output to \'~{folder.replace(UHOME, "")}\'' )
+
+    else:
+        i=1
+        while True:
+            if not os.path.exists(f'{folder}_{i}'):
+                os.mkdir(f'{folder}_{i}')
+                folder = f'{folder}_{i}'
+                print_console_msg(f'output to \'~{folder.replace(UHOME, "")}\'' )
+                break
+            i += 1
+            if i >= 100:
+                print_console_msg(f'too much \'~{folder.replace(UHOME, "")}_xx\' folders :-/' )
+                return False
+
+    return True
+
+
 if __name__ == "__main__":
 
     # Enables plotting when rommeasure.py is used from command line
@@ -505,6 +480,11 @@ if __name__ == "__main__":
     #   - LS config: device, fs, and N;
     #   - doBeep, numMeas, channels, Scho, timer, jackIP, jackUser
     read_command_line()
+
+    # - Prepare output FRD folder:
+    if not prepare_frd_folder():
+        print_console_msg('Please check your folders tree')
+        sys.exit()
 
     # Print info summary:
     print_info()
