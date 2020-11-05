@@ -31,8 +31,9 @@ class RoommeasureGUI(Tk):
         super().__init__()  # this initiates the parent class Tk in order to
                             # make self a typical root = Tk()
 
-        self.xpos = 250     # pixels from left screen end
-        self.ypos = 100     # pixels fron top screen end
+        # force window location
+        self.xpos = 250
+        self.ypos = 100
         self.geometry(f'+{self.xpos}+{self.ypos}')
         self.title('DRC/roommeasure.py GUI')
 
@@ -206,20 +207,28 @@ class RoommeasureGUI(Tk):
             """ displays an image
                 row and col allows to array the image on the screen
             """
-
             # https://tkdocs.com/tutorial/fonts.html#images
+
+            # Image window and container frame
             wimg = Toplevel()
+            #wimg.title(os.path.basename(rm.folder))
             fimg = Frame(wimg)
             fimg.grid(row=0, column=0)
 
+            # Resizing image to a reasonable height
             image = Image.open(imagePath)#.convert("RGB")
+            iw, ih = image.size
+            iaspect = iw / ih
+            sh = self.winfo_screenheight()
+            ih2 = int(sh / 3)
+            iw2 = int(ih2 * iaspect)
+            image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
+            imageObj = ImageTk.PhotoImage(image2)
 
-            width, height = image.size
+            # Arranging
             xoffset = self.xpos + 50
             yoffset = self.ypos
-            wimg.geometry(f'+{xoffset + width * col}+{yoffset + height * row}')
-
-            imageObj = ImageTk.PhotoImage(image)
+            wimg.geometry(f'+{xoffset + iw2 * col}+{yoffset + ih2 * row}')
 
             # http://effbot.org/pyfaq/why-do-my-tkinter-images-not-appear.htm (*)
             lbl_image = Label(fimg, image=imageObj)
