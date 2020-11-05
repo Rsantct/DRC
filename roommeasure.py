@@ -226,6 +226,7 @@ def do_meas(ch, seq):
     LS.plot_TF( m_smoo, semi=True,  label     = f'{ch}_{str(seq)}',
                                     color     = css4_colors[(7 + seq) % 148],
                                     figure    = figIdx,
+                                    title     = f'{os.path.basename(folder)}',
                                     png_fname = f'{folder}/{ch}.png'
                )
 
@@ -334,7 +335,7 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
 
         if gui_trigger:
             gui_msg.set(f'LOCATION: {str(seq+1)} / {str(numMeas)}')
-            sleep(.5)
+            sleep(1)
         else:
             print_console_msg(f'MIC LOCATION: {str(seq+1)}/{str(numMeas)}')
 
@@ -423,6 +424,7 @@ def do_save_averages():
         LS.plot_TF( m_smoo, semi=True,  label     = f'{ch} avg smoothed',
                                         color     = 'red',
                                         figure    = 20+i,
+                                        title     = f'{os.path.basename(folder)}',
                                         png_fname = f'{folder}/{ch}_avg.png'
                       )
 
