@@ -74,23 +74,29 @@
 #
 #   - La opciones de calibración no se toman en cuenta aquí.
 
-#---------------------------- IMPORT MODULES: -------------------------
-#  ~/audiotools modules
+#---------------------------- IMPORTING MODULES: -------------------------
 import os
 import sys
+from time import time       # Para evaluar el tiempo de proceso de algunos cálculos,
+                            # como por ejemplo la crosscorrelation que tarda un güevo.
+
 HOME = os.path.expanduser("~")
 sys.path.append(HOME + "/audiotools")
 from smoothSpectrum import smoothSpectrum as smooth
 import tools
 
-from time import time       # Para evaluar el tiempo de proceso de algunos cálculos,
-                            # como por ejemplo la crosscorrelation que tarda un güevo.
 
-from matplotlib import pyplot as plt
+# https://matplotlib.org/faq/howto_faq.html#working-with-threads
+import matplotlib
+# Later we will be able to call matplotlib.use('Agg') to replace the regular
+# display backend (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid
+# incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
+import matplotlib.pyplot as plt
+
 from numpy import *
 from scipy import interpolate # para aligerar el ploteo de la TF smoothed
-
 from scipy.signal import correlate as signal_correlate
+
 # signal.correlate muestra un FutureWarning, lo inhibimos:
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -106,7 +112,6 @@ checkClearence      = True
 
 printInfo           = True
 
-# When used as module avoids plotting:
 aux_plot            = False     # Time domain aux plotting
 TF_plot             = False     # Freq domain Transfer Function plotting
 TF_plot_smooth      = False     # Optional smoothed TF plotting
@@ -262,8 +267,11 @@ def do_plot_aux_graphs():
 
 
 def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
-             label=" ", color="blue", figure=100 ):
+             label=" ", color="blue", figure=100, png_fname='' ):
     """ Plots a whole or semi spectrum
+        options:
+            figure      allows to perform multicurve figures
+            png_fname   dumps a png image from the plotted graph
     """
     if semi:
         N = len(mag)*2
@@ -283,6 +291,8 @@ def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
     plt.xlabel('frequency [Hz]')
     plt.ylabel('dB')
     plt.title( f'Magnitude Response ({Kbins} Kbins, res = {str(round(Fresol,2))} Hz)')
+    if png_fname:
+        plt.savefig(png_fname)
     return
 
 
