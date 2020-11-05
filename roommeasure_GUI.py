@@ -19,7 +19,7 @@ import roommeasure as rm
 # We need to call matplotlib.use('Agg') to replace the regular display backend
 # (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid incompatibility
 # when threading the matplotlib from the imported rm.LS on this GUI.
-# Notice below that we dont order plt.plot() but plt.close('all').
+# Notice below that we dont order plt.show() but plt.close('all').
 rm.LS.matplotlib.use('Agg')
 
 
