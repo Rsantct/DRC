@@ -35,9 +35,6 @@ class RoommeasureGUI(Tk):
         self.geometry(f'+{self.xpos}+{self.ypos}')
         self.title('DRC/roommeasure.py GUI')
 
-        ### A SINGLE FRAME
-        content =  ttk.Frame( self, padding=(10,10,12,12) )
-
         ### EVENTS HANDLING
         self.bind('<Key>', self.handle_keypressed)
 
@@ -59,7 +56,9 @@ class RoommeasureGUI(Tk):
         self.meas_trigger = threading.Event()
         self.var_msg      = StringVar()
 
-        ### WIDGETS
+        ### MAIN CONFIG WIDGETS FRAME
+        content =  ttk.Frame( self, padding=(10,10,12,12) )
+
         # - SOUND CARD SECTION
         lbl_scard        = ttk.Label(content, text='SOUND CARD:')
         lbl_cap          = ttk.Label(content, text='IN')
@@ -81,7 +80,7 @@ class RoommeasureGUI(Tk):
         self.ent_scho    = ttk.Entry(content,                     width=5)
 
         # - REMOTE JACK SECTION
-        lbl_rjack        = ttk.Label(content, text='Remote JACK:')
+        lbl_rjack        = ttk.Label(content, text='REMOTE JACK\nLOUDSPEAKER:')
         lbl_rjaddr       = ttk.Label(content, text='addr')
         self.ent_rjaddr  = ttk.Entry(content,                     width=15)
         lbl_rjuser       = ttk.Label(content, text='user')
@@ -102,7 +101,7 @@ class RoommeasureGUI(Tk):
         self.btn_close   = ttk.Button(content, text='close', command=self.destroy)
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
 
-        # - BOTTOM MESSAGES SECTION
+        #### BOTTOM MESSAGES SECTION FRAME
         frm_msg          = ttk.Frame(content, borderwidth=2, relief='solid')
         self.lbl_msg     = ttk.Label(frm_msg, textvariable=self.var_msg,
                                               font=(None, 32))
@@ -140,13 +139,13 @@ class RoommeasureGUI(Tk):
         lbl_timer.grid(         row=8,  column=0, sticky=E )
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
         self.chk_beep.grid(     row=8,  column=2 )
-        lbl_folder.grid(        row=9,  column=0, sticky=E )
-        self.ent_folder.grid(   row=9,  column=1, sticky=W )
-        self.btn_help.grid(     row=9,  column=3 )
-        self.btn_close.grid(    row=9,  column=4 )
-        self.btn_go.grid(       row=9,  column=5 )
+        lbl_folder.grid(        row=8,  column=4, sticky=E )
+        self.ent_folder.grid(   row=8,  column=5, sticky=W )
+        self.btn_help.grid(     row=9,  column=3, sticky=E, pady=15  )
+        self.btn_close.grid(    row=9,  column=4, sticky=E )
+        self.btn_go.grid(       row=9,  column=5, sticky=E )
 
-        frm_msg.grid(           row=10, column=0, columnspan=6, pady=15, sticky=W+E )
+        frm_msg.grid(           row=10, column=0, columnspan=6, pady=10, sticky=W+E )
         self.lbl_msg.grid(                        sticky=W )
 
         ### GRID RESIZING BEHAVIOR
