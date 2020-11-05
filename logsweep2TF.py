@@ -267,7 +267,8 @@ def do_plot_aux_graphs():
 
 
 def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
-             label=" ", color="blue", figure=100, png_fname='' ):
+             label=" ", color="blue", figure=100, title='Freq. response',
+             png_fname='' ):
     """ Plots a whole or semi spectrum
         options:
             figure      allows to perform multicurve figures
@@ -290,7 +291,7 @@ def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
     plt.legend()
     plt.xlabel('frequency [Hz]')
     plt.ylabel('dB')
-    plt.title( f'Magnitude Response ({Kbins} Kbins, res = {str(round(Fresol,2))} Hz)')
+    plt.title(title)
     if png_fname:
         plt.savefig(png_fname)
     return
