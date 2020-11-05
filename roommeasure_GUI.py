@@ -270,6 +270,9 @@ class RoommeasureGUI(Tk):
         rm.do_save_averages()
         self.var_msg.set('DONE')
 
+        # Ending the rm.LS dummy Agg backend plotting
+        rm.LS.plt.close('all')
+
         # Showing the rm.LS saved graphs, arranged on the screen
         self.do_show_rm_LS_graphs()
 
