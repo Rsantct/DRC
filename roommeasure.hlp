@@ -4,7 +4,7 @@ roommeasure.py
     Gets the stationary frequency response from an in-rooom loudspeaker,
     from several microphone locations.
 
-    The resulting files for every CHannel are as follow:
+    The resulting files for every CHannel are named as follow:
 
     'CH_N.frd'              Measured response at mic location #N.
     'CH_avg.frd'            Average response from all mic locations.
@@ -41,7 +41,7 @@ roommeasure.py
                             (Choose the right ones by checking logsweep2TF.py -h)
 
          -folder=path       A folder to store the measured FRD files,
-                            relative to your $HOME (default ~/roommeasure)
+                            relative to your $HOME (default ~/rm/meas)
 
 
                             USER INTERACTION:
