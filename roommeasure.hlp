@@ -19,7 +19,7 @@ roommeasure.py
 
         roommeasure.py  [options ... ...]
 
-         -h                 This help
+         -h                 This help.
 
          -m=N               Number of mic locations per channel.
                             (default 2 mic takes)
@@ -37,7 +37,7 @@ roommeasure.py
                             for the resulting smoothed freq response file.
                             (default 200 Hz)
 
-         -dev=cap,pbk,fs    Capture and playback devices and Fs to use
+         -dev=cap,pbk,fs    Capture and playback devices and Fs to use.
                             (Choose the right ones by checking logsweep2TF.py -h)
 
          -folder=path       A folder to store the measured FRD files,
@@ -46,8 +46,8 @@ roommeasure.py
 
                             USER INTERACTION:
 
-         -timer=N           Auto Timer N seconds between measurements
-                            (default is 0, then will promt the user to press ENTER)
+         -timer=N           Auto Timer N seconds between measurements.
+                            Default 0 (manual) will promt the user to press ENTER.
 
          -nobeep            Avoids beep alerting during measuring location changes.
 
