@@ -200,11 +200,13 @@ def set_sound_card(optional_device):
 
 def do_meas(ch, seq):
 
-    # Do measure, by taken the positive semi-spectrum
+    # Do meas, then taken the positive semi-spectrum
     meas = abs( LS.do_meas()[:int(LS.N/2)] )
 
-    # Saving the curve to a sequenced frd filename
+    # Interpolating to use the desired binsFRD (freq response points)
     f, m = tools.interp_semispectrum(freq, meas, LS.fs/2, binsFRD)
+
+    # Saving the curve to a sequenced frd filename
     tools.saveFRD(  fname   = f'{folder}/{ch}_{str(seq)}.frd',
                     freq    = f,
                     mag     = 20 * np.log10(m),
@@ -213,14 +215,13 @@ def do_meas(ch, seq):
                     verbose = False
                   )
 
-    # Smoothed curve for plotting (this takes a while in a slow cpu)
+    # Plotting the a smoothed version of the raw measured curve
+    # (smoothing takes a while in a slow cpu)
     m_smoo = smooth(f, m, Noct, f0=Scho)
     figIdx = 10
     chs = ('L', 'R', 'C')
     if ch in chs:
         figIdx += chs.index(ch)
-
-    # Plotting the smoothed measurement
     # Will choose a color by selecting the CSS4 color sequence, from black (index 7)
     LS.plot_TF( m_smoo, semi=True,  label     = f'{ch}_{str(seq)}',
                                     color     = css4_colors[(7 + seq) % 148],
