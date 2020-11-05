@@ -1,13 +1,26 @@
 #!/usr/bin/env python3
 """ This is a Tkinter based GUI to running DRC/roommeasure.py
 """
+import os
+UHOME = os.path.expanduser("~")
+
 from tkinter import *
 from tkinter import ttk
+
+# https://tkdocs.com/tutorial/fonts.html#images
+from PIL import ImageTk, Image
+
 import threading
-import roommeasure as rm
 from time import sleep
-from os.path import expanduser
-UHOME = expanduser("~")
+
+import roommeasure as rm
+
+# https://matplotlib.org/faq/howto_faq.html#working-with-threads
+# We need to call matplotlib.use('Agg') to replace the regular display backend
+# (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid incompatibility
+# when threading this module from this GUI.
+rm.LS.matplotlib.use('Agg')
+
 
 class RoommeasureGUI(Tk):
 
@@ -17,8 +30,12 @@ class RoommeasureGUI(Tk):
         super().__init__()  # this initiates the parent class Tk in order to
                             # make self a typical root = Tk()
 
+        self.xpos = 250     # pixels from left screen end
+        self.ypos = 100     # pixels fron top screen end
+        self.geometry(f'+{self.xpos}+{self.ypos}')
         self.title('DRC/roommeasure.py GUI')
-        self.geometry('+250+100')
+
+        ### A SINGLE FRAME
         content =  ttk.Frame( self, padding=(10,10,12,12) )
 
         ### EVENTS HANDLING
@@ -75,7 +92,7 @@ class RoommeasureGUI(Tk):
 
         # - RUN AREA
         lbl_run          = ttk.Label(content, text='RUN:')
-        lbl_folder       = ttk.Label(content, text='output folder ~/')
+        lbl_folder       = ttk.Label(content, text='output folder: ~/rm/')
         self.ent_folder  = ttk.Entry(content,                     width=15)
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
@@ -152,7 +169,11 @@ class RoommeasureGUI(Tk):
         bgcolor     = 'light grey'
         bgcolortxt  = 'snow2'
 
-        with open(__file__.replace('_GUI.py', '.hlp'), 'r') as f:
+        help_fname  = __file__.replace('_GUI.py', '.hlp')
+        # this is for Mac OS users having renamed this script file
+        help_fname  = help_fname.replace('_GUI.command', '.hlp')
+
+        with open(help_fname, 'r') as f:
             tmp = f.read()
 
         whlp = Toplevel(bg=bgcolor)
@@ -174,6 +195,54 @@ class RoommeasureGUI(Tk):
         txt_help.grid(  row=0,  column=0,   pady=5 )
         but_ok.grid(    row=1,  column=0,   pady=5 )
         self.btn_help['state'] = 'disabled'
+
+
+    # Show the rm.LS saved graphs, arranged on the screen
+    def do_show_rm_LS_graphs(self):
+        """ Showing the rm.LS saved graphs, arranged on the screen
+        """
+
+        def do_show_image(imagePath, row=0, col=0):
+            """ displays an image
+                row and col allows to array the image on the screen
+            """
+
+            # https://tkdocs.com/tutorial/fonts.html#images
+            wimg = Toplevel()
+            fimg = Frame(wimg)
+            fimg.grid(row=0, column=0)
+
+            image = Image.open(imagePath)#.convert("RGB")
+
+            width, height = image.size
+            xoffset = self.xpos + 50
+            yoffset = self.ypos
+            wimg.geometry(f'+{xoffset + width * col}+{yoffset + height * row}')
+
+            imageObj = ImageTk.PhotoImage(image)
+
+            # http://effbot.org/pyfaq/why-do-my-tkinter-images-not-appear.htm (*)
+            lbl_image = Label(fimg, image=imageObj)
+            lbl_image.image = imageObj              # (*) trick: keep the reference
+            lbl_image.grid(row=0, column=0)
+
+
+        fnames = os.listdir(rm.folder)
+        fnames.sort()
+        row = 0
+        col = 0
+        found = False
+        for ch in 'C', 'L', 'R':
+            for fname in fnames:
+                if fname[-4:] == '.png' and fname[0] == ch:
+                    imagePath = f'{rm.folder}/{fname}'
+                    do_show_image(imagePath, row, col)
+                    found = True
+                    col += 1
+            if found:
+                row +=1
+                col = 0
+                found = False
 
 
     def handle_keypressed(self, event):
@@ -201,6 +270,9 @@ class RoommeasureGUI(Tk):
         rm.do_averages()
         rm.do_save_averages()
         self.var_msg.set('DONE')
+
+        # Showing the rm.LS saved graphs, arranged on the screen
+        self.do_show_rm_LS_graphs()
 
         # Re enabling the GO! & CLOSE button
         self.btn_go['state'] = 'normal'
@@ -266,8 +338,11 @@ class RoommeasureGUI(Tk):
 
             # - output folder
             if folder:
-                rm.folder = f'{UHOME}/{folder}'
+                rm.folder = f'{UHOME}/rm/{folder}'
             rm.prepare_frd_folder()
+            #   updates the GUI w/ the real folder if subindex have been added
+            app.ent_folder.delete(0, END)
+            app.ent_folder.insert(0, os.path.basename(rm.folder))
 
             # - beeps:
             rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
@@ -330,7 +405,7 @@ if __name__ == '__main__':
     # - Channels to measure ('L' or 'R' or 'LR')
     app.cmb_ch.set('LR')
     # - Locations per channel:
-    app.cmb_meas.set('5')
+    app.cmb_meas.set('3')
     # - Auto timer for measuring progress ('manual' or 'N' seconds)
     app.cmb_timer.set('manual')
     # - Alert before measuring: ('1' or '0')
@@ -338,7 +413,7 @@ if __name__ == '__main__':
     # - Schroeder freq for smoothing result curve:
     app.ent_scho.insert(0, '200')
     # - Output folder
-    app.ent_folder.insert(0, 'roommeasure')
+    app.ent_folder.insert(0, 'meas')
 
     # LAUNCH GUI
     app.mainloop()
