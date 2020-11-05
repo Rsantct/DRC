@@ -33,8 +33,8 @@ from time import sleep
 # logsweep2TF module (logsweep to transfer function)
 try:
     import logsweep2TF as LS
-except:
-    print( "(!) It is needed logsweep2TF.py" )
+except Exception as e:
+    print( f'(!) ERROR loading module \'logsweep2TF.py\': {e}' )
     sys.exit()
 
 # audiotools modules
@@ -56,39 +56,33 @@ channels_avg= {'L':None, 'R':None}
 # roommeasure.py DEFAULT parameters
 ################################################################################
 
-# Disabling plotting when rommeasure.py is used as a module
-doPlot = False
+# sd.default.device and  sd.default.samplerate have default values in LS module
 
-LS.N                    = 2**17     # Sweep length in samples.
-numMeas                 = 2         # Number of measurements to perform
-doBeep                  = True      # Do beep warning sound before each measurement
-timer    = 0                        # A timer to countdown between measurements,
-                                    # without user interaction
-channels                = ['C']     # Channels to interleaving measurements.
+LS.N                = 2**17     # Sweep length in samples.
+numMeas             = 2         # Number of measurements to perform
+doBeep              = True      # Do beep warning sound before each measurement
+timer               = 0         # A timer to countdown between measurements,
+                                # without user interaction
+channels            = ['C']     # Channels to interleaving measurements.
 
-# Result:
-binsFRD                 = 2**14     # Bins for .frd files
+# Results:
+folder              = f'{UHOME}/rm/meas'
+binsFRD             = 2**14     # Bins for .frd files
+                                # Smoothing the resulting response:
+Scho                = 200       # Schroeder freq (Hz)
+Noct                = 24        # Initial 1/Noct smoothing below Scho,
+                                # then will be changed progressively until
+                                # 1/1oct at Nyquist freq.
 
-# Smoothing the resulting response
-Scho                    = 200       # Schroeder freq (Hz)
-Noct                    = 24        # Initial 1/Noct smoothing below Scho,
-                                    # then will be changed progressively until
-                                    # 1/1oct at Nyquist freq.
+LS.printInfo        = True      # logsweep2TF verbose
 
-# (i) sd.default.device and  sd.default.samplerate have default values in LS module
-
-LS.printInfo            = True      # logsweep2TF verbose
-
-# It is assumed that the user has check previously for soundacard and levels setup.
-LS.checkClearence       = False
+LS.checkClearence   = False     # It is assumed that the user has check
+                                # previously for soundacard and levels setup.
 
 # Remote JACK management
-jackIP      = ''
-jackUser    = ''
-manageJack  = False
-
-# Folder for resulting FRD files:
-folder = f'{UHOME}/roommeasure'
+jackIP              = ''
+jackUser            = ''
+manageJack          = False
 
 
 def print_help_and_exit():
@@ -146,7 +140,7 @@ def read_command_line():
             jackUser = opc[7:]
 
         elif '-f' in opc:
-            folder = f'{UHOME}/{opc.split("=")[-1]}'
+            folder = f'{UHOME}/rm/{opc.split("=")[-1]}'
 
         else:
             opcsOK = False
@@ -219,19 +213,20 @@ def do_meas(ch, seq):
                     verbose = False
                   )
 
-    if doPlot:
-        # Smoothed curve plot (this takes a while in a slow cpu)
-        m_smoo = smooth(f, m, Noct, f0=Scho)
-        figIdx = 10
-        chs = ('L', 'R', 'C')
-        if ch in chs:
-            figIdx += chs.index(ch)
+    # Smoothed curve for plotting (this takes a while in a slow cpu)
+    m_smoo = smooth(f, m, Noct, f0=Scho)
+    figIdx = 10
+    chs = ('L', 'R', 'C')
+    if ch in chs:
+        figIdx += chs.index(ch)
 
-        # Looping CSS4 color sequence, from black (index 7)
-        LS.plot_TF( m_smoo, semi=True,  label  = f'{ch}_{str(seq)}',
-                                        color  = css4_colors[(7 + seq) % 148],
-                                        figure = figIdx
-                  )
+    # Plotting the smoothed measurement
+    # Will choose a color by selecting the CSS4 color sequence, from black (index 7)
+    LS.plot_TF( m_smoo, semi=True,  label     = f'{ch}_{str(seq)}',
+                                    color     = css4_colors[(7 + seq) % 148],
+                                    figure    = figIdx,
+                                    png_fname = f'{folder}/{ch}.png'
+               )
 
     return meas
 
@@ -418,16 +413,16 @@ def do_save_averages():
                         fs      = LS.fs,
                         comments= f'roommeasure.py ch:{ch} smoothed avg' )
 
-        if doPlot:
-            # Prepare a figure with curves from all mic positions
-            LS.plot_TF( m,      semi=True,  label  = f'{ch} avg',
-                                            color  = 'blue',
-                                            figure = 20+i
-                      )
-            # Prepare a figure with average and smoothed average
-            LS.plot_TF( m_smoo, semi=True,  label  = f'{ch} avg smoothed',
-                                            color  = 'red',
-                                            figure = 20+i
+        # Prepare a figure with average curve ...
+        LS.plot_TF( m,      semi=True,  label     = f'{ch} avg',
+                                        color     = 'blue',
+                                        figure    = 20+i
+                  )
+        # ... and adding the smoothed average curve
+        LS.plot_TF( m_smoo, semi=True,  label     = f'{ch} avg smoothed',
+                                        color     = 'red',
+                                        figure    = 20+i,
+                                        png_fname = f'{folder}/{ch}_avg.png'
                       )
 
         i += 1
@@ -452,14 +447,14 @@ def prepare_frd_folder():
     global folder
 
     if not os.path.exists(folder):
-        os.mkdir(folder)
+        os.makedirs(folder)
         print_console_msg(f'output to \'~{folder.replace(UHOME, "")}\'' )
 
     else:
         i=1
         while True:
             if not os.path.exists(f'{folder}_{i}'):
-                os.mkdir(f'{folder}_{i}')
+                os.makedirs(f'{folder}_{i}')
                 folder = f'{folder}_{i}'
                 print_console_msg(f'output to \'~{folder.replace(UHOME, "")}\'' )
                 break
@@ -472,9 +467,6 @@ def prepare_frd_folder():
 
 
 if __name__ == "__main__":
-
-    # Enables plotting when rommeasure.py is used from command line
-    doPlot = True
 
     # Reading command line arguments, then will update:
     #   - LS config: device, fs, and N;
@@ -518,7 +510,6 @@ if __name__ == "__main__":
     do_save_averages()
 
     # Plotting prepared curves
-    if doPlot:
-        LS.plt.show()
+    LS.plt.show()
 
     # END
