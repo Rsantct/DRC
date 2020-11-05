@@ -320,21 +320,21 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
     # Alerting the user
     if gui_msg:
         gui_msg.set(f'GOING TO MEASURE AT  {numMeas}  LOCATIONS ...')
-        sleep(1)
+        sleep(.5)
     else:
         print_console_msg(f'GOING TO MEASURE AT  {numMeas}  LOCATIONS ...')
     if doBeep:
         for i in range(3):
             do_beep('L')
             do_beep('R')
-    sleep(1)
+    sleep(.5)
 
 
     for seq in range(numMeas):
 
         if gui_trigger:
             gui_msg.set(f'LOCATION: {str(seq+1)} / {str(numMeas)}')
-            sleep(3)
+            sleep(.5)
         else:
             print_console_msg(f'MIC LOCATION: {str(seq+1)}/{str(numMeas)}')
 
