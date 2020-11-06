@@ -240,6 +240,7 @@ class RoommeasureGUI(Tk):
 
         def do_test():
 
+            self.var_msg.set('TESTING SWEEP RECORDING ...')
             self.btn_go['state'] = 'disabled'
             self.btn_close['state'] = 'disabled'
 
@@ -253,6 +254,7 @@ class RoommeasureGUI(Tk):
 
             self.btn_go['state'] = 'normal'
             self.btn_close['state'] = 'normal'
+            self.var_msg.set('')
             do_show_test_graphs()
 
 
