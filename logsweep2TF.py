@@ -80,8 +80,8 @@ import sys
 from time import time       # Para evaluar el tiempo de proceso de algunos cálculos,
                             # como por ejemplo la crosscorrelation que tarda un güevo.
 
-HOME = os.path.expanduser("~")
-sys.path.append(HOME + "/audiotools")
+UHOME = os.path.expanduser("~")
+sys.path.append(UHOME + "/audiotools")
 from smoothSpectrum import smoothSpectrum as smooth
 import tools
 
@@ -226,7 +226,7 @@ def do_print_info():
     return
 
 
-def do_plot_aux_graphs():
+def do_plot_aux_graphs(png_folder=f'{UHOME}'):
     """ Aux graphs on time domain
     """
 
@@ -235,23 +235,28 @@ def do_plot_aux_graphs():
 
     # ---- Plot del sweep (domT)
     plt.figure(10)
-    plt.plot(vTimes, sweep,      color='red',  label='raw sweep')
+    plt.plot(vTimes, sweep, '--', color='black', linewidth=2,  label='raw sweep')
     plt.grid()
-    plt.plot(vTimes, tapsweep, color='blue', label='tapered sweep')
+    plt.plot(vTimes, tapsweep, color='blue', linewidth=1, label='tapered sweep')
     plt.ylim(-1.5, 1.5)
     plt.xlabel('time[s]')
     plt.legend()
-    plt.title('Sweeps')
+    plt.title('Prepared sweeps')
+    plt.savefig(f'{png_folder}/prepared_sweeps.png')
 
     #--- Plots time domain de la grabación del DUT y del REFERENCE LOOP
-    plt.figure(20)
-    plt.plot(vTimes, dut,       'blue', label='raw dut')
-    plt.plot(vTimes, ref + 2.0, 'grey', label='raw ref (offset+2.0)')
-    plt.grid()
-    plt.ylim(-1.5, 3.5)
-    plt.legend()
-    plt.xlabel('Time [s]')
-    plt.title('Recorded responses');
+    fig = plt.figure(20)
+    axDUT = fig.add_subplot()
+    axDUT.plot(vTimes, dut, 'blue', label='DUT')
+    axREF = axDUT.twinx()
+    axREF.plot(vTimes, ref, 'grey', label='REF (offset+2.0)')
+    axDUT.grid()
+    axDUT.set_ylim(-1.5, 3.5)
+    axREF.set_ylim(-3.5, 1.5)
+    fig.legend()
+    axDUT.set_xlabel('Time [s]')
+    axDUT.set_title('Recorded sweeps')
+    plt.savefig(f'{png_folder}/time_domain_recorded.png')
 
     #--- Time clearance (
     t  = vTimes
@@ -262,8 +267,9 @@ def do_plot_aux_graphs():
     plt.legend()
     plt.xlabel('time (s)')
     plt.title('Time Clearance:\nrecorder lags  player <----o----> recorder leads player')
+    plt.savefig(f'{png_folder}/time_clearance.png')
 
-    print( "--- Showing Time Domain graphs..." )
+    print( "--- Plotting Time Domain graphs..." )
 
 
 def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
@@ -297,14 +303,17 @@ def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
     return
 
 
-def do_plot_TFs():
+def do_plot_TFs(png_fname=''):
     """ Freq domain Transfer Function plotting
     """
 
-    plot_TF(DUT_TF, label='DUT', semi=False, color='blue')
-    plot_TF(REF_TF, label='REF', semi=False, color="grey")
+    plot_TF(REF_TF, label='REF', semi=False, color='grey',  png_fname=png_fname)
 
-    if TF_plot_smooth:
+    if not TF_plot_smooth:
+        plot_TF(DUT_TF, label='DUT', semi=False, color='blue', png_fname=png_fname)
+
+    else:
+
         # Para aligerar el trabajo de suavizado, que tarda mucho,
         # preparamos una versión reducida de DUT_TF
 
@@ -322,11 +331,12 @@ def do_plot_TFs():
         print( "--- Smoothing DUT spectrum (this can take a while ...)" )
         t_start = time()
         # (i) 'audiotools.smooth' trabaja con semiespectros positivos y reales (no complejos)
-        smoothed = smooth(frecNew, abs(magNew), Noct=24)
-        plot_TF(smoothed, semi=True, color='green', label='DUT smoothed')
+        magNewSmoo = smooth(frecNew, abs(magNew), Noct=24)
         print( f"Smoothing computed in {str( round(time() - t_start, 1) )} s" )
+        plot_TF(magNewSmoo, semi=True, color='green', label='DUT smoothed',
+                                                      png_fname=png_fname)
 
-    print( "--- Showing Freq Domain (TF) graphs..." )
+    print( "--- Plotting Freq Domain (TF) graphs..." )
 
 
 def prepare_sweep():
