@@ -74,22 +74,29 @@
 #
 #   - La opciones de calibración no se toman en cuenta aquí.
 
-#---------------------------- IMPORT MODULES: -------------------------
-#  ~/audiotools modules
+#---------------------------- IMPORTING MODULES: -------------------------
 import os
 import sys
-HOME = os.path.expanduser("~")
-sys.path.append(HOME + "/audiotools")
-from smoothSpectrum import smoothSpectrum as smooth
-
 from time import time       # Para evaluar el tiempo de proceso de algunos cálculos,
                             # como por ejemplo la crosscorrelation que tarda un güevo.
 
-from matplotlib import pyplot as plt
+UHOME = os.path.expanduser("~")
+sys.path.append(UHOME + "/audiotools")
+from smoothSpectrum import smoothSpectrum as smooth
+import tools
+
+
+# https://matplotlib.org/faq/howto_faq.html#working-with-threads
+import matplotlib
+# Later we will be able to call matplotlib.use('Agg') to replace the regular
+# display backend (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid
+# incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
+import matplotlib.pyplot as plt
+
 from numpy import *
 from scipy import interpolate # para aligerar el ploteo de la TF smoothed
-
 from scipy.signal import correlate as signal_correlate
+
 # signal.correlate muestra un FutureWarning, lo inhibimos:
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -100,13 +107,14 @@ import sounddevice as sd    # https://python-sounddevice.readthedocs.io
 #------------------------- DEFAULT OPTIONS: --------------------------
 #---------------------------------------------------------------------
 select_card         = False
-selected_card       = None
+selected_card       = ''
 checkClearence      = True
 
 printInfo           = True
-TFplot              = False
-auxPlots            = False
-plotSmoothSpectrum  = False  # añadir gráfica TF suavizada (OjO esto tarda)
+
+aux_plot            = False     # Time domain aux plotting
+TF_plot             = False     # Freq domain Transfer Function plotting
+TF_plot_smooth      = False     # Optional smoothed TF plotting
 
 #---------------------------------------------------------------------
 #--------------------------- DEFAULT PARAMETERS: ---------------------
@@ -114,7 +122,8 @@ plotSmoothSpectrum  = False  # añadir gráfica TF suavizada (OjO esto tarda)
 sig_frac    = 0.5               # Fraction of full scale applied to play the sweep.
 fs          = 48000             # Must ensure that sound driver accepts.
 N           = 2**18             # Lenght of the total sequence, make this
-                                # larger if there is insufficient time clearance
+                                # Larger if there is insufficient time clearance
+
 system_type = 'electronic'      # 'acoustic', 'electronic', 'level-dependent'
 Po          = 2e-5              # SPL reference pressure
 c           = 343               # speed of sound
@@ -122,7 +131,6 @@ c           = 343               # speed of sound
 #--------------------------- USE OPTIONS --------------------
 dBclearance         = 10        # white space above TF plots
 dBspan              = 60        # total scale of TF plots
-minFrecPlot         = 10        # min freq to plot
 clipWarning         = -3.0      # dBFS warning when capturing
 
 #----------------- System calibration factor CF for dut --------------------
@@ -151,49 +159,53 @@ S_adc = 1.0
 #---------------------------------------------------------------------
 
 def choose_soundcard():
-    #sd.default.device = 'Built-in Microphone', 'Built-in Output' # Mac Book
 
-    tested = False
+    result = False
+
     tries = 0
-    while not tested and tries < 3:
+    while not result and tries < 3:
         print( "\n    SYSTEM SOUND DEVICES:\n" )
         print( sd.query_devices() )
         print()
-        print( "    Select capture  device: " ); i = int(input())
-        print( "    Select playback device: " ); o = int(input())
-        tested = test_soundcard(i,o)
+        print( "    Select capture  device: ", end='' ); i = int(input())
+        print( "    Select playback device: ", end='' ); o = int(input())
+        result = test_soundcard(i,o)
         tries += 1
 
-    return tested
+    return result
 
-def test_soundcard(i="default",o="default", fs=fs):
 
-    playrecOK = False
-    dummy1sec = zeros(int(1*fs))
-    print( "\n    SYSTEM SOUND DEVICES:\n" )
-    print( sd.query_devices() )
-    print()
-    sd.default.device = i, o # Sets the default device for the sounddevide module.
-    print( "    Trying play/rec:" )
+def test_soundcard(i="default",o="default", fs=fs, ch=2):
 
-    try:
-        print( "    ", sd.query_devices(i)['name'] )
-        print( "    ", sd.query_devices(o)['name'] )
+    result = False
 
-    except:
-        print( "(!) Error accediendo a los devices " + str(i) + " / " + str(o) )
-        return  playrecOK
+    dummy1sec = zeros(int(fs))
+
+    print( 'Trying:' )
 
     try:
-        chk_rec = sd.check_input_settings(i, channels=2, samplerate=float(fs))
-        chk_pb  = sd.check_output_settings(o, channels=2, samplerate=float(fs))
-        dummy = sd.playrec(dummy1sec)
-        playrecOK = True
-        print( "    Sound device settings are supported" )
-    except:
-        print( "\n(!) FAILED to playback and recording on selected device." )
+        sd.default.device = i, o
+        print( f'    {sd.query_devices(i)["name"]}')
+        print( f'    {sd.query_devices(o)["name"]}')
+    except Exception as e:
+        print( f'(!) Error accesing devices [{i},{o}]: {e}' )
 
-    return  playrecOK
+    try:
+        chk_rec = sd.check_input_settings (i, channels=ch, samplerate=float(fs))
+        chk_pb  = sd.check_output_settings(o, channels=ch, samplerate=float(fs))
+        print( f'Sound card parameters OK' )
+    except Exception as e:
+        print( f'(!) Sound card [{i},{o}] ERROR: {e}' )
+
+    try:
+        dummy = sd.playrec(dummy1sec, samplerate=fs, channels=ch)
+        print( 'Sound device settings are supported\n' )
+        result = True
+    except Exception as e:
+        print( f'\n(!) FAILED to playback and recording on selected device: {e}\n' )
+
+    return  result
+
 
 def do_print_info():
 
@@ -213,45 +225,134 @@ def do_print_info():
     print()
     return
 
-def plot_spectrum(MAG, fs=fs, semi=False, fini=20, fend=20000,
-                  fig=None, label=" ", color="blue"):
-    """ plotea un espectro 'mag'
-        semi: boolean que indica que 'mag' es un semiespectro
+
+def do_plot_aux_graphs(png_folder=f'{UHOME}'):
+    """ Aux graphs on time domain
+    """
+
+    vSamples = arange(0,N)              # vector de samples
+    vTimes   = vSamples / float(fs)     # samples a tiempos para visualización
+
+    # ---- Plot del sweep (domT)
+    plt.figure(10)
+    plt.plot(vTimes, sweep, '--', color='black', linewidth=2,  label='raw sweep')
+    plt.grid()
+    plt.plot(vTimes, tapsweep, color='blue', linewidth=1, label='tapered sweep')
+    plt.ylim(-1.5, 1.5)
+    plt.xlabel('time[s]')
+    plt.legend()
+    plt.title('Prepared sweeps')
+    plt.savefig(f'{png_folder}/prepared_sweeps.png')
+
+    #--- Plots time domain de la grabación del DUT y del REFERENCE LOOP
+    fig = plt.figure(20)
+    axDUT = fig.add_subplot()
+    axDUT.plot(vTimes, dut, 'blue', label='DUT')
+    axREF = axDUT.twinx()
+    axREF.plot(vTimes, ref, 'grey', label='REF (offset+2.0)')
+    axDUT.grid()
+    axDUT.set_ylim(-1.5, 3.5)
+    axREF.set_ylim(-3.5, 1.5)
+    fig.legend()
+    axDUT.set_xlabel('Time [s]')
+    axDUT.set_title('Recorded sweeps')
+    plt.savefig(f'{png_folder}/time_domain_recorded.png')
+
+    #--- Time clearance (
+    t  = vTimes
+    t -= N/2.0 / fs               # centramos el 0 en el pico ideal de X
+    plt.figure(30)
+    plt.plot(t, X, color="black", label='xcorr pb/rec')
+    plt.grid()
+    plt.legend()
+    plt.xlabel('time (s)')
+    plt.title('Time Clearance:\nrecorder lags  player <----o----> recorder leads player')
+    plt.savefig(f'{png_folder}/time_clearance.png')
+
+    print( "--- Plotting Time Domain graphs..." )
+
+
+def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
+             label=" ", color="blue", figure=100, title='Freq. response',
+             png_fname='' ):
+    """ Plots a whole or semi spectrum
+        options:
+            figure      allows to perform multicurve figures
+            png_fname   dumps a png image from the plotted graph
     """
     if semi:
-        N = len(MAG)*2
+        N = len(mag)*2
     else:
-        N = len(MAG)
+        N = len(mag)
     Kbins = str((N/2)/1024)
     Fresol = float(fs)/N
-    #frecs = arange(0, N/2.0) * fs / N
     frecs = linspace(0, int(fs/2), int(N/2))
-    #top  = 20 * log10(max(abs(TF[0:int(N/2)])))  # highest dB in plot
     top = 0
-    MAGdB = 20 * log10(abs( MAG[0:int(N/2)] ))
-    plt.figure(fig)
-    plt.semilogx(frecs, MAGdB, color, label=label)
+    magdB = 20 * log10(abs( mag[0:int(N/2)] ))
+    plt.figure(figure)
+    plt.semilogx( frecs, magdB, color, label=label )
     plt.grid()
-    plt.xlim( minFrecPlot, fs/2 )
+    plt.xlim( f_ini, f_end )
     plt.ylim( top+dBclearance-dBspan, top+dBclearance )
-    plt.xlim(fini, fend)
     plt.legend()
     plt.xlabel('frequency [Hz]')
     plt.ylabel('dB')
-    plt.title('Magnitude Response (' + Kbins + ' Kbins, res = ' + str(round(Fresol,2)) + ' Hz)')
+    plt.title(title)
+    if png_fname:
+        plt.savefig(png_fname)
     return
 
-def make_sweep():
-    """ returns:    (windowsweep, sweep, Npad)
-                    The sequence to be played: faded sweep + end pad zeroes
-                    The raw one.
-    """
-    global Npad, indexf1, indexf2           # necesarias en otros procedimientos
 
-    # La secuencia total enviada tendrá longitud N (2**xx) muestras , pero
-    # el sweep no las ocupará todas, se deja al final un tramo de 'Npad' zeros
-    Npad = int(N/4)                         # zeros at the end of the total sequence
-    Ns   = N - Npad                         # most of array is used for sweep
+def do_plot_TFs(png_fname=''):
+    """ Freq domain Transfer Function plotting
+    """
+
+    plot_TF(REF_TF, label='REF', semi=False, color='grey',  png_fname=png_fname)
+
+    if not TF_plot_smooth:
+        plot_TF(DUT_TF, label='DUT', semi=False, color='blue', png_fname=png_fname)
+
+    else:
+
+        # Para aligerar el trabajo de suavizado, que tarda mucho,
+        # preparamos una versión reducida de DUT_TF
+
+        frecOrig = arange(0, N/2.0)  * fs / N
+        magOrig  = DUT_TF[0:int(N/2)] # tomamos solo el semiespectro positivo
+
+        N2 = N/4                 # remuestreo a un cuarto para aligerar
+        frecNew  = arange(0, N2/2.0) * fs / N2
+        # Definimos la func. de interpolación que nos ayudará a obtener las mags reducidas
+        funcI = interpolate.interp1d(frecOrig, magOrig, kind="cubic", bounds_error=False,
+                                 fill_value="extrapolate")
+        # Obtenemos las magnitudes interpoladas en las 'fnew':
+        magNew = funcI(frecNew)
+
+        print( "--- Smoothing DUT spectrum (this can take a while ...)" )
+        t_start = time()
+        # (i) 'audiotools.smooth' trabaja con semiespectros positivos y reales (no complejos)
+        magNewSmoo = smooth(frecNew, abs(magNew), Noct=24)
+        print( f"Smoothing computed in {str( round(time() - t_start, 1) )} s" )
+        plot_TF(magNewSmoo, semi=True, color='green', label='DUT smoothed',
+                                                      png_fname=png_fname)
+
+    print( "--- Plotting Freq Domain (TF) graphs..." )
+
+
+def prepare_sweep():
+    """ prepare globals to work:
+            sweep:      A raw sweep.
+            tapsweep:   The sequence to be played: faded sweep + a zeroes tail
+            indexf1:    Index of pre-tapper end freq in tapsweep
+    """
+    global sweep, tapsweep, indexf1
+
+
+    # The played tapsweep (len=N) will be compund of
+    # a logsweep (len=N-Npad) plus a zeros tail (len=Npad).
+    Npad = int(N/4.0)
+    Ns   = N - Npad                         # most of array is used for sweep ;-)
+
     ts   = linspace(0, Ns/float(fs), Ns)    # array de tiempos del sweep
     # Al sweep se le aplica una 'windo' para 'fade in/out' en f1 y f2
     f_start     = 5.0                       # beginning of turnon half-Hann
@@ -279,27 +380,14 @@ def make_sweep():
     windo[indexf2:Ns] = 0.5 * (1 + cos(pi * arange(0, Ns-indexf2) / (Ns-indexf2)) )
     windo[Ns:N]       = 0       # Zeropad end of sweep. (i) Esto creo que es redundante
                                 # porque el sweep ya tiene zeros ahí.
-    windosweep = windo * sweep  # Here the LOGSWEEP tapered at each end for output to DAC
+    tapsweep = windo * sweep    # Here the LOGSWEEP tapered at each end for output to DAC
 
     # NOTA no tengo claro el interés de pritar esto:
     print( "f_start * Ls: " + str(round(f_start*Ls, 2)) + \
           "   Ls: "  + str(round(Ls,2)) + "    ¿!?" )
     print( 'Finished sweep generation...' )
     print( )
-    # ---- Plot del sweep (domT)
-    if auxPlots:
-        plt.figure(10)
-        vSamples = arange(0,N)              # vector de samples
-        vTimes   = vSamples / float(fs)     # samples a tiempos para visualización
-        plt.plot(vTimes, sweep,      color='red',  label='raw sweep')
-        plt.grid()
-        plt.plot(vTimes, windosweep, color='blue', label='windowed sweep')
-        plt.ylim(-1.5, 1.5)
-        plt.xlabel('time[s]')
-        plt.legend()
-        plt.title('Sweeps')
 
-    return windosweep, sweep
 
 def get_offset_xcorr(sweep, dut, ref):
     """
@@ -312,6 +400,9 @@ def get_offset_xcorr(sweep, dut, ref):
     returns: offset, TimeClearanceOK
 
     """
+
+    global X  # global scoped for plotting later
+
     ### Matlab code:
     # lags = N/2                    % large enough to catch most delays
     #                                 (!) no usable en Numpy.correlate
@@ -345,21 +436,12 @@ def get_offset_xcorr(sweep, dut, ref):
 
     print( "Computed in " + str( round(time() - timestamp, 1) ) + " s" )
 
-    if auxPlots:
-        t  = arange(0, N) / float(fs) # linea de tiempo
-        t -= N/2.0 / fs               # centramos el 0 en el pico ideal de X
-        plt.figure(30)
-        plt.plot(t, X, color="black", label='xcorr pb/rec')
-        plt.grid()
-        plt.legend()
-        plt.xlabel('time (s)')
-        plt.title('recorder lags  player <----|----> recorder leads player')
-
     print( 'Record offset: ' +  str(offset) + ' samples' + \
           ' (' +  str( round( offset/float(fs), 3) ) + ' s)' )
     if offset < 0:
         print( '(i) Negative offset means player lags recorder!' )
 
+    Npad=int(N/4.0)
     if abs(offset) > Npad:
         print( '******INSUFFICIENT TIME CLEARANCE!******' )
         print( '******INSUFFICIENT TIME CLEARANCE!******' )
@@ -369,11 +451,16 @@ def get_offset_xcorr(sweep, dut, ref):
 
     return offset, TimeClearanceOK
 
-def do_meas(windosweep, sweep):
+
+def do_meas():
     """
-    returns:    DUT_SWEEP (The Transfer Function of the DUT),
-                    If errors, returns zeros(N)
+    returns:    DUT_TF, the Transfer Function of the Device Under Test,
+                If errors, returns zeros(N)
     """
+
+    global dut,    ref          # Time domain global scoped
+    global DUT_TF, REF_TF       # Freq domain global scoped
+
     #---------------------------------------------------------------------------
     # ---- Determina SPL calibration factor en función del tipo de sistema -----
     #---------------------------------------------------------------------------
@@ -394,9 +481,12 @@ def do_meas(windosweep, sweep):
     print( '(i) Some sound cards act strangely. Check carefully!' )
     # Antiphased signals on channels avoids codec midtap modulation.
     # Se aplica atenuación según 'sig_frac'
-    stereo = array([sig_frac * windosweep, sig_frac * -windosweep]) # [ch0, ch1]
+    stereo = array([sig_frac * tapsweep, sig_frac * -tapsweep]) # [ch0, ch1]
     sd.default.samplerate = fs
     sd.default.channels = 2
+    rec_dev_name = sd.query_devices(sd.default.device[0])['name']
+    pbk_dev_name = sd.query_devices(sd.default.device[1])['name']
+    print(f'    in: {rec_dev_name}, out: {pbk_dev_name}, fs: {sd.default.samplerate}')
     # (i) .transpose pq el player necesita una array con cada canal en una COLUMNA.
     z = sd.playrec(stereo.transpose(), blocking=True) # 'blocking' waits to finish.
     dut = z[:, 0]   # we use LEFT  CHANNEL as DUT
@@ -426,18 +516,6 @@ def do_meas(windosweep, sweep):
         print( 'REF channel max level:', round(maxdBFS_REF, 1), 'dBFS             ', \
               'RMS_LSBs:',  REF_RMS_LSBs )
 
-    #--- Plots time domain de la grabación del DUT y del REFERENCE LOOP
-    if auxPlots:
-        plt.figure(20)
-        vTimes = arange(0,N) / float(fs)    # vector de samples en segundos
-        plt.plot(vTimes, dut,       'blue', label='raw dut')
-        plt.plot(vTimes, ref + 2.0, 'grey', label='raw ref (offset+2.0)')
-        plt.grid()
-        plt.ylim(-1.5, 3.5)
-        plt.legend()
-        plt.xlabel('Time [s]')
-        plt.title('Recorded responses');
-
     #-----------------------------------------------------------------------------
     #------------- 3. Determine if time clearance: -------------------------------
     # Checks if ound card play/rec delay is lower than the zeropad silence at the signal end.
@@ -454,7 +532,7 @@ def do_meas(windosweep, sweep):
     #                   All frequency variables are meant to be voltage spectra
     #-----------------------------------------------------------------------------
     lwindo = ones(N)
-    lwindo[0:indexf1] = 0.5 * ( 1- cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
+    lwindo[0:indexf1] = 0.5 * ( 1 - cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
     lwindosweep = lwindo * sweep
     # remove play-record delay by shifting computer sweep array:
     ## %sweep=circshift(sweep,-offset);             # Esto aparece comentado en el cód. original,
@@ -472,48 +550,20 @@ def do_meas(windosweep, sweep):
     #     que es el objetivo que nos ocupa ;-)
 
     ##%TF       = DUT./SWEEP;                                # <- código original comentado
-    DUT_SWEEP   = DUT / LWINDOSWEEP  # (orig named as 'TF' )   this has good Nyquist behaviour
-    DUT_REF     = DUT / REF          # (orig named as 'TF2')
-
-    #-----------------------------------------------------------------------------
-    #-------------------------  PLOTTING FREQ RESPONSES --------------------------
-    #-----------------------------------------------------------------------------
-    if TFplot:
-        plot_spectrum(DUT_SWEEP, fig=100, label='DUT/SWEEP', color='blue')
-        plot_spectrum(DUT_REF,   fig=100, label='DUT/REF',   color="grey")
-
-        if plotSmoothSpectrum:
-            # Para aligerar el trabajo de suavizado, que tarda mucho,
-            # preparamos una versión reducida de DUT_SWEEP
-
-            frecOrig = arange(0, N/2.0)  * fs / N
-            magOrig  = DUT_SWEEP[0:N/2] # tomamos solo el semiespectro positivo
-
-            N2 = N/4                    # remuestreo a un cuarto para aligerar
-            frecNew  = arange(0, N2/2.0) * fs / N2
-            # Definimos la func. de interpolación que nos ayudará a obtener las mags reducidas
-            funcI = interpolate.interp1d(frecOrig, magOrig, kind="cubic", bounds_error=False,
-                                     fill_value="extrapolate")
-            # Obtenemos las magnitudes interpoladas en las 'fnew':
-            magNew = funcI(frecNew)
-
-            print( "--- Smoothing DUT spectrum (this can take a while ...)" )
-            t_start = time()
-            # (i) 'audiotools.smooth' trabaja con semiespectros positivos y reales (no complejos)
-            smoothed = smooth(frecNew, abs(magNew), Noct=24)
-            plot_spectrum(smoothed, semi=True, fig=100, color='green', label='DUT/SWEEP smoothed')
-            print( "Smoothing computed in " + str( round(time() - t_start, 1) ) + " s" )
+    DUT_TF   = DUT / LWINDOSWEEP  # (orig named as 'TF' )   this has good Nyquist behaviour
+    REF_TF   = DUT / REF          # (orig named as 'TF2')
 
     ### (i)
-    ##  A partir de aquí , el código original de Logsweep1quasi.m está destinado a
-    ##  encontrar la respuesta quasi anecoica de un altavoz, a base de definir marcadores para
-    ##  enventanar la medida DUT.
-    ##  A nosotros nos interesa la respuesta estacionaria in room.
+    ##  A partir de aquí , el código original de Logsweep1quasi.m está destinado
+    ##  a encontrar la respuesta quasi anecoica de un altavoz, a base de definir
+    ##  marcadores para enventanar la medida DUT.
+    ##  Nosotros nos quedamos con la respuesta estacionaria in room.
 
     if TimeClearanceOK:
-        return DUT_SWEEP
+        return DUT_TF
     else:
         return zeros(N)
+
 
 #-----------------------------------------------------------------------------
 #--------------------------------- MAIN PROGRAM ------------------------------
@@ -521,8 +571,8 @@ def do_meas(windosweep, sweep):
 if __name__ == "__main__":
 
     # Las gráficas son mostradas por defecto
-    TFplot      = True
-    auxPlots    = True
+    TF_plot     = True
+    aux_plot    = True
 
     # Lee la command line
     opcsOK = True
@@ -539,13 +589,13 @@ if __name__ == "__main__":
             printInfo = True
 
         elif "-notf" in opc.lower():
-            TFplot = False
+            TF_plot = False
 
         elif "-noaux" in opc.lower():
-            auxPlots = False
+            aux_plot = False
 
         elif "-smoo" in opc.lower():
-            plotSmoothSpectrum = True
+            TF_plot_smooth = True
 
         elif "-noclear" in opc.lower():
             checkClearence = False
@@ -596,10 +646,16 @@ if __name__ == "__main__":
     if printInfo:
         do_print_info()
 
-    windosweep, sweep = make_sweep()
+    # Do create the needed raw and tapered sweeps
+    prepare_sweep()
 
-    TF = do_meas(windosweep, sweep)
+    TF = do_meas()
 
-    if auxPlots or TFplot:
-        print( "--- Showing the graphs..." )
+    if aux_plot:
+        do_plot_aux_graphs()
+
+    if TF_plot:
+        do_plot_TFs()
+
+    if aux_plot or TF_plot:
         plt.show()

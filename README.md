@@ -9,6 +9,8 @@ El script **`roommeasure.py`** permite realizar **_medidas estacionarias en múl
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
+![GUI](https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png)
+
 
 ### Integración con JACK
 
@@ -85,14 +87,15 @@ Este software funciona en máquinas Linux o Mac OS (Homebrew), que dispongan de 
 
 **python3**
 
-    $ sudo apt install numpy scipy matplotlib sounddevice
+    sudo apt install python3-numpy python3-matplotlib python3-scipy
 
 Quizás se necesite actualizar las herramientas de compilación y el gestor de paquetes de Python:
 
-    $ sudo apt install build-essential libssl-dev libffi-dev python-dev
-    $ sudo pip install --upgrade pip
-    $ sudo pip install --upgrade setuptools
-    $ sudo pip install sounddevice
+    sudo apt install python3-pip
+    sudo apt install build-essential libssl-dev libffi-dev python-dev
+    sudo pip3 install --upgrade pip
+    sudo pip3 install --upgrade setuptools
+    sudo pip3 install sounddevice
 
 **AudioHumLab/audiotools**
 
