@@ -9,12 +9,15 @@ El script **`roommeasure.py`** permite realizar **_medidas estacionarias en múl
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
-![GUI](https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png)
-
 
 ### Integración con JACK
 
 Para sistemas de altavoces gestionados con JACK, como los disponibles en [AudioHumLab](https://github.com/AudioHumLab), **`roommeasure.py`** dispone de una opción para ordenar el cambio de canal al sistema de altavoces remoto, al objeto de facilitar la automatización de medidas en un sistema estéreo.
+
+![GUI](https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png)
+
+![GUI](https://github.com/Rsantct/DRC/blob/master/doc/test_sweep.png)
+
 
 
 ## Cálculo
