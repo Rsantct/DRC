@@ -60,11 +60,14 @@ roommeasure.py
 
     IMPORTANT:
 
-    Please do a preliminary test by using logsweep2TF.py, in order to verify:
+    Please do a preliminary test by running the script logsweep2TF.py or
+    by clicking the [test sweep] GUI button, in order to verify:
 
-    - The sound card does not loses samples, and levels are ok.
+        - the sound card does not loses samples, and levels are ok.
 
-    - The measuremet is feasible (Time clearance) with the selected parameters.
+        - the measuremet is feasible (a clear 'Time clearance' graph is shown)
+
+    with the selected hardware and parameters (sample rate and sweep length).
 
 
     RESULTS:
