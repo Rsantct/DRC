@@ -11,7 +11,6 @@ from tkinter import ttk
 from PIL import ImageTk, Image
 
 import threading
-from time import sleep
 
 import roommeasure as rm
 
@@ -31,9 +30,12 @@ class RoommeasureGUI(Tk):
         super().__init__()  # this initiates the parent class Tk in order to
                             # make self a typical root = Tk()
 
-        # force window location
-        self.xpos = 250
-        self.ypos = 100
+        self.screenW = self.winfo_screenwidth()
+        self.screenH = self.winfo_screenheight()
+
+        #  Main window location
+        self.xpos = int(self.screenW / 12)
+        self.ypos = int(self.screenH / 12)
         self.geometry(f'+{self.xpos}+{self.ypos}')
         self.title('DRC/roommeasure.py GUI')
 
@@ -219,8 +221,7 @@ class RoommeasureGUI(Tk):
             image = Image.open(imagePath)#.convert("RGB")
             iw, ih = image.size
             iaspect = iw / ih
-            sh = self.winfo_screenheight()
-            ih2 = int(sh / 3)
+            ih2 = int(self.screenH / 3)
             iw2 = int(ih2 * iaspect)
             image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
             imageObj = ImageTk.PhotoImage(image2)
@@ -352,9 +353,9 @@ class RoommeasureGUI(Tk):
             if folder:
                 rm.folder = f'{UHOME}/rm/{folder}'
             rm.prepare_frd_folder()
-            #   updates the GUI w/ the real folder if subindex have been added
-            app.ent_folder.delete(0, END)
-            app.ent_folder.insert(0, os.path.basename(rm.folder))
+            #   updates the GUI w/ the real folder because subindex could be added
+            self.ent_folder.delete(0, END)
+            self.ent_folder.insert(0, os.path.basename(rm.folder))
 
             # - beeps:
             rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
@@ -402,6 +403,9 @@ class RoommeasureGUI(Tk):
                                      daemon = True )
         job_meas.start()
 
+
+class TestLogSweep2TFGUI(Tk):
+    pass
 
 if __name__ == '__main__':
 
