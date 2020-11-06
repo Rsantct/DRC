@@ -171,6 +171,7 @@ class RoommeasureGUI(Tk):
         for i in range(ncolumns):
             content.columnconfigure(i, weight=1)
 
+
     def enable_Go(self):
         if self.var_validate.get():
             self.btn_go['state'] = 'normal'
