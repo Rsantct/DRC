@@ -9,6 +9,8 @@ El script **`roommeasure.py`** permite realizar **_medidas estacionarias en múl
 
 Es responsabilidad del usuario definir la amplitud espacial de las posiciones de micrófono, dependiendo del escenario de escucha.
 
+![GUI](https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png)
+
 
 ### Integración con JACK
 
