@@ -313,30 +313,36 @@ def do_plot_TFs(png_fname=''):
         plot_TF(DUT_TF, label='DUT', semi=False, color='blue', png_fname=png_fname)
 
     else:
-
-        # Para aligerar el trabajo de suavizado, que tarda mucho,
-        # preparamos una versión reducida de DUT_TF
-
+        # To lighten the smoothing work, which takes a long time,
+        # we prepare a reduced version of DUT_TF
         frecOrig = arange(0, N/2.0)  * fs / N
         magOrig  = DUT_TF[0:int(N/2)] # tomamos solo el semiespectro positivo
+        frecNew, magNew = reduce_spectrum(frecOrig, magOrig, factor=4)
 
-        N2 = N/4                 # remuestreo a un cuarto para aligerar
-        frecNew  = arange(0, N2/2.0) * fs / N2
-        # Definimos la func. de interpolación que nos ayudará a obtener las mags reducidas
-        funcI = interpolate.interp1d(frecOrig, magOrig, kind="cubic", bounds_error=False,
-                                 fill_value="extrapolate")
-        # Obtenemos las magnitudes interpoladas en las 'fnew':
-        magNew = funcI(frecNew)
-
+        # Smoothing
         print( "--- Smoothing DUT spectrum (this can take a while ...)" )
         t_start = time()
-        # (i) 'audiotools.smooth' trabaja con semiespectros positivos y reales (no complejos)
+        # (i) 'audiotools.smooth' requires a real valued semi spectrum
         magNewSmoo = smooth(frecNew, abs(magNew), Noct=24)
         print( f"Smoothing computed in {str( round(time() - t_start, 1) )} s" )
         plot_TF(magNewSmoo, semi=True, color='green', label='DUT smoothed',
                                                       png_fname=png_fname)
 
     print( "--- Plotting Freq Domain (TF) graphs..." )
+
+
+def reduce_semispectrum(f, mag, factor=4):
+    """ compute a reduced version of a given semispectrum
+    """
+    # reduced freq bins
+    Nnew = len(f)/factor
+    fNew  = arange(0, Nnew/2.0) * fs / Nnew
+    # Interpolate function
+    funcI = interpolate.interp1d( f, mag, kind="cubic",
+                                          bounds_error=False,
+                                          fill_value="extrapolate" )
+    # Return interpolated magnitudes over reduced freq bins
+    return fNew, funcI(fNew)
 
 
 def prepare_sweep():
@@ -423,7 +429,7 @@ def get_offset_xcorr(sweep, dut, ref):
         print( "(i) Bad level on REF ch, using DUT ch itself to estimate clearance" )
 
     print( "--- Determining record/play delay using crosscorrelation (can take a while ...)" )
-    TimeClearanceOK = False
+
     timestamp = time()
 
     ### (i) Correlation in NUMPY/SCIPY no usa el parámetro lags como en MATLAB
@@ -443,9 +449,7 @@ def get_offset_xcorr(sweep, dut, ref):
 
     Npad=int(N/4.0)
     if abs(offset) > Npad:
-        print( '******INSUFFICIENT TIME CLEARANCE!******' )
-        print( '******INSUFFICIENT TIME CLEARANCE!******' )
-        print( '******INSUFFICIENT TIME CLEARANCE!******' )
+        TimeClearanceOK = False
     else:
         TimeClearanceOK = True
 
@@ -454,8 +458,7 @@ def get_offset_xcorr(sweep, dut, ref):
 
 def do_meas():
     """
-    returns:    DUT_TF, the Transfer Function of the Device Under Test,
-                If errors, returns zeros(N)
+    returns: DUT_TF (Transfer Function of the Device Under Test), TimeClearance
     """
 
     global dut,    ref          # Time domain global scoped
@@ -559,10 +562,7 @@ def do_meas():
     ##  marcadores para enventanar la medida DUT.
     ##  Nosotros nos quedamos con la respuesta estacionaria in room.
 
-    if TimeClearanceOK:
-        return DUT_TF
-    else:
-        return zeros(N)
+    return DUT_TF, TimeClearanceOK
 
 
 #-----------------------------------------------------------------------------
@@ -649,7 +649,22 @@ if __name__ == "__main__":
     # Do create the needed raw and tapered sweeps
     prepare_sweep()
 
-    TF = do_meas()
+    TF, TC = do_meas()
+
+    if not TC:
+        print( '******INSUFFICIENT TIME CLEARANCE!******' )
+        print( '******INSUFFICIENT TIME CLEARANCE!******' )
+        print( '******INSUFFICIENT TIME CLEARANCE!******' )
+
+    maxdB = max( 20 * log10( abs(TF) ) )
+    if  maxdB > 0.0:
+        print( '****************************************' )
+        print(f'CLIPPING DETECTED: +{round(maxdB,1)} dB  ' )
+        print( '****************************************' )
+    elif maxdB < -20.0:
+        print( '****************************************' )
+        print(f'TOO LOW: {round(maxdB,1)} dB  ' )
+        print( '****************************************' )
 
     if aux_plot:
         do_plot_aux_graphs()
