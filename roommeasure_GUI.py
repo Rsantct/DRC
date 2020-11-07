@@ -244,7 +244,18 @@ class RoommeasureGUI(Tk):
             self.btn_go['state'] = 'disabled'
             self.btn_close['state'] = 'disabled'
 
-            rm.LS.TF = rm.LS.do_meas()
+            TF, TC = rm.LS.do_meas()
+
+            if not TC:
+                self.var_msg.set('INSUFFICIENT TIME CLEARANCE!')
+
+            maxdB = max( 20 * rm.np.log10( rm.np.abs(TF) ) )
+            if  maxdB > 0.0:
+                self.var_msg.set(f'CLIPPING DETECTED: +{round(maxdB,1)} dB')
+            elif maxdB < -20.0:
+                self.var_msg.set(f'TOO LOW: {round(maxdB,1)} dB')
+            else:
+                self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
 
             rm.LS.do_plot_aux_graphs( png_folder=f'{UHOME}/rm/' )
 
