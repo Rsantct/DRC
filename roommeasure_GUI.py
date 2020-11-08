@@ -209,7 +209,7 @@ class RoommeasureGUI(Tk):
         image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
         imageObj = ImageTk.PhotoImage(image2)
 
-        # Arranging
+        # On screen arranging
         xoffset = self.xpos + extraX
         yoffset = self.ypos + extraY
         wimg.geometry(f'+{xoffset + iw2 * col}+{yoffset + ih2 * row}')
