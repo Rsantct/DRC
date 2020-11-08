@@ -65,10 +65,12 @@ roommeasure.py
 
         - the sound card does not loses samples, and levels are ok.
 
-        - the measuremet is feasible ( the 'Time clearance' graph shows a
-          clear spike shape, without side noise)
+        - the measuremet is feasible, i.e. the 'Time clearance' graph shows a
+          clear spike shape, without side noise.
 
     with the selected hardware and parameters (sample rate and sweep length).
+
+    If bad time clearance, you'll may need to increase the sweep length.
 
 
     RESULTS:
