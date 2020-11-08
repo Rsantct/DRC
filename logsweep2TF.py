@@ -25,7 +25,7 @@
 """
     logsweep2TF.py
 
-    Obtiene la TF Transfer Function de un DUT (device under test) mediante
+    Computa la TF Transfer Function de un DUT (device under test) mediante
     la deconvolución de una señal de excitación (logsweep) y
     la respuesta capturada por el micrófono.
 
@@ -85,7 +85,6 @@ sys.path.append(UHOME + "/audiotools")
 from smoothSpectrum import smoothSpectrum as smooth
 import tools
 
-
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
 import matplotlib
 # Later we will be able to call matplotlib.use('Agg') to replace the regular
@@ -103,9 +102,9 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 import sounddevice as sd    # https://python-sounddevice.readthedocs.io
 
-#---------------------------------------------------------------------
-#------------------------- DEFAULT OPTIONS: --------------------------
-#---------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#----------------------------- DEFAULT OPTIONS: --------------------------------
+#-------------------------------------------------------------------------------
 select_card         = False
 selected_card       = ''
 checkClearence      = True
@@ -116,30 +115,31 @@ aux_plot            = False     # Time domain aux plotting
 TF_plot             = False     # Freq domain Transfer Function plotting
 TF_plot_smooth      = False     # Optional smoothed TF plotting
 
-#---------------------------------------------------------------------
-#--------------------------- DEFAULT PARAMETERS: ---------------------
-#---------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#----------------------------- DEFAULT PARAMETERS: -----------------------------
+#-------------------------------------------------------------------------------
 sig_frac    = 0.5               # Fraction of full scale applied to play the sweep.
 fs          = 48000             # Must ensure that sound driver accepts.
 N           = 2**18             # Lenght of the total sequence, make this
-                                # Larger if there is insufficient time clearance
+                                # larger if there is insufficient time clearance
+clipWarning = -3.0              # dBFS warning when capturing
 
 system_type = 'electronic'      # 'acoustic', 'electronic', 'level-dependent'
 Po          = 2e-5              # SPL reference pressure
 c           = 343               # speed of sound
 
-#--------------------------- USE OPTIONS --------------------
-dBclearance         = 10        # white space above TF plots
-dBspan              = 60        # total scale of TF plots
-clipWarning         = -3.0      # dBFS warning when capturing
+binsFRD     = 2**14             # Freq bins for output .frd files
 
-#----------------- System calibration factor CF for dut --------------------
+yplotmax    = 10                # TF plots above 0 dB
+yplotspan   = 60                # total scale of TF plots
+
+#----------------- System calibration factor CF for dut ------------------------
 power_amp_gain  = 10            # V/V acoustic
 mic_cal         = 0.012         # V/Pa acoustic
 mic_preamp_gain = 10.0          # V/V acoustic
 Vw              = 1.0           # 2.83 V/watt8ohms acoustic Leave this=1 if not wanted
 electronic_gain = 1.0           # total gain in series with electronic system
-#------------------- Enter value for your soundcard: ------------------------
+#------------------- Enter value for your soundcard: ---------------------------
 S_dac = 1.0
 S_adc = 1.0
 ## S_dac=-1.22;         % UCA202
@@ -154,9 +154,6 @@ S_adc = 1.0
 ## S_adc=+1.49;         % USB Dual Pre JV pot minimum (gain=3, Windows 7)
 
 
-#---------------------------------------------------------------------
-#----------------------- INTERNAL PROCEDURES -------------------------
-#---------------------------------------------------------------------
 
 def choose_soundcard():
 
@@ -209,12 +206,14 @@ def test_soundcard(i="default",o="default", fs=fs, ch=2):
 
 def do_print_info():
 
-    print( "--- SYSTEM SOUND DEVICES:" )
+    print( "\n--- SYSTEM SOUND DEVICES:" )
     print( sd.query_devices() )
     rec, pb = sd.default.device
-    print( "    Using '" + str(rec) + "' to CAPTURE, '" + str(pb) + "' to PLAYBACK" )
-    print( "    [ DUT ] --> LEFT  ch  ||  [ REF ] --> RIGHT ch" )
-    print( "--- Parameters:" )
+    print( f"    Using '{str(pb)}' to PLAYBACK" )
+    print( f"          '{str(rec)}' to RECORD")
+    print( f"               LEFT  <--- [ DUT ]" )
+    print( f"               RIGHT <--- [ REF ]" )
+    print( f"\n--- Parameters:" )
     sig_frac_dBFS = round(20 * log10(sig_frac), 2)
     print( 'Amplitude:      ' + str(sig_frac) + ' (' + str(sig_frac_dBFS) + ' dBFS)' )
     print( 'fs:             ' + str(fs) + ' Hz' )
@@ -230,10 +229,10 @@ def do_plot_aux_graphs(png_folder=f'{UHOME}'):
     """ Aux graphs on time domain
     """
 
-    vSamples = arange(0,N)              # vector de samples
-    vTimes   = vSamples / float(fs)     # samples a tiempos para visualización
+    vSamples = arange(0,N)              # samples vector
+    vTimes   = vSamples / float(fs)     # samples to time conversion
 
-    # ---- Plot del sweep (domT)
+    # ---- Sweep
     plt.figure(10)
     plt.plot(vTimes, sweep, '--', color='black', linewidth=2,  label='raw sweep')
     plt.grid()
@@ -244,7 +243,7 @@ def do_plot_aux_graphs(png_folder=f'{UHOME}'):
     plt.title('Prepared sweeps')
     plt.savefig(f'{png_folder}/prepared_sweeps.png')
 
-    #--- Plots time domain de la grabación del DUT y del REFERENCE LOOP
+    #--- DUT and REFERENCE LOOP time domain plot
     fig = plt.figure(20)
     axDUT = fig.add_subplot()
     axDUT.plot(vTimes, dut, 'blue', label='DUT')
@@ -258,10 +257,10 @@ def do_plot_aux_graphs(png_folder=f'{UHOME}'):
     axDUT.set_title('Recorded sweeps')
     plt.savefig(f'{png_folder}/time_domain_recorded.png')
 
-    #--- Time clearance (
+    #--- X cross correlation (Time Clearance)
+    plt.figure(30)
     t  = vTimes
     t -= N/2.0 / fs               # centramos el 0 en el pico ideal de X
-    plt.figure(30)
     plt.plot(t, X, color="black", label='xcorr pb/rec')
     plt.grid()
     plt.legend()
@@ -272,77 +271,92 @@ def do_plot_aux_graphs(png_folder=f'{UHOME}'):
     print( "--- Plotting Time Domain graphs..." )
 
 
-def plot_TF( mag, fs=fs, semi=False, f_ini=20, f_end=20000,
-             label=" ", color="blue", figure=100, title='Freq. response',
-             png_fname='' ):
-    """ Plots a whole or semi spectrum
-        options:
+def plot_FRdB( f, magdB, figure=100, label='', color='blue', title='Freq. response',
+                                                         png_fname='' ):
+    """ Plots a FRD freq response data given in dB
+
             figure      allows to perform multicurve figures
-            png_fname   dumps a png image from the plotted graph
+            png_fname   dumps a png image of the plotted graph
     """
-    if semi:
-        N = len(mag)*2
-    else:
-        N = len(mag)
-    Kbins = str((N/2)/1024)
-    Fresol = float(fs)/N
-    frecs = linspace(0, int(fs/2), int(N/2))
-    top = 0
-    magdB = 20 * log10(abs( mag[0:int(N/2)] ))
     plt.figure(figure)
-    plt.semilogx( frecs, magdB, color, label=label )
-    plt.grid()
-    plt.xlim( f_ini, f_end )
-    plt.ylim( top+dBclearance-dBspan, top+dBclearance )
+    plt.semilogx( f, magdB, color=color, label=label )
+    plt.xlim(20, 20000)
+    plt.ylim( yplotmax - yplotspan, yplotmax )
+    plt.grid(True, which="both")
     plt.legend()
     plt.xlabel('frequency [Hz]')
     plt.ylabel('dB')
     plt.title(title)
     if png_fname:
         plt.savefig(png_fname)
-    return
 
 
-def do_plot_TFs(png_fname=''):
-    """ Freq domain Transfer Function plotting
+def do_plot_TF(png_fname=f'{UHOME}/freq_response.png'):
+    """ freq domain Transfer Function plotting
     """
 
-    plot_TF(REF_TF, label='REF', semi=False, color='grey',  png_fname=png_fname)
+    # REFERENCE
+    f, REF_FR = fft_to_FRD(REF_TF, fs)
 
+    plot_FRdB( f, 20 * log10(REF_FR), label='REF',
+                                      color='grey',
+                                      png_fname=png_fname )
+
+    # DUT
     if not TF_plot_smooth:
-        plot_TF(DUT_TF, label='DUT', semi=False, color='blue', png_fname=png_fname)
 
+        f, DUT_FR = fft_to_FRD(DUT_TF, fs)
+
+        plot_FRdB( f, 20 * log10(DUT_FR) , label='DUT',
+                                           color='blue',
+                                           png_fname=png_fname )
+    # or DUT smoothed
     else:
-        # To lighten the smoothing work, which takes a long time,
-        # we prepare a reduced version of DUT_TF
-        frecOrig = arange(0, N/2.0)  * fs / N
-        magOrig  = DUT_TF[0:int(N/2)] # tomamos solo el semiespectro positivo
-        frecNew, magNew = reduce_spectrum(frecOrig, magOrig, factor=4)
 
-        # Smoothing
-        print( "--- Smoothing DUT spectrum (this can take a while ...)" )
-        t_start = time()
-        # (i) 'audiotools.smooth' requires a real valued semi spectrum
-        magNewSmoo = smooth(frecNew, abs(magNew), Noct=24)
-        print( f"Smoothing computed in {str( round(time() - t_start, 1) )} s" )
-        plot_TF(magNewSmoo, semi=True, color='green', label='DUT smoothed',
-                                                      png_fname=png_fname)
+        f, DUT_FR = fft_to_FRD(DUT_TF, fs, smooth_Noct=24)
 
-    print( "--- Plotting Freq Domain (TF) graphs..." )
+        plot_FRdB( f, 20 * log10(DUT_FR) , label='DUT 1/24 oct smooth',
+                                           color='green',
+                                           png_fname=png_fname )
+
+    print( "--- Plotting Freq Response graphs..." )
 
 
-def reduce_semispectrum(f, mag, factor=4):
-    """ compute a reduced version of a given semispectrum
+def fft_to_FRD(wholeFFT, fs=fs, smooth_Noct=0, Nbins=binsFRD):
     """
-    # reduced freq bins
-    Nnew = len(f)/factor
-    fNew  = arange(0, Nnew/2.0) * fs / Nnew
-    # Interpolate function
-    funcI = interpolate.interp1d( f, mag, kind="cubic",
-                                          bounds_error=False,
-                                          fill_value="extrapolate" )
-    # Return interpolated magnitudes over reduced freq bins
-    return fNew, funcI(fNew)
+        Input:
+
+            wholeFFT        A whole FFT array
+            fs              Sampling freq
+            smooth_Noct     Do smooth 1/N oct the output curve
+            Nbins           Number of freq bins of the output curve
+
+
+        Output:
+
+            (f, mag)        A real valued positive semi-spectrum tuple FRD data
+                            (mag is given in lineal values not in dB)
+    """
+
+    N = len(wholeFFT)
+
+    # Frequencies
+    f = linspace(0, int(fs/2), int(N/2) )
+
+    # Taking the magnitude from the positive freqs fft part
+    mag = abs( wholeFFT[0:int(N/2)] )
+
+    # interpolates to Nbins
+    f, mag = tools.interp_semispectrum(f, mag, fs, Nbins)
+
+    # Smoothing
+    if smooth_Noct:
+        print( '--- Smoothing spectrum (this can take a while ...)' )
+        t_start = time()
+        mag = smooth(f, mag, Noct=smooth_Noct)
+        print(f'--- Smoothing computed in {str( round(time() - t_start, 1) )} s' )
+
+    return f, mag
 
 
 def prepare_sweep():
@@ -458,11 +472,17 @@ def get_offset_xcorr(sweep, dut, ref):
 
 def do_meas():
     """
-    returns: DUT_TF (Transfer Function of the Device Under Test), TimeClearance
+    Compute globals about DUT Device-Under-Test and REFerence measurements.
+
+        dut,    ref      --> Time domain responses
+        DUT_TF, REF_TF   --> Freq domain responses (whole complex FFT)
+        TimeClearanceOK  --> Boolean about the detected time clearance
+
     """
 
-    global dut,    ref          # Time domain global scoped
-    global DUT_TF, REF_TF       # Freq domain global scoped
+    global dut,    ref          # Time domain recordings
+    global DUT_TF, REF_TF       # FFT Freq domain
+    global TimeClearanceOK      # The detected time clearance (boolean)
 
     #---------------------------------------------------------------------------
     # ---- Determina SPL calibration factor en función del tipo de sistema -----
@@ -477,9 +497,9 @@ def do_meas():
         print( "(!) Please check system_type for CF" )
         return zeros(N)
 
-    #-----------------------------------------------------------------------------
-    #------------ 2. data gathering: send out sweep, record system output --------
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
+    #---------- 2. data gathering: send out sweep, record system output --------
+    #---------------------------------------------------------------------------
     print( '--- Starting recording ...' )
     print( '(i) Some sound cards act strangely. Check carefully!' )
     # Antiphased signals on channels avoids codec midtap modulation.
@@ -497,43 +517,43 @@ def do_meas():
     #N   = len(dut) # esto creo que es innecesario
     print( 'Finished recording.' )
 
-    #---------------------------  Cheking LEVELS -----------------------------------
+    #-------------  Checking time domain RECORDING LEVELS ----------------------
     print( "--- Checking levels:" )
-    maxdBFS_DUT = 20 * log10( max( abs( dut ) ) )
-    maxdBFS_REF = 20 * log10( max( abs( ref ) ) )
+    maxdBFS_dut = 20 * log10( max( abs( dut ) ) )
+    maxdBFS_ref = 20 * log10( max( abs( ref ) ) )
     # Esto supongo que debe ser una información de energía ¿?
     DUT_RMS_LSBs = round(sqrt( 2**30 * sum(dut**2) / N ), 2)
     REF_RMS_LSBs = round(sqrt( 2**30 * sum(ref**2) / N ), 2)
 
-    if maxdBFS_DUT >= clipWarning:
-        print( 'DUT channel max level:', round(maxdBFS_DUT, 1), 'dBFS  WARNING (!)', \
+    if maxdBFS_dut >= clipWarning:
+        print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS  WARNING (!)', \
               'RMS_LSBs:',  DUT_RMS_LSBs )
     else:
-        print( 'DUT channel max level:', round(maxdBFS_DUT, 1), 'dBFS             ', \
+        print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS             ', \
               'RMS_LSBs:',  DUT_RMS_LSBs )
 
-    if maxdBFS_REF >= clipWarning:
-        print( 'REF channel max level:', round(maxdBFS_REF, 1), 'dBFS  WARNING (!)', \
+    if maxdBFS_ref >= clipWarning:
+        print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS  WARNING (!)', \
               'RMS_LSBs:',  REF_RMS_LSBs )
     else:
-        print( 'REF channel max level:', round(maxdBFS_REF, 1), 'dBFS             ', \
+        print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS             ', \
               'RMS_LSBs:',  REF_RMS_LSBs )
 
-    #-----------------------------------------------------------------------------
-    #------------- 3. Determine if time clearance: -------------------------------
+    #---------------------------------------------------------------------------
+    #------------- 3. Determine if time clearance: -----------------------------
     # Checks if ound card play/rec delay is lower than the zeropad silence at the signal end.
     # ( Will use crosscorrelation )
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     offset = 0              # ideal record/play delay
     TimeClearanceOK = True  # forzamos aunque pudiera ser falso.
     if checkClearence:
         offset, TimeClearanceOK = get_offset_xcorr(sweep=sweep, dut=dut, ref=ref)
 
-    #-----------------------------------------------------------------------------
-    #-------------- 4. Calculate TFs using Frequency Domain Ratios * -------------
+    #---------------------------------------------------------------------------
+    #-------------- 4. Calculate TFs using Frequency Domain Ratios (*) ---------
     #                   UCASE used for freq domain variables.
     #                   All frequency variables are meant to be voltage spectra
-    #-----------------------------------------------------------------------------
+    #---------------------------------------------------------------------------
     lwindo = ones(N)
     lwindo[0:indexf1] = 0.5 * ( 1 - cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
     lwindosweep = lwindo * sweep
@@ -547,8 +567,8 @@ def do_meas():
     REF         = S_adc * fft.fft(ref)
     DUT         = S_adc * fft.fft(dut)         * CF         # CF calibration factor
 
-    # (i) La DECONVOLUCIÓN, mediante división en el dominio de la frecuencia
-    #     - o sea los 'Frequency Domain Ratios' referidos arriba(*) -
+    # (i) La DECONVOLUCIÓN ( es decir división en el dominio de la frecuencia)
+    #     - (*) arriba referico como 'Frequency Domain Ratios' -
     #     proporciona la TF Transfer Function del dispositivo bajo ensayo DUT
     #     que es el objetivo que nos ocupa ;-)
 
@@ -556,18 +576,20 @@ def do_meas():
     DUT_TF   = DUT / LWINDOSWEEP  # (orig named as 'TF' )   this has good Nyquist behaviour
     REF_TF   = DUT / REF          # (orig named as 'TF2')
 
-    ### (i)
-    ##  A partir de aquí , el código original de Logsweep1quasi.m está destinado
-    ##  a encontrar la respuesta quasi anecoica de un altavoz, a base de definir
-    ##  marcadores para enventanar la medida DUT.
-    ##  Nosotros nos quedamos con la respuesta estacionaria in room.
+    # END
 
-    return DUT_TF, TimeClearanceOK
+    # (i)   The results are the above referenced global scoped variables.
+    #
+    #       The orginal code Logsweep1quasi.m continues finding the loudspeaker
+    #       quasi-anechoic response, by using markers to windowing the recorded
+    #       time domain signal.
+    #       Here we don't need that, because we use the stationary in-room
+    #       loudspeaker response.
 
 
-#-----------------------------------------------------------------------------
-#--------------------------------- MAIN PROGRAM ------------------------------
-#-----------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#--------------------------------- MAIN PROGRAM --------------------------------
+#-------------------------------------------------------------------------------
 if __name__ == "__main__":
 
     # Las gráficas son mostradas por defecto
@@ -649,28 +671,44 @@ if __name__ == "__main__":
     # Do create the needed raw and tapered sweeps
     prepare_sweep()
 
-    TF, TC = do_meas()
+    # MEASURE
+    do_meas()
 
-    if not TC:
-        print( '******INSUFFICIENT TIME CLEARANCE!******' )
-        print( '******INSUFFICIENT TIME CLEARANCE!******' )
-        print( '******INSUFFICIENT TIME CLEARANCE!******' )
+    # Checking TIME CLEARANCE
+    if not TimeClearanceOK:
+        print( '****************************************' )
+        print( '********  POOR TIME CLEARANCE!  ********' )
+        print( '********   check sweep length   ********' )
+        print( '****************************************' )
 
-    maxdB = max( 20 * log10( abs(TF) ) )
+
+    # Checking FREQ DOMAIN SPECTRUM LEVEL
+    _, mag = fft_to_FRD( DUT_TF, fs, smooth_Noct=24 )
+
+    maxdB = max( 20 * log10(mag) )
+
     if  maxdB > 0.0:
         print( '****************************************' )
         print(f'CLIPPING DETECTED: +{round(maxdB,1)} dB  ' )
         print( '****************************************' )
+    elif  maxdB > clipWarning:
+        print( '****************************************' )
+        print(f'CLOSE TO CLIPPING: {round(maxdB,1)} dB  ' )
+        print( '****************************************' )
     elif maxdB < -20.0:
         print( '****************************************' )
         print(f'TOO LOW: {round(maxdB,1)} dB  ' )
+        print( '****************************************' )
+    else:
+        print( '****************************************' )
+        print(f'LEVEL OK: {round(maxdB,1)} dB  ' )
         print( '****************************************' )
 
     if aux_plot:
         do_plot_aux_graphs()
 
     if TF_plot:
-        do_plot_TFs()
+        do_plot_TF()
 
     if aux_plot or TF_plot:
         plt.show()
