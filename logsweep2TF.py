@@ -25,29 +25,35 @@
 """
     logsweep2TF.py
 
-    Computa la TF Transfer Function de un DUT (device under test) mediante
-    la deconvolución de una señal de excitación (logsweep) y
-    la respuesta capturada por el micrófono.
+    Computes the TF Transfer Function from a Device-Under-Test, through by the
+    deconvolution of an excitation log-sweep signal and the mic captured one.
 
-    DUT   ---> LEFT CHANNEL  (Señal del micrófono)
-    LOOP  ---> RIGHT CHANNEL (Bucle opcional para ayudar a validar la medida según la
-                              latencia HW vs la longitud N de la secuencia de pruebas)
 
-    Uso:      python logsweep2TF.py  [opciones ... ...]
+    DUT   ---> LEFT CHANNEL     Mic signal
+    LOOP  ---> RIGHT CHANNEL    Optional loop helps to validate the measurement
+                                as per the latency vs the test sweep length.
 
-    -h                  Ayuda
 
-    -sc                 Solicita una sound card y la prueba.
-    -dev=cap,pbk,fs     Usa los sound devices y la fs indicada.
-                        NO son devices ALSA, usar -h para ver un listado.
+    Usage:      python3 logsweep2TF.py  [options ... ...]
 
-    -eXX                Potencia de 2 que determina la longitud=2^XX total
-                        en muestras (N) de la señal de prueba. Por defecto 2^17.
+    -h                  Help
 
-    -noclearance        Elude la validación por excesiva latencia.
-    -auxplots           Muestra las gráficas auxiliares (sweeps grabados)
-    -notfplot           No muestra la gráfica de la TF obtenida
-    -smooth             Muestra la TF suavizada
+    -sc                 Request a sound card and proof.
+
+    -dev=cap,pbk,fs     Sund devices and fs to use.
+                        Use -h to list the available ones.
+
+    -eXX                Power of 2 that determines the total lenght N of the
+                        test log-sweep. Default 2^17 = 128K samples ~ 2 sec
+
+
+    -noclearance        Ommit time clearance validation.
+
+    -auxplots           Aux plots for recorded sweeps
+
+    -notfplot           Do not plot the resulting TF (freq response)
+
+    -smooth             TF freq response will be smoothed
 
 """
 #-------------------------------------------------------------------------------
