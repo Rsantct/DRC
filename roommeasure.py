@@ -47,10 +47,12 @@ from smoothSpectrum import smoothSpectrum as smooth
 from matplotlib import colors as mcolors
 css4_colors = list(mcolors.CSS4_COLORS.values())    # (black is index 7)
 
-# Resulting measurements (all measured points for every channel)
-curves = {'L':None, 'R':None}
+# Resulting measurements stack (all measured points for every channel)
+curves = {'freq': None, 'L': None, 'R': None}
+
 # Resulting averaged curves for every channel
 channels_avg= {'L':None, 'R':None}
+
 
 ################################################################################
 # roommeasure.py DEFAULT parameters
@@ -67,7 +69,6 @@ channels            = ['C']     # Channels to interleaving measurements.
 
 # Results:
 folder              = f'{UHOME}/rm/meas'
-binsFRD             = 2**14     # Bins for .frd files
                                 # Smoothing the resulting response:
 Scho                = 200       # Schroeder freq (Hz)
 Noct                = 24        # Initial 1/Noct smoothing below Scho,
@@ -198,41 +199,6 @@ def set_sound_card(optional_device):
         sys.exit()
 
 
-def do_meas(ch, seq):
-
-    # Do meas, then taken the positive semi-spectrum
-    meas = abs( LS.do_meas()[:int(LS.N/2)] )
-
-    # Interpolating to use the desired binsFRD (freq response points)
-    f, m = tools.interp_semispectrum(freq, meas, LS.fs/2, binsFRD)
-
-    # Saving the curve to a sequenced frd filename
-    tools.saveFRD(  fname   = f'{folder}/{ch}_{str(seq)}.frd',
-                    freq    = f,
-                    mag     = 20 * np.log10(m),
-                    fs      = LS.fs,
-                    comments= f'roommeasure.py ch:{ch} loc:{str(seq)}',
-                    verbose = False
-                  )
-
-    # Plotting the a smoothed version of the raw measured curve
-    # (smoothing takes a while in a slow cpu)
-    m_smoo = smooth(f, m, Noct, f0=Scho)
-    figIdx = 10
-    chs = ('L', 'R', 'C')
-    if ch in chs:
-        figIdx += chs.index(ch)
-    # Will choose a color by selecting the CSS4 color sequence, from black (index 7)
-    LS.plot_TF( m_smoo, semi=True,  label     = f'{ch}_{str(seq)}',
-                                    color     = css4_colors[(7 + seq) % 148],
-                                    figure    = figIdx,
-                                    title     = f'{os.path.basename(folder)}',
-                                    png_fname = f'{folder}/{ch}.png'
-               )
-
-    return meas
-
-
 def print_console_msg(msg):
     tmp = '\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n'
     tmp +=  f'{msg}\n'
@@ -308,6 +274,41 @@ def gui_prompt(ch, seq, gui_trigger, gui_msg):
     gui_msg.set(f'measuring at location #{seq+1}  [ {ch} ]')
 
 
+def LS_meas(ch, seq):
+
+    # Order LS to do the measurement
+    LS.do_meas()
+
+    # Getting the result from LS
+    f, mag = LS.fft_to_FRD( LS.DUT_TF, LS.fs, smooth_Noct=24 )
+
+    magdB = 20 * np.log10(mag)
+
+    # Saving the curve to a sequenced frd filename
+    tools.saveFRD(  fname   = f'{folder}/{ch}_{str(seq)}.frd',
+                    freq    = f,
+                    mag     = magdB,
+                    fs      = LS.fs,
+                    comments= f'roommeasure.py ch:{ch} loc:{str(seq)}',
+                    verbose = False
+                  )
+
+    # Plotting
+    figIdx = 10
+    chs = ('L', 'R', 'C')
+    if ch in chs:
+        figIdx += chs.index(ch)
+    # Will choose a color by selecting the CSS4 color sequence, from black (index 7)
+    LS.plot_FRdB( f, magdB, label     = f'{ch}_{str(seq)}',
+                            color     = css4_colors[(7 + seq) % 148],
+                            figure    = figIdx,
+                            title     = f'{os.path.basename(folder)}',
+                            png_fname = f'{folder}/{ch}.png'
+               )
+
+    return f, mag  # lineal
+
+
 def do_meas_loop(gui_trigger=None, gui_msg=None):
     """ Meas for every channel and stores them into the <curves> stack
         Optional:
@@ -345,22 +346,23 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
                 rjack.select_channel(ch)
                 sleep(.2)
 
-            # GUI
+            # gui
             if gui_trigger:
                 gui_prompt(ch, seq, gui_trigger, gui_msg)
 
-            # CONSOLE
+            # console
             else:
                 console_prompt(ch, seq)
 
-            # Do measure
-            meas = do_meas(ch, seq)
-
-            # Do stack the measurement
+            # DO MEASURE AND STACK RESULTS
+            f, mag = LS_meas(ch, seq)       # (i) mag is given lineal
+            #
+            curves['freq'] = f
+            #
             if seq == 0:
-                curves[ch] = meas
+                curves[ch] = mag
             else:
-                curves[ch] = np.vstack( ( curves[ch], meas ) )
+                curves[ch] = np.vstack( ( curves[ch], mag ) )
 
     if manageJack:
         rjack.select_channel('')
@@ -373,11 +375,11 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
 
 
 def do_averages():
-    """ Compute the average from all raw measurements
+    """ Compute the average from all raw measurements,
+        saving to .frd and plotting
     """
 
-    global channels_avg
-
+    # Computing averages if more than one measurement
     for ch in channels:
         print( "Computing average of channel: " + ch )
         if numMeas > 1:
@@ -386,49 +388,50 @@ def do_averages():
         else:
             channels_avg[ch] = curves[ch]
 
+    f = curves['freq']
 
-def do_save_averages():
-    """ Saving average to a .frd file
-    """
-
-    i = 0
-
+    figIdx = 0
     for ch in channels:
 
-        f, m = tools.interp_semispectrum(freq, channels_avg[ch], LS.fs/2, binsFRD)
+        avg_mag     = channels_avg[ch]
+        avg_mag_dB  = 20 * np.log10( avg_mag )
+
         tools.saveFRD(  fname   = f'{folder}/{ch}_avg.frd',
                         freq    = f,
-                        mag     = 20 * np.log10(m),
+                        mag     = avg_mag_dB,
                         fs      = LS.fs,
                         comments= f'roommeasure.py ch:{ch} raw avg'
                       )
 
-        # Also a smoothed version of average
+        # Also a progressive smoothed version of average
         print( 'Smoothing average 1/' + str(Noct) + ' oct up to ' + \
                 str(Scho) + ' Hz, then changing towards 1/1 oct at Nyq' )
 
-        m_smoo = smooth(f, m, Noct, f0=Scho)
+        avg_mag_progSmooth      = smooth(f, avg_mag, Noct, f0=Scho)
+        avg_mag_progSmooth_dB   = 20 * np.log10(avg_mag_progSmooth)
 
         tools.saveFRD(  fname   = f'{folder}/{ch}_avg_smoothed.frd',
                         freq    = f,
-                        mag     = 20 * np.log10(m_smoo),
+                        mag     = avg_mag_progSmooth_dB,
                         fs      = LS.fs,
                         comments= f'roommeasure.py ch:{ch} smoothed avg' )
 
         # Prepare a figure with average curve ...
-        LS.plot_TF( m,      semi=True,  label     = f'{ch} avg',
+        LS.plot_FRdB( f, avg_mag_dB,
+                                        label     = f'{ch} avg',
                                         color     = 'blue',
-                                        figure    = 20+i
-                  )
+                                        figure    = 20 + figIdx
+                    )
         # ... and adding the smoothed average curve
-        LS.plot_TF( m_smoo, semi=True,  label     = f'{ch} avg smoothed',
+        LS.plot_FRdB( f, avg_mag_progSmooth_dB,
+                                        label     = f'{ch} avg smoothed',
                                         color     = 'red',
-                                        figure    = 20+i,
+                                        figure    = 20 + figIdx,
                                         title     = f'{os.path.basename(folder)}',
                                         png_fname = f'{folder}/{ch}_avg.png'
-                      )
+                    )
 
-        i += 1
+        figIdx += 1
 
 
 def connect_to_remote_JACK(jackIP, jackUser, pwd=None):
@@ -496,9 +499,6 @@ if __name__ == "__main__":
     # - Preparing log-sweep as per the updated LS parameters
     LS.prepare_sweep()
 
-    # - Prepare a positive frequencies vector as per the selected N value.
-    freq = np.linspace(0, int(LS.fs/2), int(LS.N/2))
-
     # MAIN measure procedure and SAVING
     do_meas_loop()
 
@@ -508,9 +508,6 @@ if __name__ == "__main__":
 
     # COMPUTE the average from all raw measurements
     do_averages()
-
-    # SAVING averages
-    do_save_averages()
 
     # Plotting prepared curves
     LS.plt.show()
