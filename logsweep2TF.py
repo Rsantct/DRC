@@ -50,40 +50,29 @@
     -smooth             Muestra la TF suavizada
 
 """
-#-------------------------------------------------------------------------------------------
-#-------------------------------- CRÉDITOS: ------------------------------------------------
-#-------------------------------------------------------------------------------------------
-# Este script está basado en el siguiente código Matlab Open Source:
-# 'An Open-Source Electroacoustic Measurement System'
-# Richard Mann and John Vanderkooy, March 2017, Audio Research Group, University of Waterloo
+#-------------------------------------------------------------------------------
+#-------------------------------- CREDITS: -------------------------------------
+#-------------------------------------------------------------------------------
+# This script is based on the Matlab Open Source code:
+#   'An Open-Source Electroacoustic Measurement System'
+#   Richard Mann and John Vanderkooy, March 2017,
+#   Audio Research Group, University of Waterloo
 #
-# Publicado en:
 # https://linearaudio.net/volumes/2282
 # https://linearaudio.net/downloads
 # https://linearaudio.net/sites/linearaudio.net/files/vol%2013%20rm%26jvdk%20readme%26m-files%20p1.zip
 # https://linearaudio.net/sites/linearaudio.net/files/vol%2013%20rm%26jvdk%20readme%26m-files%20p2.zip
 #
 #
-#   Observaciones:
+#   Notes:
+#   - calibration options are not considered here
+#   - windowing for quasi-anechoic analisys is not performed here
 #
-#   - En la sección "data gathering ... ..." una vez capturada la señal 'dut' se redefine
-#   N=len(dut). Esto lo he descartado entiendo que no tiene efectos secundarios.
-#
-#   - El nivel max de la señal en domT no se corresponde con el max en domF,
-#   confirmar si es correcto, yo creo que si.
-#
-#   - La opciones de calibración no se toman en cuenta aquí.
 
 #---------------------------- IMPORTING MODULES: -------------------------
 import os
 import sys
-from time import time       # Para evaluar el tiempo de proceso de algunos cálculos,
-                            # como por ejemplo la crosscorrelation que tarda un güevo.
-
-UHOME = os.path.expanduser("~")
-sys.path.append(UHOME + "/audiotools")
-from smoothSpectrum import smoothSpectrum as smooth
-import tools
+from time import time
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
 import matplotlib
@@ -93,14 +82,19 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 from numpy import *
-from scipy import interpolate # para aligerar el ploteo de la TF smoothed
-from scipy.signal import correlate as signal_correlate
+from scipy.signal import correlate as signal_correlate # to differentiate it from numpy
 
-# signal.correlate muestra un FutureWarning, lo inhibimos:
+# scipy.signal.correlate shows a FutureWarning, we do inhibit it:
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-import sounddevice as sd    # https://python-sounddevice.readthedocs.io
+# https://python-sounddevice.readthedocs.io
+import sounddevice as sd
+
+UHOME = os.path.expanduser("~")
+sys.path.append(UHOME + "/audiotools")
+from smoothSpectrum import smoothSpectrum as smooth
+import tools
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT OPTIONS: --------------------------------
@@ -373,8 +367,11 @@ def prepare_sweep():
     Npad = int(N/4.0)
     Ns   = N - Npad                         # most of array is used for sweep ;-)
 
-    ts   = linspace(0, Ns/float(fs), Ns)    # array de tiempos del sweep
-    # Al sweep se le aplica una 'windo' para 'fade in/out' en f1 y f2
+    ts   = linspace(0, Ns/float(fs), Ns)    # sweep's time points array
+
+    #--- tapered sweep window:
+    # Parameters to define a window to make a tapered sweep version,
+    # fade in until f1 then fade out from f2 on:
     f_start     = 5.0                       # beginning of turnon half-Hann
     f1          = 10.0                      # end of turnon half-Hann
     f2          = 0.91 * fs / 2             # beginning of turnoff half-Hann
@@ -382,31 +379,29 @@ def prepare_sweep():
     Ts          = Ns/float(fs)              # sweep duration. Lenght N-Npad samples.
     Ls          = Ts / log(f_stop/f_start)  # time for frequency to increase by factor e
 
-    #--- tapered sweep window:
-    indexf1 = int(round(fs * Ls * log(f1/f_start) ) + 1)     # end of starting taper
-    indexf2 = int(round(fs * Ls * log(f2/f_start) ) + 1)     # beginning of ending taper
+    indexf1 = int(round(fs * Ls * log(f1/f_start) ) + 1) # end of starting taper
+    indexf2 = int(round(fs * Ls * log(f2/f_start) ) + 1) # beginning of ending taper
 
     print( "--- Calculating logsweep from ", int(f_start), "to", int(f_stop), "Hz" )
     sweep       = zeros(N)                  # initialize
     sweep[0:Ns] = sin( 2*pi * f_start * Ls * (exp(ts/Ls) - 1) )
     #
-    #  /\/\/\/\/\/\/\/\----  this is the LOGSWEEP+Npad, total lenght N.
+    #  /\/\/\/\/\/\/\/\----  this is the LOGSWEEP + Npad, with total lenght N.
 
-    # tappers para fade in / fade out en el tramo del sweep:
-    windo   = ones(N)
+    window   = ones(N)
     # pre-taper
-    windo[0:indexf1]  = 0.5 * (1 - cos(pi * arange(0, indexf1)    / indexf1     ) )
+    window[0:indexf1]  = 0.5 * (1 - cos(pi * arange(0, indexf1)    / indexf1     ) )
     # post-taper
-    windo[indexf2:Ns] = 0.5 * (1 + cos(pi * arange(0, Ns-indexf2) / (Ns-indexf2)) )
-    windo[Ns:N]       = 0       # Zeropad end of sweep. (i) Esto creo que es redundante
-                                # porque el sweep ya tiene zeros ahí.
-    tapsweep = windo * sweep    # Here the LOGSWEEP tapered at each end for output to DAC
+    window[indexf2:Ns] = 0.5 * (1 + cos(pi * arange(0, Ns-indexf2) / (Ns-indexf2)) )
+    window[Ns:N]       = 0      # Zeropad end of sweep
 
-    # NOTA no tengo claro el interés de pritar esto:
-    print( "f_start * Ls: " + str(round(f_start*Ls, 2)) + \
-          "   Ls: "  + str(round(Ls,2)) + "    ¿!?" )
-    print( 'Finished sweep generation...' )
-    print( )
+    # Here the LOGSWEEP tapered at each end for output to DAC
+    tapsweep = window * sweep
+
+    # pending to find out the meaning fo this:
+    print( f'f_start * Ls: {str(round(f_start*Ls, 2))}  Ls: {str(round(Ls,2))}')
+
+    print( 'Finished sweep generation...\n' )
 
 
 def get_offset_xcorr(sweep, dut, ref):
@@ -434,23 +429,23 @@ def get_offset_xcorr(sweep, dut, ref):
     ## [~,nmax]=max(abs(X));
 
     # Correlate with an automatic reference selection:
-    # (i) Para estimar el offset, es preferible tomar una señal poco alterada.
-    #     Es posible que la señal captada por el micro sea 'noisy' para poder correlarla.
-    #     Si no se detecta señal en el canal de referencia, se usa a malas la del micro.
+    # (i) For offset estimation, it is preferred to take an undisturbed signal.
+    #     The mic captured signal maybe too noisy to be able to be correlated.
+    #     If not enough signal in ref channel, will use the mic channel instead.
+
     myref = ref
     if max(ref) < 0.1 * max(dut):  # but if no signal on ref, use data itself
         myref = dut
-        print( "(i) Bad level on REF ch, using DUT ch itself to estimate clearance" )
+        print('(!) Bad level on REF ch, using DUT ch itself to estimate clearance')
 
-    print( "--- Determining record/play delay using crosscorrelation (can take a while ...)" )
+    print( '--- Determining record/play delay using crosscorrelation '
+           '(can take a while ...)' )
 
     timestamp = time()
 
-    ### (i) Correlation in NUMPY/SCIPY no usa el parámetro lags como en MATLAB
+    ### (i) scipy.signal.correlate doesn't use the parameter 'lags' as in Matlab
+    #      (numpy.correlate is too slow, will use scipy.signal equivalent)
 
-    # Correlate de Numpy tarda mucho, usamos el de signal
-    # PEEEERO escupe un FutureWarning al menos en mi versión
-    # que queda feo en la consola :-/
     X = signal_correlate(sweep, myref, mode="same")
     offset = int(N/2) - argmax(X)
 
@@ -485,7 +480,7 @@ def do_meas():
     global TimeClearanceOK      # The detected time clearance (boolean)
 
     #---------------------------------------------------------------------------
-    # ---- Determina SPL calibration factor en función del tipo de sistema -----
+    # ---- SPL calibration as per system type
     #---------------------------------------------------------------------------
     if system_type == 'acoustic':
         CF = Vw / (power_amp_gain * mic_cal * mic_preamp_gain * Po)
@@ -503,49 +498,50 @@ def do_meas():
     print( '--- Starting recording ...' )
     print( '(i) Some sound cards act strangely. Check carefully!' )
     # Antiphased signals on channels avoids codec midtap modulation.
-    # Se aplica atenuación según 'sig_frac'
+    # 'sig_frac' means the applied attenuation
     stereo = array([sig_frac * tapsweep, sig_frac * -tapsweep]) # [ch0, ch1]
     sd.default.samplerate = fs
     sd.default.channels = 2
     rec_dev_name = sd.query_devices(sd.default.device[0])['name']
     pbk_dev_name = sd.query_devices(sd.default.device[1])['name']
     print(f'    in: {rec_dev_name}, out: {pbk_dev_name}, fs: {sd.default.samplerate}')
-    # (i) .transpose pq el player necesita una array con cada canal en una COLUMNA.
-    z = sd.playrec(stereo.transpose(), blocking=True) # 'blocking' waits to finish.
+    # (i) .transpose because the player needs an array having a channel per column.
+    #     'blocking' waits to finish.
+    z = sd.playrec(stereo.transpose(), blocking=True)
     dut = z[:, 0]   # we use LEFT  CHANNEL as DUT
     ref = z[:, 1]   # we use RIGHT CHANNEL as REFERENCE
-    #N   = len(dut) # esto creo que es innecesario
+    #N = len(dut)   # This seems to be redundant ¿?
     print( 'Finished recording.' )
 
     #-------------  Checking time domain RECORDING LEVELS ----------------------
     print( "--- Checking levels:" )
     maxdBFS_dut = 20 * log10( max( abs( dut ) ) )
     maxdBFS_ref = 20 * log10( max( abs( ref ) ) )
-    # Esto supongo que debe ser una información de energía ¿?
-    DUT_RMS_LSBs = round(sqrt( 2**30 * sum(dut**2) / N ), 2)
-    REF_RMS_LSBs = round(sqrt( 2**30 * sum(ref**2) / N ), 2)
+    # LSB: Less Significant Bit
+    dut_RMS_LSBs = round(sqrt( 2**30 * sum(dut**2) / N ), 2)
+    ref_RMS_LSBs = round(sqrt( 2**30 * sum(ref**2) / N ), 2)
 
     if maxdBFS_dut >= clipWarning:
         print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS  WARNING (!)', \
-              'RMS_LSBs:',  DUT_RMS_LSBs )
+              'RMS_LSBs:',  dut_RMS_LSBs )
     else:
         print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS             ', \
-              'RMS_LSBs:',  DUT_RMS_LSBs )
+              'RMS_LSBs:',  dut_RMS_LSBs )
 
     if maxdBFS_ref >= clipWarning:
         print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS  WARNING (!)', \
-              'RMS_LSBs:',  REF_RMS_LSBs )
+              'RMS_LSBs:',  ref_RMS_LSBs )
     else:
         print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS             ', \
-              'RMS_LSBs:',  REF_RMS_LSBs )
+              'RMS_LSBs:',  ref_RMS_LSBs )
 
     #---------------------------------------------------------------------------
     #------------- 3. Determine if time clearance: -----------------------------
-    # Checks if ound card play/rec delay is lower than the zeropad silence at the signal end.
-    # ( Will use crosscorrelation )
+    # Checks if ound card play/rec delay is lower than the zeropad silence
+    # at the signal end. Will use crosscorrelation
     #---------------------------------------------------------------------------
     offset = 0              # ideal record/play delay
-    TimeClearanceOK = True  # forzamos aunque pudiera ser falso.
+    TimeClearanceOK = True
     if checkClearence:
         offset, TimeClearanceOK = get_offset_xcorr(sweep=sweep, dut=dut, ref=ref)
 
@@ -555,26 +551,25 @@ def do_meas():
     #                   All frequency variables are meant to be voltage spectra
     #---------------------------------------------------------------------------
     lwindo = ones(N)
-    lwindo[0:indexf1] = 0.5 * ( 1 - cos ( pi * arange(0,indexf1) / indexf1 ) ) # LF pre-taper
+    # LF pre-taper
+    lwindo[0:indexf1] = 0.5 * ( 1 - cos ( pi * arange(0,indexf1) / indexf1 ) )
     lwindosweep = lwindo * sweep
     # remove play-record delay by shifting computer sweep array:
-    ## %sweep=circshift(sweep,-offset);             # Esto aparece comentado en el cód. original,
-    ## lwindosweep=circshift(lwindosweep,-offset);  # que usa este código.
+    #%sweep=circshift(sweep,-offset);            # commented out in original code
+    #lwindosweep=circshift(lwindosweep,-offset); # then replaced by this line
     lwindosweep = roll(lwindosweep, -offset)
 
-    # (i) NÓTESE que trabajamos con FFTs completas:
-    LWINDOSWEEP = S_dac * fft.fft(lwindosweep) * sig_frac   # sig_frac es la atenuación establecida al sweep
+    # (i) NOTICE we use whole FFTs
+    LWINDOSWEEP = S_dac * fft.fft(lwindosweep) * sig_frac   # sig_frac ~ atten
     REF         = S_adc * fft.fft(ref)
-    DUT         = S_adc * fft.fft(dut)         * CF         # CF calibration factor
+    DUT         = S_adc * fft.fft(dut)         * CF         # Calibration Factor
 
-    # (i) La DECONVOLUCIÓN ( es decir división en el dominio de la frecuencia)
-    #     - (*) arriba referico como 'Frequency Domain Ratios' -
-    #     proporciona la TF Transfer Function del dispositivo bajo ensayo DUT
-    #     que es el objetivo que nos ocupa ;-)
+    # The DECONVOLUTION (i.e ~ freq domain division) provides the TF of DUT
+    # (*) Above referred as 'Frequency Domain Ratios'
 
-    ##%TF       = DUT./SWEEP;                                # <- código original comentado
-    DUT_TF   = DUT / LWINDOSWEEP  # (orig named as 'TF' )   this has good Nyquist behaviour
-    REF_TF   = DUT / REF          # (orig named as 'TF2')
+    ##%TF       = DUT./SWEEP;  # commented out in original code
+    DUT_TF   = DUT / LWINDOSWEEP  # (orig 'TF' ) this has good Nyquist behaviour
+    REF_TF   = DUT / REF          # (orig 'TF2')
 
     # END
 
@@ -592,11 +587,11 @@ def do_meas():
 #-------------------------------------------------------------------------------
 if __name__ == "__main__":
 
-    # Las gráficas son mostradas por defecto
+    # Defaults to plot graphs
     TF_plot     = True
     aux_plot    = True
 
-    # Lee la command line
+    # Reading command line options
     opcsOK = True
     for opc in sys.argv[1:]:
 
@@ -655,11 +650,12 @@ if __name__ == "__main__":
         except: pass
         if i.isdigit(): i = int(i)
         if o.isdigit(): o = int(o)
-        if not test_soundcard(i=i, o=o):    # Si fallara sale
+        # A sound card failure will end the script.
+        if not test_soundcard(i=i, o=o):
             sys.exit()
 
     if select_card:
-        if not choose_soundcard():          # Si falla la selección
+        if not choose_soundcard():
             print( "(!) Error using devices to play/rec:" )
             for dev in sd.default.device:
                 print( "    " + sd.query_devices(dev)['name'] )
