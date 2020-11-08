@@ -244,28 +244,34 @@ class RoommeasureGUI(Tk):
             self.btn_go['state'] = 'disabled'
             self.btn_close['state'] = 'disabled'
 
-            TF, TC = rm.LS.do_meas()
+            rm.LS.TF_plot_smooth = True
+            rm.LS.do_meas()
 
-            if not TC:
-                self.var_msg.set('INSUFFICIENT TIME CLEARANCE!')
+            # Checking TIME CLEARANCE:
+            if not rm.LS.TimeClearanceOK:
+                self.var_msg.set('POOR TIME CLEARANCE! check sweep length')
 
-            maxdB = max( 20 * rm.np.log10( rm.np.abs(TF) ) )
+            # Checking FREQ DOMAIN SPECTRUM LEVEL
+            _, mag = rm.LS.fft_to_FRD( rm.LS.DUT_TF, rm.LS.fs, smooth_Noct=24 )
+
+            maxdB = max( 20 * rm.np.log10( mag ) )
             if  maxdB > 0.0:
                 self.var_msg.set(f'CLIPPING DETECTED: +{round(maxdB,1)} dB')
+            elif maxdB > -3.0:
+                self.var_msg.set(f'CLOSE TO CLIPPING: {round(maxdB,1)} dB')
             elif maxdB < -20.0:
                 self.var_msg.set(f'TOO LOW: {round(maxdB,1)} dB')
             else:
                 self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
 
+            # Plotting test signals
             rm.LS.do_plot_aux_graphs( png_folder=f'{UHOME}/rm/' )
-
-            rm.LS.do_plot_TFs(png_fname=f'{UHOME}/rm/freq_response.png')
-
+            rm.LS.do_plot_TF(png_fname=f'{UHOME}/rm/freq_response.png')
             rm.LS.plt.close('all')
 
             self.btn_go['state'] = 'normal'
             self.btn_close['state'] = 'normal'
-            self.var_msg.set('')
+            #self.var_msg.set('')
             do_show_test_graphs()
 
 
@@ -382,7 +388,6 @@ class RoommeasureGUI(Tk):
         # Smoothing curve and saving to disk:
         self.var_msg.set('SMOOTHING AND SAVING TO DISK ...')
         rm.do_averages()
-        rm.do_save_averages()
         self.var_msg.set('DONE')
 
         # Ending the rm.LS dummy Agg backend plotting
@@ -467,9 +472,6 @@ class RoommeasureGUI(Tk):
 
             # - log-sweep as per the updated LS parameters
             rm.LS.prepare_sweep()
-
-            # - a positive frequencies vector as per the selected N value.
-            rm.freq = rm.np.linspace(0, int(rm.LS.fs/2), int(rm.LS.N/2))
 
             # - timer
             if timer.isdigit():
