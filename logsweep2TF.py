@@ -44,7 +44,7 @@
                         Use -h to list the available ones.
 
     -eXX                Power of 2 that determines the total lenght N of the
-                        test log-sweep. Default 2^17 = 128K samples ~ 2 sec
+                        test log-sweep. Default 2^18 = 256K samples ~ 4 sec
 
 
     -noclearance        Ommit time clearance validation.
