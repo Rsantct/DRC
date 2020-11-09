@@ -66,7 +66,7 @@ roommeasure.py
         - the sound card does not loses samples, and levels are ok.
 
         - the measuremet is feasible, i.e. the 'Time clearance' graph shows a
-          clear spike shape, without side noise.
+          clear spike shape (~ thousands in Y scale, without side noise).
 
     with the selected hardware and parameters (sample rate and sweep length).
 

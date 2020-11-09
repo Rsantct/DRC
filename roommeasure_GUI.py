@@ -86,7 +86,7 @@ class RoommeasureGUI(Tk):
         self.cmb_meas    = ttk.Combobox(content, values=takes,    width=4)
         lbl_sweep        = ttk.Label(content, text='sweep length')
         self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
-        lbl_scho         = ttk.Label(content, text='Smooth Schroeder')
+        lbl_scho         = ttk.Label(content, text='smooth Schroeder')
         self.ent_scho    = ttk.Entry(content,                     width=5)
 
         # - REMOTE JACK SECTION
@@ -240,21 +240,19 @@ class RoommeasureGUI(Tk):
 
         def do_test():
 
-            self.var_msg.set('TESTING SWEEP RECORDING ...')
+            self.var_msg.set('TESTING SWEEP RECORDING ... (please wait)')
             self.btn_go['state'] = 'disabled'
             self.btn_close['state'] = 'disabled'
 
-            rm.LS.TF_plot_smooth = True
             rm.LS.do_meas()
 
             # Checking TIME CLEARANCE:
             if not rm.LS.TimeClearanceOK:
                 self.var_msg.set('POOR TIME CLEARANCE! check sweep length')
 
-            # Checking FREQ DOMAIN SPECTRUM LEVEL
-            _, mag = rm.LS.fft_to_FRD( rm.LS.DUT_TF, rm.LS.fs, smooth_Noct=24 )
+            # Checking SPECTRUM LEVEL
+            maxdB = max( 20 * rm.np.log10( rm.LS.DUT_FR ) )
 
-            maxdB = max( 20 * rm.np.log10( mag ) )
             if  maxdB > 0.0:
                 self.var_msg.set(f'CLIPPING DETECTED: +{round(maxdB,1)} dB')
             elif maxdB > -3.0:
@@ -266,7 +264,7 @@ class RoommeasureGUI(Tk):
 
             # Plotting test signals
             rm.LS.do_plot_aux_graphs( png_folder=f'{UHOME}/rm/' )
-            rm.LS.do_plot_TF(png_fname=f'{UHOME}/rm/freq_response.png')
+            rm.LS.do_plot_FRD( png_fname=f'{UHOME}/rm/freq_response.png' )
             rm.LS.plt.close('all')
 
             self.btn_go['state'] = 'normal'
@@ -286,13 +284,13 @@ class RoommeasureGUI(Tk):
 
             # PREPARING roommeasure.LS stuff as per given options:
             # - sound card
-            rm.LS.fs = fs
+            rm.LS.fs    = fs
             if not rm.LS.test_soundcard(cap, pbk):
                 self.var_msg.set('SOUND CARD ERROR :-/')
                 return False
 
             # - log-sweep as per the selected LS parameters
-            rm.LS.N      = sweeplength
+            rm.LS.N     = sweeplength
             rm.LS.prepare_sweep()
 
             # - Includes time clearance test
@@ -378,10 +376,6 @@ class RoommeasureGUI(Tk):
         self.btn_go['state'] = 'disabled'
         self.btn_close['state'] = 'disabled'
 
-        # This is already disabled in rm, just a reminder,
-        # becasue matplotlib cannot be threaded.
-        rm.doPlot = False
-
         # Ordering the meas loop:
         rm.do_meas_loop(e_trigger, msg)
 
@@ -407,8 +401,10 @@ class RoommeasureGUI(Tk):
 
         # Optional printing rm settings
         def print_rm_info():
-            cap = rm.LS.sd.query_devices(rm.LS.sd.default.device[0])["name"]
-            pbk = rm.LS.sd.query_devices(rm.LS.sd.default.device[1])["name"]
+            cap = rm.LS.sd.query_devices( rm.LS.sd.default.device[0],
+                                          kind='input'                )['name']
+            pbk = rm.LS.sd.query_devices(rm.LS.sd.default.device[1],
+                                          kind='output'                )['name']
             print(f'cap:            {cap}')
             print(f'pbk:            {pbk}')
             print(f'fs:             {rm.LS.fs}')
@@ -445,43 +441,44 @@ class RoommeasureGUI(Tk):
             # PREPARING roommeasure.LS stuff as per given options:
 
             # - sound card
-            rm.LS.fs = fs
-            if not rm.LS.test_soundcard(cap, pbk):
-                self.var_msg.set('SOUND CARD ERROR :-/')
+            rm.LS.fs        = fs
+            test_sc = rm.LS.test_soundcard(cap, pbk)
+            if test_sc != 'ok':
+                self.var_msg.set( test_sc )
                 return
 
             # - measure
-            rm.channels  = [c for c in channels]
-            rm.numMeas   = takes
-            rm.LS.N      = sweeplength
+            rm.channels     = [c for c in channels]
+            rm.numMeas      = takes
+            rm.LS.N         = sweeplength
 
             # - smoothing
             rm.Scho         = Scho
 
             # - output folder
             if folder:
-                rm.folder = f'{UHOME}/rm/{folder}'
+                rm.folder   = f'{UHOME}/rm/{folder}'
             rm.prepare_frd_folder()
             #   updates the GUI w/ the real folder because subindex could be added
             self.ent_folder.delete(0, END)
             self.ent_folder.insert(0, os.path.basename(rm.folder))
 
             # - beeps:
-            rm.beepL = rm.tools.make_beep(f=880, fs=rm.LS.fs)
-            rm.beepR = rm.tools.make_beep(f=932, fs=rm.LS.fs)
+            rm.beepL        = rm.tools.make_beep(f=880, fs=rm.LS.fs)
+            rm.beepR        = rm.tools.make_beep(f=932, fs=rm.LS.fs)
 
             # - log-sweep as per the updated LS parameters
             rm.LS.prepare_sweep()
 
             # - timer
             if timer.isdigit():
-                rm.timer = int(timer)
+                rm.timer    = int(timer)
             elif timer == 'manual':
-                rm.timer = 0
+                rm.timer    = 0
 
             # - alert beeps
             if not self.var_beep.get():
-                rm.doBeep = False
+                rm.doBeep   = False
 
             # - Remote Jack enabling
             if rjaddr and rjuser and rjpass:
@@ -517,8 +514,10 @@ if __name__ == '__main__':
 
     ### DEFAULT GUI PARAMETERS
     # - Sound card:
-    app.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0] )['name'])
-    app.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1] )['name'])
+    app.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0],
+                                            kind = 'input'             )['name'])
+    app.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1],
+                                            kind = 'output'            )['name'])
     app.cmb_fs.set('48000')
     # - Logsweep length:
     app.cmb_sweep.set(str(2**17))
