@@ -10,7 +10,7 @@ This software not only performs the freq response calculation of your sound syst
 
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/time_clearance.png" width="480">
 
-Graphical information will help you also to detect inaudible gaps than can appear from your hardware stuff. The following both channels direct loop ilustrates this anomalie:
+Graphical information will help you also to detect inaudible gaps that can appear from your hardware stuff. The following both channels direct loop ilustrates this anomalie:
 
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/gaps_in_recorded.jpg" width="480">
 
