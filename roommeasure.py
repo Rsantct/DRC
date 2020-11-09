@@ -271,7 +271,7 @@ def gui_prompt(ch, seq, gui_trigger, gui_msg):
         print(f'(rm) RESUMING, meas #{seq+1}_ch:{ch}')
         gui_trigger.clear()
 
-    gui_msg.set(f'measuring at location #{seq+1}  [ {ch} ]')
+    gui_msg.set(f'computing location #{seq+1}  [ {ch} ] (please wait)')
 
 
 def LS_meas(ch, seq):
@@ -279,14 +279,11 @@ def LS_meas(ch, seq):
     # Order LS to do the measurement
     LS.do_meas()
 
-    # Getting the result from LS
-    f, mag = LS.fft_to_FRD( LS.DUT_TF, LS.fs, smooth_Noct=24 )
-
-    magdB = 20 * np.log10(mag)
+    magdB = 20 * np.log10( LS.DUT_FR )
 
     # Saving the curve to a sequenced frd filename
     tools.saveFRD(  fname   = f'{folder}/{ch}_{str(seq)}.frd',
-                    freq    = f,
+                    freq    = LS.FREQ,
                     mag     = magdB,
                     fs      = LS.fs,
                     comments= f'roommeasure.py ch:{ch} loc:{str(seq)}',
@@ -299,14 +296,14 @@ def LS_meas(ch, seq):
     if ch in chs:
         figIdx += chs.index(ch)
     # Will choose a color by selecting the CSS4 color sequence, from black (index 7)
-    LS.plot_FRdB( f, magdB, label     = f'{ch}_{str(seq)}',
-                            color     = css4_colors[(7 + seq) % 148],
-                            figure    = figIdx,
-                            title     = f'{os.path.basename(folder)}',
-                            png_fname = f'{folder}/{ch}.png'
-               )
+    LS.plot_FRdB( LS.FREQ, magdB, label     = f'{ch}_{str(seq)}',
+                                  color     = css4_colors[(7 + seq) % 148],
+                                  figure    = figIdx,
+                                  title     = f'{os.path.basename(folder)}',
+                                  png_fname = f'{folder}/{ch}.png'
+                 )
 
-    return f, mag  # lineal
+    return LS.FREQ, LS.DUT_FR  # DUT_FR given in lineal magnitude not dB
 
 
 def do_meas_loop(gui_trigger=None, gui_msg=None):
@@ -435,16 +432,21 @@ def do_averages():
 
 
 def connect_to_remote_JACK(jackIP, jackUser, pwd=None):
+
     global manageJack, rjack
+
     from remote_jack import Remote
+
     # (i) Here the user will be prompted to enter the remote password
     try:
         rjack = Remote(jackIP, jackUser, password=pwd)
         manageJack = True
         print_console_msg(f'Connected to remote Jack machine {jackIP}')
+
     except Exception as e:
         print_console_msg(f'ERROR connecting to remote Jack machine {jackIP}')
         manageJack = False
+
     return manageJack
 
 
