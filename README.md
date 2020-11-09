@@ -1,9 +1,23 @@
 This soft is intended to measure a loudspeaker's in-room response, then calculate a FIR filter to perform DRC equalization (digital room correction). You'll ned to use a convolver inserted in the loudspeakers signal path, such **Brutefir** as used [here](https://github.com/AudioHumLab/pe.audio.sys)
 
+The applied test signal will be a **log sweep** chirp.
+
+## Testing your sound card settings
+
+The main meas script is **`logsweep2TF.py`**. It is based on a public lisenced Matlab program from Richard Mann y John Vanderkooy, published at [linearaudio.net](https://linearaudio.net/downloads) (Vol.13).
+
+This software not only performs the freq response calculation of your sound system, it also provides a **_time clearance_** checking of the meassurement chain, depending on the total latency and the selected log-sweep lenght.
+
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/time_clearance.png" width="480">
+
+Graphical information will help you also to detect inaudible gaps than can appear from your hardware stuff. The following both channels direct loop ilustrates this anomalie:
+
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/gaps_in_recorded.jpg" width="480">
+
+
 
 ## Multipoint measurement
 
-The main meas script is **`logsweep2TF.py`**. It is based on a public lisenced Matlab program from Richard Mann y John Vanderkooy, published at [linearaudio.net](https://linearaudio.net/downloads) (Vol.13).
 
 The script **`roommeasure.py`** allows to perform **_stationary measurements in several mic locations_**, then resulting an averaged frequency response in `.frd` file format.
 
@@ -16,12 +30,12 @@ When measuring a [JACK based loudspeaker system](https://github.com/AudioHumLab)
 
 ## GUI appearance:
 
-![GUI](https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png)
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png" width="800">
 
 
 Testing the log-sweep recording:
 
-![GUI](https://github.com/Rsantct/DRC/blob/master/doc/test_sweep.png)
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/test_sweep.png" width="800">
 
 
 ## DRC EQ filter calculation
@@ -70,8 +84,7 @@ The **reference level** on which it is applied the EQ is automatically detected,
 
 ```
 
-![gaps](https://github.com/Rsantct/DRC/blob/master/doc/roomEQ_hard-modes.png)
-
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/roomEQ_hard-modes.png" width="800">
 
 
 ## FIR application
@@ -83,7 +96,7 @@ Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or
 
 ## Using the measurement software
 
-You can use a Linux o Mac OS (Homebrew) laptop.
+You can use a Linux o Mac OS (Homebrew) laptop, equiped with a suitable sound card and measurement mic.
 
 
 ### Dependencies
