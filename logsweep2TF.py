@@ -523,7 +523,8 @@ def do_meas():
     print( "--- Checking levels:" )
     maxdBFS_dut = 20 * log10( max( abs( dut ) ) )
     maxdBFS_ref = 20 * log10( max( abs( ref ) ) )
-    # LSB: Less Significant Bit
+    # LSBrms stands for least significant bit root-mean-square and it measures the power 
+    # of the system noise in terms of the smallest detectable change in voltage.
     dut_RMS_LSBs = round(sqrt( 2**30 * sum(dut**2) / N ), 2)
     ref_RMS_LSBs = round(sqrt( 2**30 * sum(ref**2) / N ), 2)
 
