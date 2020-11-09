@@ -4,7 +4,7 @@ The applied test signal will be a **log sweep** chirp.
 
 ## Testing your sound card settings
 
-The main meas script is **`logsweep2TF.py`**. It is based on a public licensed Matlab program from Richard Mann y John Vanderkooy, published at [linearaudio.net](https://linearaudio.net/downloads) (Vol.13).
+The main meas script is **`logsweep2TF.py`**. It is based on a public licensed Matlab program from Richard Mann and John Vanderkooy, published at [linearaudio.net](https://linearaudio.net/downloads) (Vol.13).
 
 This software not only performs the freq response calculation of your sound system, it also provides a **_time clearance_** checking of the meassurement chain, depending on the total latency and the selected log-sweep lenght.
 
@@ -88,6 +88,8 @@ The **reference level** on which it is applied the EQ is automatically detected,
             -dev    Auxiliary plots
 
 ```
+
+Example of a very strong room mode in the listening area:
 
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/roomEQ_hard-modes.png" width="800">
 
