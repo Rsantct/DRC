@@ -38,6 +38,11 @@ Testing the log-sweep recording:
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/test_sweep.png" width="800">
 
 
+A multipoint measurement:
+
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/multipoint_sample.png" width="800">
+
+
 ## DRC EQ filter calculation
 
 The script **`roomEQ.py`** is in charge to calculate the FIR filter for DRC EQ, from a given `.frd` freq response file, as the one provided from **`roommeasure.py`**, or other software e.g : ARTA or Room EQ Wizard.
