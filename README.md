@@ -30,7 +30,7 @@ When measuring a [JACK based loudspeaker system](https://github.com/AudioHumLab)
 
 ## GUI appearance:
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png" width="800">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png" width="640">
 
 
 Testing the log-sweep recording:
