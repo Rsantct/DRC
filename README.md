@@ -1,11 +1,11 @@
-This soft is intended to measure a loudspeaker's in-room response, then calculate FIR filter to perform DRC equalization (digital room correction). You'll ned to use a convolver inserted in the loudspeakers signal path, such as Brutefir as used [here](https://github.com/AudioHumLab/pe.audio.sys)
+This soft is intended to measure a loudspeaker's in-room response, then calculate a FIR filter to perform DRC equalization (digital room correction). You'll ned to use a convolver inserted in the loudspeakers signal path, such **Brutefir** as used [here](https://github.com/AudioHumLab/pe.audio.sys)
 
 
 ## Multipoint measurement
 
 The main meas script is **`logsweep2TF.py`**. It is based on a public lisenced Matlab program from Richard Mann y John Vanderkooy, published at [linearaudio.net](https://linearaudio.net/downloads) (Vol.13).
 
-The script **`roommeasure.py`** allows to perform **_stationary measurements in several mic locations_**, then resulting an averaged frequency response in .frd file format.
+The script **`roommeasure.py`** allows to perform **_stationary measurements in several mic locations_**, then resulting an averaged frequency response in `.frd` file format.
 
 The spatial amplitude for mic locations relies in the user criteria, depending on the listening scenario.
 
