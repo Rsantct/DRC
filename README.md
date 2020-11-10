@@ -71,7 +71,7 @@ The **reference level** on which it is applied the EQ is automatically detected,
 
             -ref=   Reference level in dB (default autodetected)
 
-            -scho=  Schroeder freq. (default 200 Hz)
+            -sch=   Schroeder freq. (default 200 Hz)
 
             -wFc=   Gaussian window to limit positive EQ: center freq
                     (default 1000 Hz)
