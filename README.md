@@ -96,9 +96,9 @@ Example of a very strong room mode in the listening area:
 
 ## FIR application
 
-The obtained FIR filter, must be loaded in a convolver as Brutefir in Linux, or in a generic reverb plugin as Wave's IR1 in a DAW, or in a hardware convolver as miniDSP.
+The obtained FIR filter, must be loaded in a convolver as **Brutefir** in Linux, or in a generic reverb plugin as Wave's IR1 in a DAW, or in a hardware convolver as miniDSP.
 
-Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or [pre.di.c](https://github.com/AudioHumLab) fron the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
+Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or [pre.di.c](https://github.com/AudioHumLab) from the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
 
 
 ## Using the measurement software
@@ -108,7 +108,7 @@ You can use a Linux o Mac OS (Homebrew) laptop, equipped with a suitable sound c
 
 ### Dependencies
 
-You'll need the following standard libraries:
+You'll need the following standard libraries (Linux Debian flavor install commands are shown below).
 
 #### Python3
 
