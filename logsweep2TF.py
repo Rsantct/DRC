@@ -93,6 +93,7 @@ import matplotlib
 # incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
 import matplotlib.pyplot as plt
 
+from matplotlib.ticker import EngFormatter
 from numpy import *
 from scipy.signal import correlate as signal_correlate # to differentiate it from numpy
 
@@ -117,8 +118,8 @@ checkClearence      = True
 
 printInfo           = True
 
-aux_plot            = True      # Time domain aux plotting
-FRD_plot            = True      # Freq Response plotting
+aux_plot            = True      # Time domain aux plots
+FRD_plot            = True      # Freq Response plots
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT PARAMETERS: -----------------------------
@@ -133,7 +134,7 @@ system_type = 'electronic'      # 'acoustic', 'electronic', 'level-dependent'
 Po          = 2e-5              # SPL reference pressure
 c           = 343               # speed of sound
 
-binsFRD     = 2**14             # Freq bins for output .frd files
+binsFRD     = 2**14             # Freq bins for output .frd files, default 16 Kbins
 Noct        = 24                # smoothing 1/N oct for freq response plots
 
 yplotmax    = 6                 # TF plots above 0 dB
@@ -292,46 +293,75 @@ def do_plot_aux_graphs(png_folder=f'{UHOME}'):
     print( "--- Plotting Time Domain graphs..." )
 
 
-def plot_FRdB( f, magdB, figure=100, label='', color='blue', title='Freq. response',
-                                                         png_fname='' ):
-    """ Plots a FRD freq response data given in dB
+def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
+    """ Plots multi FRD curves
 
-            figure      allows to perform multicurve figures
-            png_fname   dumps a png image of the plotted graph
+        freq:       The freq vector
+
+        curves:     A list of curves dictionaries: {magdB:, color:, label:}
+
+        png_fname:  A figure .png filename to be saved on disk
+
+        figure:     By calling a figure number, you can interleave the curves
+                    in the desired figure.
     """
-    plt.figure(figure)
 
-    # a warning level dotted line
-    plt.plot(f, full(f.shape, clipWarning), label='',
-                linestyle=(0,(5,10)), linewidth=0.5, color='purple')
+    # If this is a new figure, lets create it with a new axes:
+    if figure not in plt.get_fignums():
+        fig = plt.figure(figure)
+        ax = fig.add_subplot()
 
-    # response curve
-    plt.semilogx( f, magdB, color=color, label=label )
+        # plot warning level lines
+        ax.plot(freq, full(freq.shape, clipWarning), label='',
+                    linestyle='--', linewidth=0.5,  color='purple')
 
-    plt.xlim(20, 20000)
-    plt.ylim( yplotmax - yplotspan, yplotmax )
-    plt.grid(True, which="both")
-    plt.legend()
-    plt.xlabel('frequency [Hz]')
-    plt.ylabel('dB')
-    plt.title(title)
+        ax.plot(freq, full(freq.shape, 0.0),         label='',
+                    linestyle='--',       linewidth=0.75, color='purple')
+
+        # formatting
+        ax.set_title(title)
+        ax.set_xlim(20, 20000)
+        ax.set_ylim( yplotmax - yplotspan, yplotmax )
+        # Y ticks in 6 dB steps
+        ax.set_yticks( range(yplotmax - yplotspan, yplotmax + 6, 6) )
+        ax.grid(True, which="both")
+        ax.set_xlabel('frequency [Hz]')
+        ax.set_ylabel('dB')
+        # nice engineering formatting "1 K"
+        ax.xaxis.set_major_formatter( EngFormatter() )
+
+    # If the figure already exists, simply select the existing axes:
+    else:
+        fig = plt.figure(figure)
+        ax = plt.gca()
+
+    # plot curves
+    for i, c in enumerate(curves):
+        print(f'(plotFRDs) figure#{figure} curve #{i} \'{c["label"]}\'')
+        ax.semilogx( freq, c['magdB'], color=c['color'], label=c['label'] )
+
+    # updating legend
+    ax.legend()
+
     if png_fname:
         plt.savefig(png_fname)
 
 
-def do_plot_FRD(png_fname=f'{UHOME}/freq_response.png'):
+def plot_DUT_REF():
     """ plot freq responses: DUT_FR and REF_FR
     """
 
-    # plot DUT
-    plot_FRdB( FREQ, 20 * log10(DUT_FR) , label='DUT',
-                                       color='blue',
-                                       png_fname=png_fname )
+    # DUT
+    c1 = {  'magdB': 20 * log10(DUT_FR),
+            'label': 'DUT',
+            'color': 'blue' }
 
-    # plot REFERENCE
-    plot_FRdB( FREQ, 20 * log10(REF_FR), label='REF',
-                                      color='grey',
-                                      png_fname=png_fname )
+    # REFERENCE
+    c2 = {  'magdB': 20 * log10(REF_FR),
+            'label': 'REF',
+            'color': 'grey' }
+
+    plot_FRDs( FREQ, (c1, c2), png_fname=f'{UHOME}/freq_response.png' )
 
     print( "--- Plotting Freq Response graphs..." )
 
@@ -735,7 +765,7 @@ if __name__ == "__main__":
         do_plot_aux_graphs()
 
     if FRD_plot:
-        do_plot_FRD()
+        plot_DUT_REF()
 
     if aux_plot or TF_plot:
         plt.show()
