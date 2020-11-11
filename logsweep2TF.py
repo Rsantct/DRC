@@ -330,7 +330,7 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
         # nice engineering formatting "1 K"
         ax.xaxis.set_major_formatter( EngFormatter() )
 
-    # If the figure already exists, simply select the existing axes:
+    # If the figure already exists, simply select it and select the existing axes:
     else:
         fig = plt.figure(figure)
         ax = plt.gca()
@@ -347,7 +347,7 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
         plt.savefig(png_fname)
 
 
-def plot_DUT_REF():
+def plot_DUT_REF(png_fname=f'{UHOME}/freq_response.png'):
     """ plot freq responses: DUT_FR and REF_FR
     """
 
@@ -361,7 +361,7 @@ def plot_DUT_REF():
             'label': 'REF',
             'color': 'grey' }
 
-    plot_FRDs( FREQ, (c1, c2), png_fname=f'{UHOME}/freq_response.png' )
+    plot_FRDs( FREQ, (c1, c2), png_fname=png_fname )
 
     print( "--- Plotting Freq Response graphs..." )
 
