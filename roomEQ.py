@@ -371,7 +371,7 @@ if not noPos:
 
 # computed EQ curve:
 ax.plot(newFreq, newEq,
-                        label=f'EQ FIR ({str(len(newEq)-1)} bins)',
+                        label=f'EQ FIR ({int(m/1024)} Ktaps)',
                         color='green')
 
 # estimated result curve:
