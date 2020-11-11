@@ -229,8 +229,8 @@ class RoommeasureGUI(Tk):
         # measuring in awaiting state could be triggered.
         self.meas_trigger.set()
 
-
-    def do_show_image(self,imagePath, row=0, col=0, extraX=0, extraY=0):
+    # Individual windows images display
+    def do_show_image_at(self, imagePath, row=0, col=0, extraX=0, extraY=0):
         """ displays an image
             row and col allows to array the image on the screen,
             referred to the main window position.
@@ -241,12 +241,12 @@ class RoommeasureGUI(Tk):
 
         # Image window and container frame
         wimg = Toplevel()
-        #wimg.title(os.path.basename(rm.folder))
+        wimg.title(os.path.basename(imagePath))
         fimg = Frame(wimg)
         fimg.grid(row=0, column=0)
 
         # Resizing image to a reasonable height
-        image = Image.open(imagePath)#.convert("RGB")
+        image = Image.open(imagePath)
         iw, ih = image.size
         iaspect = iw / ih
         ih2 = int(self.screenH / 3)
@@ -265,22 +265,62 @@ class RoommeasureGUI(Tk):
         lbl_image.grid(row=0, column=0)
 
 
+    # Joined images window display
+    def do_show_images(self, png_tuples, wtitle=''):
+        """ png_tuples:     A list of png tuples (pngPath, row, column)
+            wtitle:         Container window title
+        """
+
+        # Joined images window and container frame
+        wimg = Toplevel()
+        if wtitle:
+            wimg.title(wtitle)
+        fimg = Frame(wimg)
+        fimg.grid(row=0, column=0)
+
+        for png_tuple in png_tuples:
+
+            image_path, row, column = png_tuple
+
+            # Resizing image to a reasonable height
+            image = Image.open(image_path)
+            iw, ih = image.size
+            iaspect = iw / ih
+            ih2 = int(self.screenH / 3)
+            iw2 = int(ih2 * iaspect)
+            image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
+            imageObj = ImageTk.PhotoImage(image2)
+
+            # http://effbot.org/pyfaq/why-do-my-tkinter-images-not-appear.htm (*)
+            lbl = ttk.Label(fimg, image=imageObj)
+            lbl.image = imageObj              # (*) trick: keep the reference
+            lbl.grid(row=row, column=column)
+
+
     def test_logsweep(self):
 
-        def do_show_test_graphs():
+        def do_show_test_graphs(joined=True):
             """ Showing the rm.LS saved graphs, arranged on the screen
             """
 
             png_folder = f'{UHOME}/rm/'
-            pngs = []
-            pngs.append( (f'{png_folder}/freq_response.png',        1, 1) )
-            pngs.append( (f'{png_folder}/time_clearance.png',       0, 1) )
-            pngs.append( (f'{png_folder}/time_domain_recorded.png', 1, 0) )
-            pngs.append( (f'{png_folder}/prepared_sweeps.png',      0, 0) )
-            for png in pngs:
-                self.do_show_image( imagePath=png[0],
-                                    row=png[1], col=png[2],
-                                    extraX=50,  extraY=50  )
+
+            png_tuples = []
+            png_tuples.append( (f'{png_folder}/prepared_sweeps.png',      0, 0) )
+            png_tuples.append( (f'{png_folder}/time_clearance.png',       0, 1) )
+            png_tuples.append( (f'{png_folder}/time_domain_recorded.png', 1, 0) )
+            png_tuples.append( (f'{png_folder}/freq_response.png',        1, 1) )
+
+            # OPC: Individual images display
+            if not joined:
+                for png_tuple in png_tuples:
+                    self.do_show_image_at(  imagePath=png_tuple[0],
+                                            row=png_tuple[1], col=png_tuple[2],
+                                            extraX=50,        extraY=50  )
+                return
+
+            # OPC: Joined images window and container frame
+            self.do_show_images( png_tuples, wtitle='~/rm' )
 
 
         def do_test():
@@ -309,12 +349,12 @@ class RoommeasureGUI(Tk):
 
             # Plotting test signals
             rm.LS.do_plot_aux_graphs( png_folder=f'{UHOME}/rm/' )
-            rm.LS.do_plot_FRDs( png_fname=f'{UHOME}/rm/freq_response.png' )
+            rm.LS.plot_DUT_REF( png_fname=f'{UHOME}/rm/freq_response.png' )
             rm.LS.plt.close('all')
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            do_show_test_graphs()
+            do_show_test_graphs(joined=True)
 
 
         def configure_LS():
@@ -363,7 +403,7 @@ class RoommeasureGUI(Tk):
         bgcolor     = 'light grey'
         bgcolortxt  = 'snow2'
 
-        help_fname  = __file__.replace('_GUI.py', '.hlp')
+        help_fname  = f'{os.path.dirname(__file__)}/roommeasure.hlp'
         # this is for Mac OS users having renamed this script file
         help_fname  = help_fname.replace('_GUI.command', '.hlp')
 
@@ -382,19 +422,22 @@ class RoommeasureGUI(Tk):
         xscroll  = ttk.Scrollbar(fhlp, orient='horizontal', command=txt_help.xview)
         txt_help['yscrollcommand'] = yscroll.set
         txt_help['xscrollcommand'] = xscroll.set
+        txt_help.grid( row=0, column=0, pady=5 )
 
-        but_ok   = Button(fhlp, text='OK', command=arakiri,
+        fbtn = Frame(whlp, bg=bgcolor)
+        fbtn.grid( row=1, column=0 )
+
+        btn_ok   = Button(fbtn, text='OK', command=arakiri,
                                            highlightbackground=bgcolor)
-
-        txt_help.grid(  row=0,  column=0,   pady=5 )
-        but_ok.grid(    row=1,  column=0,   pady=5 )
+        btn_ok.grid(    row=1,  column=0,   pady=5 )
         self.btn_help['state'] = 'disabled'
 
 
     # Show the rm.LS saved graphs, arranged on the screen
-    def do_show_rm_LS_graphs(self):
+    def do_show_rm_LS_graphs(self, joined=False):
         """ Showing the rm.LS saved graphs, arranged on the screen
         """
+        png_tuples = []
         fnames = os.listdir(rm.folder)
         fnames.sort()
         row = 0
@@ -404,13 +447,26 @@ class RoommeasureGUI(Tk):
             for fname in fnames:
                 if fname[-4:] == '.png' and fname[0] == ch:
                     imagePath = f'{rm.folder}/{fname}'
-                    self.do_show_image(imagePath, row, col, extraX=50)
+                    if not joined:
+                        self.do_show_image_at(imagePath, row, col, extraX=50)
+                    else:
+                        png_tuples.append( (imagePath, row, col) )
                     found = True
                     col += 1
             if found:
                 row +=1
                 col = 0
                 found = False
+
+
+        # OPC: Individual images display
+        if not joined:
+            return
+
+        # OPC: Joined images window and container frame
+        else:
+            self.do_show_images( png_tuples,
+                                 wtitle=f'~/rm/{os.path.basename(rm.folder)}' )
 
 
     # MAIN MEAS procedure and SAVING of curves
@@ -432,7 +488,7 @@ class RoommeasureGUI(Tk):
         rm.LS.plt.close('all')
 
         # Showing the rm.LS saved graphs, arranged on the screen
-        self.do_show_rm_LS_graphs()
+        self.do_show_rm_LS_graphs(joined=True)
 
         # Re enabling the GO! & CLOSE button
         self.btn_go['state'] = 'normal'
@@ -613,7 +669,7 @@ class RoommeasureGUI(Tk):
 
             cmdline = f'{rEQ_path} {frd_path} {args}'
 
-            self.var_msg.set(f'running roomEQ.py ... ...')
+            self.var_msg.set(f'running roomEQ ... ...')
             print( f'(GUI) running: {cmdline}' )
 
             Popen( cmdline, shell=True)
