@@ -27,31 +27,27 @@
 
         roomEQ.py response.frd  [ options ]
 
-            -name=  A meaningful suffix to name the output FIR file
-                    (default current folder name)
+            -name=      A meaningful suffix to name the output FIR file
+                        (default current folder name)
 
-            -fs=    Output FIR sampling freq (default 48000 Hz)
+            -fs=        Output FIR sampling freq (default 48000 Hz)
 
-            -e=     Exponent 2^XX for FIR length in taps.
-                    (default 15, i.e. 2^15=32 Ktaps)
+            -e=         Exponent 2^XX for FIR length in taps.
+                        (default 15, i.e. 2^15=32 Ktaps)
 
-            -ref=   Reference level in dB (default autodetected)
+            -ref=       Reference level in dB (default autodetected)
 
-            -scho=  Schroeder freq. (default 200 Hz)
+            -schro=     Schroeder freq. (default 200 Hz)
 
-            -wFc=   Gaussian window to limit positive EQ: center freq
-                    (default 1000 Hz)
+            -wFc=       Gaussian window to limit positive EQ: center freq
+                        (default 1000 Hz)
 
-            -wOct=  Gaussian window to limit positive EQ: wide in octaves
-                    (default 10 octaves 20 ~ 20 KHz)
+            -wOct=      Gaussian window to limit positive EQ: wide in octaves
+                        (default 10 octaves 20 ~ 20 KHz)
 
-            -noPos  Does not allow positive gains at all
+            -noPos      Does not allow positive gains at all
 
-            -doFIR  Generates the pcm FIR after estimating the final EQ.
-
-            -plot   FIR visualizer
-
-            -dev    Auxiliary plots
+            -doFIR      Generates the pcm FIR after estimating the final EQ.
 
 
     NOTE:   this tool depends on github.com/AudioHumLab/audiotools
@@ -62,7 +58,14 @@ import sys
 import numpy as np
 from scipy import signal
 from scipy.interpolate import interp1d
-from matplotlib import pyplot as plt
+
+# https://matplotlib.org/faq/howto_faq.html#working-with-threads
+import matplotlib
+# Later we will be able to call matplotlib.use('Agg') to replace the regular
+# display backend (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid
+# incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
+import matplotlib.pyplot as plt
+
 from matplotlib.ticker import EngFormatter
 
 ### ~/audiotools
@@ -91,7 +94,7 @@ ax.set_ylim(-30, 18)
 ##########################################################################
 
 # Just calculates EQ, do not generates FIR
-noFIRs  = True
+doFIR  = False
 
 # For developers, aux plots about managing curves
 dev = False
@@ -107,8 +110,8 @@ f1, f2  = 500, 2000 # Range of freqs to get the ref level
 
 # TARGET over the original given .frd
 Noct    = 96        # Initial fine smoothing 1/96 oct.
-fScho   = 200       # Schroeder freq.
-octScho = 2         # Octaves referred to Schoeder to initiate the transition
+fSchro  = 200       # Schroeder freq.
+octSch  = 2         # Octaves referred to Schroeder to initiate the transition
                     # from fine smoothing towards a wider one 1/1 oct.
 Tspeed  = "medium"  # Transition speed for audiotools/smoothSpectrum.py
 
@@ -161,9 +164,9 @@ for opc in sys.argv[1:]:
             print( __doc__ )
             sys.exit()
 
-    elif opc[:6] == '-scho=':
+    elif '-sch' in opc:
         try:
-            fScho = float(opc[6:])
+            fSchro = float(opc.split('=')[-1])
         except:
             print( __doc__ )
             sys.exit()
@@ -182,14 +185,14 @@ for opc in sys.argv[1:]:
             print( __doc__ )
             sys.exit()
 
-    elif opc[:6].lower() == '-nopos':
+    elif '-nopos' in opc.lower():
         noPos = True
 
     elif '-v' in opc:
         viewFIRs = True
 
-    elif '-doFIR' in opc:
-        noFIRs = False
+    elif '-dofir' in opc.lower():
+        doFIR = True
 
     elif '-dev' in opc:
         dev = True
@@ -246,7 +249,7 @@ else:
 
 # 1.2 'target' curve: a smoothed version of the given freq response
 # 'f0': the bottom freq to begin increasing smoothing towards 1/1 oct at Nyquist
-f0 = 2**(-octScho) * fScho
+f0 = 2**(-octSch) * fSchro
 
 # 'Noct': starting fine somoothing in low freq (def 1/48 oct)
 # 'Tspeed': smoothing transition speed (audiotools/smoothSpectrum.py)
@@ -331,15 +334,15 @@ imp = pydsd.semiblackmanharris(m) * imp[:m]
 
 
 ##########################################################################
-# 4. PLOTTING
+# 4. MAKE PLOTS
 ##########################################################################
 
 # auxiliary EQ plots ( -dev )
 if dev:
 
-    ax.axvline(fScho, label='Schroeder', color='black', linestyle=':')
+    ax.axvline(fSchro, label='Schroeder', color='black', linestyle=':')
 
-    ax.axvline (f0, label='f0 = -' + str(octScho) + ' oct vs Schroeder',
+    ax.axvline (f0, label='f0 = -' + str(octSch) + ' oct vs Schroeder',
                     color='orange', linestyle=':', linewidth=1)
 
     ax.plot(freq, eqaux,
@@ -368,8 +371,8 @@ if not noPos:
 
 # computed EQ curve:
 ax.plot(newFreq, newEq,
-                        label="EQ applied (" + str(len(newEq)-1) + " bins)",
-                        color="red")
+                        label=f'EQ FIR ({str(len(newEq)-1)} bins)',
+                        color='green')
 
 # estimated result curve:
 if dev:
@@ -392,8 +395,6 @@ ax.legend()
 
 plt.title(title)
 
-plt.show()
-
 
 ##########################################################################
 # 5. Saving graphs to PDF:
@@ -411,7 +412,7 @@ plt.show()
 ##########################################################################
 # 6. Saving impulse to .pcm files
 ##########################################################################
-if noFIRs:
+if not doFIR:
     print( "(i) Skeeping FIR generation. Bye!" )
     sys.exit()
 
@@ -436,7 +437,13 @@ tools.savePCM32(imp, EQpcmname)
 
 
 ##########################################################################
-# 7. FIR visualizer
+# 7. SHOW PLOTS
+##########################################################################
+plt.show()
+
+
+##########################################################################
+# 8. FIR visualizer
 ##########################################################################
 if viewFIRs:
     print( "FIR plotting with audiotools/IR_tool.py ..." )
