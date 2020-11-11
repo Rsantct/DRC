@@ -70,8 +70,8 @@ channels            = ['C']     # Channels to interleaving measurements.
 # Results:
 folder              = f'{UHOME}/rm/meas'
                                 # Smoothing the resulting response:
-Scho                = 200       # Schroeder freq (Hz)
-Noct                = 24        # Initial 1/Noct smoothing below Scho,
+Schro               = 200       # Schroeder freq (Hz)
+Noct                = 24        # Initial 1/Noct smoothing below Schro,
                                 # then will be changed progressively until
                                 # 1/1oct at Nyquist freq.
 
@@ -94,7 +94,7 @@ def print_help_and_exit():
 
 def read_command_line():
 
-    global doBeep, numMeas,  channels, Scho, timer, \
+    global doBeep, numMeas,  channels, Schro, timer, \
            jackIP, jackUser, folder
 
     # an string of three comma separated numbers 'CAPdev,PBKdev,fs'
@@ -125,8 +125,8 @@ def read_command_line():
         elif "-c=" in opc:
             channels = [x for x in opc[3:]]
 
-        elif "-s=" in opc:
-            Scho = float(opc[3:])
+        elif "-sch=" in opc:
+            Schro = float(opc.split('=')[-1])
 
         elif "-e=" in opc:
             LS.N = 2**int(opc[3:])
@@ -159,7 +159,7 @@ def print_info():
     print(f'fs:                 {LS.fs}')
     print(f'channels:           {channels}')
     print(f'takes per ch:       {numMeas}')
-    print(f'Schroeder freq:     {Scho}')
+    print(f'Schroeder freq:     {Schro}')
     print(f'sweep length (N):   {LS.N}')
 
     if timer:
@@ -295,13 +295,16 @@ def LS_meas(ch, seq):
     chs = ('L', 'R', 'C')
     if ch in chs:
         figIdx += chs.index(ch)
+
     # Will choose a color by selecting the CSS4 color sequence, from black (index 7)
-    LS.plot_FRdB( LS.FREQ, magdB, label     = f'{ch}_{str(seq)}',
-                                  color     = css4_colors[(7 + seq) % 148],
-                                  figure    = figIdx,
-                                  title     = f'{os.path.basename(folder)}',
-                                  png_fname = f'{folder}/{ch}.png'
-                 )
+    c = {   'magdB': magdB,
+            'color': css4_colors[(7 + seq) % 148],
+            'label': f'{ch}_{str(seq)}'             }
+
+    LS.plot_FRDs( LS.FREQ, (c,), title=f'{os.path.basename(folder)} ({ch})',
+                                 figure=figIdx,
+                                 png_fname=f'{folder}/{ch}.png'
+                )
 
     return LS.FREQ, LS.DUT_FR  # DUT_FR given in lineal magnitude not dB
 
@@ -397,14 +400,13 @@ def do_averages():
                         freq    = f,
                         mag     = avg_mag_dB,
                         fs      = LS.fs,
-                        comments= f'roommeasure.py ch:{ch} raw avg'
-                      )
+                        comments= f'roommeasure.py ch:{ch} raw avg' )
 
         # Also a progressive smoothed version of average
         print( 'Smoothing average 1/' + str(Noct) + ' oct up to ' + \
-                str(Scho) + ' Hz, then changing towards 1/1 oct at Nyq' )
+                str(Schro) + ' Hz, then changing towards 1/1 oct at Nyq' )
 
-        avg_mag_progSmooth      = smooth(f, avg_mag, Noct, f0=Scho)
+        avg_mag_progSmooth      = smooth(f, avg_mag, Noct, f0=Schro)
         avg_mag_progSmooth_dB   = 20 * np.log10(avg_mag_progSmooth)
 
         tools.saveFRD(  fname   = f'{folder}/{ch}_avg_smoothed.frd',
@@ -413,20 +415,19 @@ def do_averages():
                         fs      = LS.fs,
                         comments= f'roommeasure.py ch:{ch} smoothed avg' )
 
-        # Prepare a figure with average curve ...
-        LS.plot_FRdB( f, avg_mag_dB,
-                                        label     = f'{ch} avg',
-                                        color     = 'blue',
-                                        figure    = 20 + figIdx
-                    )
+        # Prepare the average curve ...
+        c1 = {  'magdB': avg_mag_dB,
+                'label': f'{ch} avg',
+                'color': 'blue'         }
+
         # ... and adding the smoothed average curve
-        LS.plot_FRdB( f, avg_mag_progSmooth_dB,
-                                        label     = f'{ch} avg smoothed',
-                                        color     = 'red',
-                                        figure    = 20 + figIdx,
-                                        title     = f'{os.path.basename(folder)}',
-                                        png_fname = f'{folder}/{ch}_avg.png'
-                    )
+        c2 = {  'magdB': avg_mag_progSmooth_dB,
+                'label': f'{ch} avg smoothed',
+                'color': 'red'                  }
+
+        LS.plot_FRDs( LS.FREQ, (c1,c2), title=f'{os.path.basename(folder)} ({ch})',
+                                        figure= 20 + figIdx,
+                                        png_fname=f'{folder}/{ch}_avg.png' )
 
         figIdx += 1
 
@@ -478,7 +479,7 @@ if __name__ == "__main__":
 
     # Reading command line arguments, then will update:
     #   - LS config: device, fs, and N;
-    #   - doBeep, numMeas, channels, Scho, timer, jackIP, jackUser
+    #   - doBeep, numMeas, channels, Schro, timer, jackIP, jackUser
     read_command_line()
 
     # - Prepare output FRD folder:
