@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-""" This is a Tkinter based GUI to running DRC/roommeasure.py
+""" This is a Tkinter based GUI to running DRC scripts
 """
+from subprocess import Popen
 import os
 UHOME = os.path.expanduser("~")
 
@@ -37,7 +38,7 @@ class RoommeasureGUI(Tk):
         self.xpos = int(self.screenW / 12)
         self.ypos = int(self.screenH / 12)
         self.geometry(f'+{self.xpos}+{self.ypos}')
-        self.title('DRC/roommeasure.py GUI')
+        self.title('DRC - GUI')
 
         ### EVENTS HANDLING
         self.bind('<Key>', self.handle_keypressed)
@@ -56,6 +57,7 @@ class RoommeasureGUI(Tk):
         ### VARS
         self.var_beep     = IntVar()
         self.var_validate = IntVar()
+        self.var_poseq    = IntVar()
 
         ### VARS SHARED WITH rm.do_meas_loop()
         self.meas_trigger = threading.Event()
@@ -65,7 +67,8 @@ class RoommeasureGUI(Tk):
         content =  ttk.Frame( self, padding=(10,10,12,12) )
 
         # - SOUND CARD SECTION
-        lbl_scard        = ttk.Label(content, text='SOUND CARD:')
+        lbl_scard        = ttk.Label(content, text='SOUND CARD:',
+                                              font=(None, 0, 'bold') )
         self.chk_validate= ttk.Checkbutton(content, text='validate test',
                                                     variable=self.var_validate,
                                                     command=self.enable_Go)
@@ -79,18 +82,24 @@ class RoommeasureGUI(Tk):
                                                command=self.test_logsweep)
 
         # - MEASURE SECTION
-        lbl_meastitle    = ttk.Label(content, text='MEASURE:')
+        lbl_meas         = ttk.Label(content, text='MEASURE:',
+                                              font=(None, 0, 'bold') )
         lbl_ch           = ttk.Label(content, text='channels')
         self.cmb_ch      = ttk.Combobox(content, values=channels, width=4)
-        lbl_meas         = ttk.Label(content, text='mic locations')
-        self.cmb_meas    = ttk.Combobox(content, values=takes,    width=4)
+        lbl_locat        = ttk.Label(content, text='mic locations')
+        self.cmb_locat    = ttk.Combobox(content, values=takes,    width=4)
         lbl_sweep        = ttk.Label(content, text='sweep length')
         self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
-        lbl_scho         = ttk.Label(content, text='smooth Schroeder')
-        self.ent_scho    = ttk.Entry(content,                     width=5)
+
+        # - PLOT SECTION
+        lbl_plot         = ttk.Label(content, text='PLOT:',
+                                              font=(None, 0, 'bold') )
+        lbl_schro        = ttk.Label(content, text='smooth Schroeder')
+        self.ent_schro   = ttk.Entry(content,                     width=5)
 
         # - REMOTE JACK SECTION
-        lbl_rjack        = ttk.Label(content, text='REMOTE JACK\nLOUDSPEAKER:')
+        lbl_rjack        = ttk.Label(content, text='MANAGE JACK\nLOUDSPEAKER:',
+                                              font=(None, 0, 'bold') )
         lbl_rjaddr       = ttk.Label(content, text='addr')
         self.ent_rjaddr  = ttk.Entry(content,                     width=15)
         lbl_rjuser       = ttk.Label(content, text='user')
@@ -100,7 +109,8 @@ class RoommeasureGUI(Tk):
         self.ent_rjpass  = ttk.Entry(content, show='*',           width=15)
 
         # - RUN AREA
-        lbl_run          = ttk.Label(content, text='RUN:')
+        lbl_run          = ttk.Label(content, text='RUN:',
+                                              font=(None, 0, 'bold') )
         lbl_folder       = ttk.Label(content, text='output folder: ~/rm/')
         self.ent_folder  = ttk.Entry(content,                     width=15)
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
@@ -113,10 +123,28 @@ class RoommeasureGUI(Tk):
         # needs to check [ ]validate
         self.btn_go['state'] = 'disabled'
 
-        #### BOTTOM MESSAGES SECTION FRAME
+        #### MESSAGES SECTION
         frm_msg          = ttk.Frame(content, borderwidth=2, relief='solid')
         self.lbl_msg     = ttk.Label(frm_msg, textvariable=self.var_msg,
                                               font=(None, 32))
+
+        #### FILTER CALCULATION SECTION
+        taps             = [2**14, 2**15, 2**16]
+
+        lbl_drc          = ttk.Label(content, text='DRC-EQ FILTER:',
+                                              font=(None, 0, 'bold') )
+        lbl_reflev       = ttk.Label(content, text='ref. level (dB)')
+        self.ent_reflev  = ttk.Entry(content,                 width=7)
+        lbl_drcsch       = ttk.Label(content, text='Schroeder for smoothing transition')
+        self.ent_drcsch  = ttk.Entry(content,                     width=5)
+        lbl_poseq        = ttk.Label(content, text='allow positive limited EQ:')
+        self.chk_poseq   = ttk.Checkbutton(content, variable=self.var_poseq)
+        lbl_drcfs        = ttk.Label(content, text='FIR sample rate')
+        self.cmb_drcfs   = ttk.Combobox(content, values=srates, width=8)
+        lbl_drctaps      = ttk.Label(content, text='FIR taps')
+        self.cmb_drctaps = ttk.Combobox(content, values=taps, width=7)
+        self.btn_drc     = ttk.Button(content, text='calculate', command=self.drc)
+
 
         ### GRID ARRANGEMENT
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
@@ -133,15 +161,17 @@ class RoommeasureGUI(Tk):
         lbl_sweep.grid(         row=2,  column=4, sticky=E )
         self.cmb_sweep.grid(    row=2,  column=5, sticky=W )
 
-        lbl_meastitle.grid(     row=3,  column=0, sticky=W, pady=5 )
+        lbl_meas.grid(          row=3,  column=0, sticky=W, pady=10 )
         lbl_ch.grid(            row=4,  column=0, sticky=E )
         self.cmb_ch.grid(       row=4,  column=1, sticky=W )
-        lbl_meas.grid(          row=4,  column=2, sticky=E )
-        self.cmb_meas.grid(     row=4,  column=3, sticky=W )
-        lbl_scho.grid(          row=4,  column=4, sticky=E )
-        self.ent_scho.grid(     row=4,  column=5, sticky=W )
+        lbl_locat.grid(         row=4,  column=2, sticky=E )
+        self.cmb_locat.grid(    row=4,  column=3, sticky=W )
 
-        lbl_rjack.grid(         row=5,  column=0, sticky=W, pady=5 )
+        lbl_plot.grid(          row=3,  column=4, sticky=E )
+        lbl_schro.grid(         row=4,  column=4, sticky=E )
+        self.ent_schro.grid(    row=4,  column=5, sticky=W )
+
+        lbl_rjack.grid(         row=5,  column=0, sticky=W, pady=10 )
         lbl_rjaddr.grid(        row=6,  column=0, sticky=E )
         self.ent_rjaddr.grid(   row=6,  column=1, sticky=W )
         lbl_rjuser.grid(        row=6,  column=2, sticky=E )
@@ -149,7 +179,7 @@ class RoommeasureGUI(Tk):
         lbl_rjpass.grid(        row=6,  column=4, sticky=E )
         self.ent_rjpass.grid(   row=6,  column=5, sticky=W )
 
-        lbl_run.grid(           row=7,  column=0, sticky=W, pady=5 )
+        lbl_run.grid(           row=7,  column=0, sticky=W, pady=10 )
         lbl_timer.grid(         row=8,  column=0, sticky=E )
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
         self.chk_beep.grid(     row=8,  column=2 )
@@ -159,8 +189,23 @@ class RoommeasureGUI(Tk):
         self.btn_close.grid(    row=9,  column=4, sticky=E )
         self.btn_go.grid(       row=9,  column=5, sticky=E )
 
-        frm_msg.grid(           row=10, column=0, columnspan=6, pady=10, sticky=W+E )
+        frm_msg.grid(           row=10, column=0, sticky=W+E, columnspan=6, pady=10 )
         self.lbl_msg.grid(                        sticky=W )
+
+        lbl_drc.grid(           row=11, column=0, sticky=W, pady=10 )
+        lbl_poseq.grid(         row=11, column=3, sticky=E, columnspan=2 )
+        self.chk_poseq.grid(    row=11, column=5, sticky=W )
+        lbl_reflev.grid(        row=12, column=0, sticky=E )
+        self.ent_reflev.grid(   row=12, column=1, sticky=W )
+        lbl_drcsch.grid(        row=12, column=2, sticky=E, columnspan=2 )
+        self.ent_drcsch.grid(   row=12, column=4, sticky=W )
+        lbl_drcfs.grid(         row=13, column=0, sticky=E, pady=10 )
+        self.cmb_drcfs.grid(    row=13, column=1, sticky=W )
+        lbl_drctaps.grid(       row=13, column=2, sticky=E )
+        self.cmb_drctaps.grid(  row=13, column=3, sticky=W )
+        self.btn_drc.grid(      row=13, column=5, sticky=E )
+
+
 
         ### GRID RESIZING BEHAVIOR
         self.rowconfigure(      0, weight=1)
@@ -264,10 +309,9 @@ class RoommeasureGUI(Tk):
 
             # Plotting test signals
             rm.LS.do_plot_aux_graphs( png_folder=f'{UHOME}/rm/' )
-            rm.LS.do_plot_FRD( png_fname=f'{UHOME}/rm/freq_response.png' )
+            rm.LS.do_plot_FRDs( png_fname=f'{UHOME}/rm/freq_response.png' )
             rm.LS.plt.close('all')
 
-            self.btn_go['state'] = 'normal'
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
             do_show_test_graphs()
@@ -413,7 +457,7 @@ class RoommeasureGUI(Tk):
             print(f'takes:          {rm.numMeas}')
             print(f'auto timer:     {rm.timer}')
             print(f'Beep:           {rm.doBeep}')
-            print(f'Schroeder:      {rm.Scho} (for smoothed meas curve)')
+            print(f'Schroeder:      {rm.Schro} (for smoothed meas curve)')
             print(f'Output folder   {rm.folder}')
 
 
@@ -426,9 +470,9 @@ class RoommeasureGUI(Tk):
             fs          =   int(self.cmb_fs.get())
 
             channels    =   self.cmb_ch.get()
-            takes       =   int(self.cmb_meas.get())
+            takes       =   int(self.cmb_locat.get())
             sweeplength =   int(self.cmb_sweep.get())
-            Scho        =   float(self.ent_scho.get())
+            Schro       =   float(self.ent_schro.get())
             folder      =   self.ent_folder.get()
 
             rjaddr      =   self.ent_rjaddr.get()
@@ -453,7 +497,7 @@ class RoommeasureGUI(Tk):
             rm.LS.N         = sweeplength
 
             # - smoothing
-            rm.Scho         = Scho
+            rm.Schro         = Schro
 
             # - output folder
             if folder:
@@ -507,32 +551,109 @@ class RoommeasureGUI(Tk):
         job_meas.start()
 
 
+    # CALCULATE DRC
+    def drc(self):
+
+        # fs
+        fs      = self.cmb_drcfs.get()
+
+        # taps
+        tmp    = self.cmb_drctaps.get()
+        taps_exp = int( rm.np.log2( int(tmp) ) )
+
+        # ref level
+        if self.ent_reflev.get() == 'auto':
+            reflev = 0
+
+        elif self.ent_reflev.get().replace('.','') \
+             .replace('+','').replace('-','').isdecimal():
+            reflev  = self.ent_reflev.get()
+
+        else:
+            self.ent_reflev.delete(0, END)
+            self.ent_reflev.insert(0, 'auto')
+            print(f'(GUI) bad ref. level (dB)')
+            return
+
+        # Schroedr freq
+        if self.ent_drcsch.get().replace('.','').isdecimal:
+            schro  = self.ent_drcsch.get()
+        else:
+            self.ent_drcsch.delete(0, END)
+            self.ent_drcsch.insert(0, '200')
+            schro  = 200
+
+        # positive limited eq
+        if self.var_poseq.get():
+            noPos = False
+        else:
+            noPos = True
+
+        # Channels
+        tmp= self.cmb_ch.get()
+        channels = [c for c in tmp]
+
+        # roomEQ command line args
+        args = f'-fs={fs} -e={taps_exp} -schro={schro} -doFIR'
+
+        if reflev:
+            args += f' -ref={reflev}'
+
+        if noPos:
+            args += f' -noPos'
+
+        rEQ_path = f'{UHOME}/DRC/roomEQ.py'
+
+        # (*) audiotools readFRD() needs some time to manage temporary files :-/
+        from time import sleep
+
+        for ch in channels:
+
+            frd_path = f'{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd'
+
+            cmdline = f'{rEQ_path} {frd_path} {args}'
+
+            self.var_msg.set(f'running roomEQ.py ... ...')
+            print( f'(GUI) running: {cmdline}' )
+
+            Popen( cmdline, shell=True)
+            sleep(1) # (*)
+
 
 if __name__ == '__main__':
 
     app = RoommeasureGUI()
 
     ### DEFAULT GUI PARAMETERS
+
     # - Sound card:
     app.cmb_cap.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[0],
                                             kind = 'input'             )['name'])
     app.cmb_pbk.set(rm.LS.sd.query_devices( rm.LS.sd.default.device[1],
                                             kind = 'output'            )['name'])
     app.cmb_fs.set('48000')
+
     # - Logsweep length:
     app.cmb_sweep.set(str(2**17))
     # - Channels to measure ('L' or 'R' or 'LR')
     app.cmb_ch.set('LR')
     # - Locations per channel:
-    app.cmb_meas.set('3')
+    app.cmb_locat.set('3')
     # - Auto timer for measuring progress ('manual' or 'N' seconds)
     app.cmb_timer.set('manual')
     # - Alert before measuring: ('1' or '0')
     app.var_beep.set(1)
     # - Schroeder freq for smoothing result curve:
-    app.ent_scho.insert(0, '200')
+    app.ent_schro.insert(0, '200')
     # - Output folder
     app.ent_folder.insert(0, 'meas')
+
+    # - DRC:
+    app.cmb_drcfs.set('44100')
+    app.cmb_drctaps.set(str(2**15))
+    app.ent_reflev.insert(0, 'auto')
+    app.ent_drcsch.insert(0, '200')
+    app.var_poseq.set(1)
 
     # LAUNCH GUI
     app.mainloop()
