@@ -230,7 +230,8 @@ class RoommeasureGUI(Tk):
         self.meas_trigger.set()
 
     # Individual windows images display
-    def do_show_image_at(self, imagePath, row=0, col=0, extraX=0, extraY=0):
+    def do_show_image_at(self, imagePath, row=0, col=0, extraX=0, extraY=0,
+                               resize=True):
         """ displays an image
             row and col allows to array the image on the screen,
             referred to the main window position.
@@ -249,15 +250,21 @@ class RoommeasureGUI(Tk):
         image = Image.open(imagePath)
         iw, ih = image.size
         iaspect = iw / ih
-        ih2 = int(self.screenH / 3)
-        iw2 = int(ih2 * iaspect)
-        image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
-        imageObj = ImageTk.PhotoImage(image2)
+        if resize:
+            ih2 = int(self.screenH / 3)
+            iw2 = int(ih2 * iaspect)
+            image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
+            imageObj = ImageTk.PhotoImage(image2)
+        else:
+            imageObj = ImageTk.PhotoImage(image)
 
         # On screen arranging
         xoffset = self.xpos + extraX
         yoffset = self.ypos + extraY
-        wimg.geometry(f'+{xoffset + iw2 * col}+{yoffset + ih2 * row}')
+        if resize:
+            wimg.geometry(f'+{xoffset + iw2 * col}+{yoffset + ih2 * row}')
+        else:
+            wimg.geometry(f'+{xoffset + iw  * col}+{yoffset + ih  * row}')
 
         # http://effbot.org/pyfaq/why-do-my-tkinter-images-not-appear.htm (*)
         lbl_image = Label(fimg, image=imageObj)
@@ -299,30 +306,6 @@ class RoommeasureGUI(Tk):
 
     def test_logsweep(self):
 
-        def do_show_test_graphs(joined=True):
-            """ Showing the rm.LS saved graphs, arranged on the screen
-            """
-
-            png_folder = f'{UHOME}/rm/'
-
-            png_tuples = []
-            png_tuples.append( (f'{png_folder}/prepared_sweeps.png',      0, 0) )
-            png_tuples.append( (f'{png_folder}/time_clearance.png',       0, 1) )
-            png_tuples.append( (f'{png_folder}/time_domain_recorded.png', 1, 0) )
-            png_tuples.append( (f'{png_folder}/freq_response.png',        1, 1) )
-
-            # OPC: Individual images display
-            if not joined:
-                for png_tuple in png_tuples:
-                    self.do_show_image_at(  imagePath=png_tuple[0],
-                                            row=png_tuple[1], col=png_tuple[2],
-                                            extraX=50,        extraY=50  )
-                return
-
-            # OPC: Joined images window and container frame
-            self.do_show_images( png_tuples, wtitle='~/rm' )
-
-
         def do_test():
 
             self.var_msg.set('TESTING SWEEP RECORDING ... (please wait)')
@@ -348,13 +331,13 @@ class RoommeasureGUI(Tk):
                 self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
 
             # Plotting test signals
-            rm.LS.do_plot_aux_graphs( png_folder=f'{UHOME}/rm/' )
-            rm.LS.plot_DUT_REF( png_fname=f'{UHOME}/rm/freq_response.png' )
+            rm.LS.plot_system_response( png_folder=f'{UHOME}/rm/' )
             rm.LS.plt.close('all')
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            do_show_test_graphs(joined=True)
+            self.do_show_image_at( imagePath=f'{UHOME}/rm/system_response.png',
+                                    resize=False )
 
 
         def configure_LS():
@@ -452,10 +435,10 @@ class RoommeasureGUI(Tk):
                     else:
                         png_tuples.append( (imagePath, row, col) )
                     found = True
-                    col += 1
+                    row += 1
             if found:
-                row +=1
-                col = 0
+                col +=1
+                row = 0
                 found = False
 
 
