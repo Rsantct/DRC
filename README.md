@@ -93,7 +93,7 @@ Example of a very strong room mode in the listening area:
 
 ## FIR application
 
-The obtained FIR filter, must be loaded in a convolver as **Brutefir** in Linux, or in a generic reverb plugin as Wave's IR1 in a DAW, or in a hardware convolver as miniDSP.
+The obtained FIR filter, must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
 
 Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or [pre.di.c](https://github.com/AudioHumLab) from the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
 
