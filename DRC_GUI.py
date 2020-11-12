@@ -2,6 +2,7 @@
 """ This is a Tkinter based GUI to running DRC scripts
 """
 from subprocess import Popen
+from time import sleep
 import os
 UHOME = os.path.expanduser("~")
 
@@ -217,6 +218,14 @@ class RoommeasureGUI(Tk):
             content.columnconfigure(i, weight=1)
 
 
+    def tmp_msg(self, msg, timeout=5):
+        """ simply displays a temporary message
+        """
+        self.var_msg.set(msg)
+        sleep(timeout)
+        self.var_msg.set('')
+
+
     def enable_Go(self):
         if self.var_validate.get():
             self.btn_go['state'] = 'normal'
@@ -228,6 +237,7 @@ class RoommeasureGUI(Tk):
         # Sets to True the event flag 'meas_trigger', so that a threaded
         # measuring in awaiting state could be triggered.
         self.meas_trigger.set()
+
 
     # Individual windows images display
     def do_show_image_at(self, imagePath, row=0, col=0, extraX=0, extraY=0,
@@ -643,20 +653,24 @@ class RoommeasureGUI(Tk):
 
         rEQ_path = f'{UHOME}/DRC/roomEQ.py'
 
-        # (*) audiotools readFRD() needs some time to manage temporary files :-/
-        from time import sleep
+        # display a temporary message
+        job_tmp_msg = threading.Thread( target=self.tmp_msg,
+                                        args=('running roomEQ', 10),
+                                        daemon=True               )
+        job_tmp_msg.start()
 
+        # Running roomEQ.py in a shell in backgroung ... ...
         for ch in channels:
 
             frd_path = f'{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd'
 
             cmdline = f'{rEQ_path} {frd_path} {args}'
 
-            self.var_msg.set(f'running roomEQ ... ...')
             print( f'(GUI) running: {cmdline}' )
 
             Popen( cmdline, shell=True)
-            sleep(1) # (*)
+            # audiotools readFRD() needs some time to manage temporary files :-/
+            sleep(1)
 
 
 if __name__ == '__main__':
