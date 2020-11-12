@@ -55,11 +55,9 @@
 
     -noclearance        Ommit time clearance validation.
 
-    -auxplots           time domain aux plots for recorded sweeps
-
-    -nofrdplot          Do not plot the resulting freq response
-
     -nosmooth           Will plot raw freq response. Default smooth at 1/24 oct
+
+    -auxplots           plot aux graphs (work in progress)
 
 """
 #-------------------------------------------------------------------------------
@@ -118,8 +116,8 @@ checkClearence      = True
 
 printInfo           = True
 
-aux_plot            = True      # Time domain aux plots
-FRD_plot            = True      # Freq Response plots
+do_plot             = True      # recorded, time clearance, freq response plots
+aux_plot            = False     # currently only for the prepared sweep plot
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT PARAMETERS: -----------------------------
@@ -138,7 +136,7 @@ binsFRD     = 2**14             # Freq bins for output .frd files, default 16 Kb
 Noct        = 24                # smoothing 1/N oct for freq response plots
 
 yplotmax    = 6                 # TF plots above 0 dB
-yplotspan   = 66                # total scale of TF plots
+yplotspan   = 54                # total scale of TF plots
 
 #----------------- System calibration factor CF for dut ------------------------
 power_amp_gain  = 10            # V/V acoustic
@@ -232,76 +230,11 @@ def do_print_info():
     return
 
 
-def do_plot_aux_graphs(png_folder=f'{UHOME}'):
-    """ Aux graphs on time domain
-    """
-
-    vSamples = arange(0,N)                  # samples vector
-    vTimes   = vSamples / float(fs)         # samples to time conversion
-
-    # ---- Sweep
-    plt.figure(10)
-    plt.plot(vTimes, sweep, '--', color='black', linewidth=2,  label='raw sweep')
-    plt.grid()
-    plt.plot(vTimes, tapsweep, color='blue', linewidth=1, label='tapered sweep')
-    plt.ylim(-2.5, 2.5)
-    plt.xlabel('time[s]')
-    plt.legend()
-    plt.title('Prepared sweeps')
-    plt.savefig(f'{png_folder}/prepared_sweeps.png')
-
-    #--- DUT and REFERENCE LOOP time domain plot
-    fig = plt.figure(20)
-    axDUT = fig.add_subplot()
-    # Safe amplitude
-    axDUT.plot(vTimes, full(vTimes.shape,  0.5), label='',
-                linestyle='dashed', linewidth=0.5, color='purple')
-    axDUT.plot(vTimes, full(vTimes.shape, -0.5), label='',
-                linestyle='dashed', linewidth=0.5, color='purple')
-    axDUT.plot(vTimes, dut, 'blue', label='DUT')
-    axREF = axDUT.twinx()
-    # Safe amplitude
-    axREF.plot(vTimes, full(vTimes.shape,  0.5), label='',
-                linestyle='dashed', linewidth=0.5, color='purple')
-    axREF.plot(vTimes, full(vTimes.shape, -0.5), label='',
-                linestyle='dashed', linewidth=0.5, color='purple')
-    axREF.plot(vTimes, ref, 'grey', label='REF (offset+2.0)')
-    axDUT.grid()
-    axDUT.set_ylim(-1.5, 3.5)               # Sliding the dut and ref Y scales
-    axREF.set_ylim(-3.5, 1.5)
-    fig.legend()
-    axDUT.set_xlabel('Time [s]')
-    axDUT.set_title('Recorded sweeps')
-    plt.savefig(f'{png_folder}/time_domain_recorded.png')
-
-    #--- X cross correlation (Time Clearance)
-    plt.figure(30)
-    t  = vTimes
-    t -= N/2.0 / fs                         # Centering the X ideal peak at 0 ms
-    maxX = max(abs(X))
-    ylim = 1000                             # Expected X >~ 1000
-    if maxX > ylim:
-        ylim += ylim * (maxX // ylim)
-    plt.ylim(-ylim, +ylim)
-    plt.plot(t, X, color="black", label='xcorr pb/rec')
-    plt.grid()
-    plt.legend()
-    plt.xlabel('time (s)')
-    plt.title('Time Clearance:\nrecorder lags  player <----o----> recorder leads player')
-    plt.savefig(f'{png_folder}/time_clearance.png')
-
-    print( "--- Plotting Time Domain graphs..." )
-
-
 def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
     """ Plots multi FRD curves
-
         freq:       The freq vector
-
         curves:     A list of curves dictionaries: {magdB:, color:, label:}
-
         png_fname:  A figure .png filename to be saved on disk
-
         figure:     By calling a figure number, you can interleave the curves
                     in the desired figure.
     """
@@ -324,11 +257,9 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
         ax.set_ylim( yplotmax - yplotspan, yplotmax )
         # Y ticks in 6 dB steps
         ax.set_yticks( range(yplotmax - yplotspan, yplotmax + 6, 6) )
-        ax.grid(True, which="both")
         ax.set_xlabel('frequency [Hz]')
         ax.set_ylabel('dB')
-        # nice engineering formatting "1 K"
-        ax.xaxis.set_major_formatter( EngFormatter() )
+        ax.grid(True, which="both")
 
     # If the figure already exists, simply select it and select the existing axes:
     else:
@@ -337,7 +268,7 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
 
     # plot curves
     for i, c in enumerate(curves):
-        print(f'(plotFRDs) figure#{figure} curve #{i} \'{c["label"]}\'')
+        print(f'(LS.plotFRDs) figure#{figure} curve #{i} \'{c["label"]}\'')
         ax.semilogx( freq, c['magdB'], color=c['color'], label=c['label'] )
 
     # updating legend
@@ -347,37 +278,126 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
         plt.savefig(png_fname)
 
 
-def plot_DUT_REF(png_fname=f'{UHOME}/freq_response.png'):
-    """ plot freq responses: DUT_FR and REF_FR
+def plot_system_response(png_folder=f'{UHOME}'):
+    """ plot layout:
+
+                [recorded_waveforms]  [time_clearance]  1/3 height
+
+                [        frequency____response       ]  2/3
     """
 
-    # DUT
-    c1 = {  'magdB': 20 * log10(DUT_FR),
-            'label': 'DUT',
-            'color': 'blue' }
+    fig = plt.figure(figsize=(9.0, 9.0))  # in inches
 
-    # REFERENCE
-    c2 = {  'magdB': 20 * log10(REF_FR),
-            'label': 'REF',
-            'color': 'grey' }
+    axDUT = plt.subplot2grid(shape=(3, 2), loc=(0, 0))
+    axTCL = plt.subplot2grid(shape=(3, 2), loc=(0, 1))
+    axFRE = plt.subplot2grid(shape=(3, 2), loc=(1, 0), colspan=2, rowspan=2)
 
-    plot_FRDs( FREQ, (c1, c2), png_fname=png_fname )
+    #--- time domain vectors
+    vSamples = arange(0,N)                  # samples vector
+    vTimes   = vSamples / float(fs)         # samples to time conversion
 
-    print( "--- Plotting Freq Response graphs..." )
+    #--- DUT and REFERENCE LOOP time domain plot
+    axREF = axDUT.twinx()
+
+    # Safe amplitudes
+    for axtmp in (axDUT, axREF):
+        for a in (.5, -.5):
+            axtmp.plot(vTimes, full(vTimes.shape,  a), label='',
+                       linestyle='dashed', linewidth=0.5, color='purple')
+
+    # DUT waveform
+    axDUT.plot(vTimes, dut, 'blue', linewidth=0.5, label='DUT')
+
+    # REF waveform
+    axREF.plot(vTimes, ref, 'grey', linewidth=0.5, label='REF')
+
+    axDUT.grid()
+    axREF.set_ylim(-1.5, 3.5)               # Sliding the dut and ref Y scales
+    axDUT.set_ylim(-3.5, 1.5)
+    axDUT.legend(loc='upper left')
+    axREF.legend(loc='lower left')
+    axDUT.set_xlabel('time [s]')
+    axDUT.set_title('Recorded sweeps')
+
+    #--- X cross correlation (Time Clearance)
+    t  = vTimes
+    t -= N/2.0 / fs                         # Centering the X ideal peak at 0 ms
+    maxX = max(abs(X))
+    ylim = 1000                             # Expected X >~ 1000
+    if maxX > ylim:
+        ylim += ylim * (maxX // ylim)
+    axTCL.set_ylim(-ylim, +ylim)
+    axTCL.plot(t, X, color="black", label='xcorr pb/rec')
+    axTCL.grid()
+    axTCL.legend()
+    axTCL.set_xlabel('time (s)')
+    axTCL.set_title(f'Time Clearance:\nrecorder lags  player <---o---> ' \
+                    f'recorder leads player', fontsize='medium')
+
+
+    #--- Freq Response
+    # plot warning level lines
+    axFRE.plot(FREQ, full(FREQ.shape, clipWarning), label='',
+                linestyle='--', linewidth=0.5,  color='purple')
+    axFRE.plot(FREQ, full(FREQ.shape, 0.0),         label='',
+                linestyle='--',       linewidth=0.75, color='purple')
+
+    # plot curves
+    axFRE.semilogx( FREQ, 20 * log10(DUT_FR), color='blue', label='DUT' )
+    axFRE.semilogx( FREQ, 20 * log10(REF_FR), color='gray', label='REF' )
+
+    # formatting
+    axFRE.set_title('Freq. response')
+    axFRE.set_xlim(20, 20000)
+    axFRE.set_ylim( yplotmax - yplotspan, yplotmax )
+    # Y ticks in 6 dB steps
+    axFRE.set_yticks( range(yplotmax - yplotspan, yplotmax + 6, 6) )
+    axFRE.grid(True, which="both")
+    axFRE.set_xlabel('frequency [Hz]')
+    axFRE.set_ylabel('dB')
+    # nice engineering formatting "1 K"
+    axFRE.xaxis.set_major_formatter( EngFormatter() )
+    axFRE.xaxis.set_minor_formatter( EngFormatter() )
+    # rotate_labels for both major and minor xticks
+    for label in axFRE.get_xticklabels(which='both'):
+        label.set_rotation(70)
+        label.set_horizontalalignment('center')
+    # updating legend
+    axFRE.legend()
+
+    plt.tight_layout()
+    plt.savefig(f'{png_folder}/system_response.png')
+    print( "--- Plotting system response graphs..." )
+
+
+def plot_aux_graphs(png_folder=f'{UHOME}'):
+    """ Aux graphs (currently only for the prepared sweep plot)
+    """
+
+    vSamples = arange(0,N)                  # samples vector
+    vTimes   = vSamples / float(fs)         # samples to time conversion
+
+    # ---- Sweep
+    fig, axSWE = plt.subplots(figsize=(4.5, 2.6))  # in inches
+    axSWE.plot(vTimes, sweep, '--', color='black', linewidth=2,  label='raw sweep')
+    axSWE.grid()
+    axSWE.plot(vTimes, tapsweep, color='blue', linewidth=1, label='tapered sweep')
+    axSWE.set_ylim(-2.5, 2.5)
+    axSWE.set_xlabel('time[s]')
+    axSWE.legend()
+    axSWE.set_title('Prepared sweeps')
+    plt.savefig(f'{png_folder}/prepared_sweeps.png')
+    print( "--- Plotting aux graphs..." )
 
 
 def fft_to_FRD(wholeFFT, fs=fs, smooth_Noct=0, Nbins=binsFRD):
     """
         Input:
-
             wholeFFT        A whole FFT array
             fs              Sampling freq
             smooth_Noct     Do smooth 1/N oct the output curve
             Nbins           Number of freq bins of the output curve
-
-
         Output:
-
             (f, mag)        A real valued positive semi-spectrum tuple FRD data
                             (mag is given in lineal values not in dB)
     """
@@ -669,12 +689,6 @@ if __name__ == "__main__":
         elif "-noinfo" in opc.lower():
             printInfo = True
 
-        elif "-nofrd" in opc.lower():
-            FRD_plot = False
-
-        elif "-noaux" in opc.lower():
-            aux_plot = False
-
         elif "-nosmoo" in opc.lower():
             Noct = 0
 
@@ -696,6 +710,9 @@ if __name__ == "__main__":
 
         elif "-e" in opc:
             N = 2**int(opc[2:])
+
+        elif "-aux" in opc.lower():
+            aux_plot = True
 
         else:
             opcsOK = False
@@ -761,11 +778,8 @@ if __name__ == "__main__":
         print(f'LEVEL OK: {round(maxdB,1)} dB  ' )
         print( '****************************************' )
 
-    if aux_plot:
-        do_plot_aux_graphs()
-
-    if FRD_plot:
-        plot_DUT_REF()
-
-    if aux_plot or TF_plot:
+    if do_plot:
+        plot_system_response()
+        if aux_plot:
+            plot_aux_graphs()
         plt.show()
