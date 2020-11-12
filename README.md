@@ -1,3 +1,5 @@
+# DRC
+
 This soft is intended to measure a loudspeaker's in-room response, then calculate a FIR filter to perform DRC equalization (digital room correction). You'll ned to use a convolver inserted in the loudspeakers signal path, such **Brutefir** as used [here](https://github.com/AudioHumLab/pe.audio.sys)
 
 The applied test signal will be a **log sweep** chirp.
