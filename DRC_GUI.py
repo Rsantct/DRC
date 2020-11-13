@@ -218,12 +218,14 @@ class RoommeasureGUI(Tk):
             content.columnconfigure(i, weight=1)
 
 
-    def tmp_msg(self, msg, timeout=5):
-        """ simply displays a temporary message
+    def tmp_msgs(self, msgs, timeout=5, clear=False):
+        """ simply displays a temporary messages sequence
         """
-        self.var_msg.set(msg)
-        sleep(timeout)
-        self.var_msg.set('')
+        for msg in msgs:
+            self.var_msg.set(msg)
+            sleep(timeout)
+            if clear:
+                self.var_msg.set('')
 
 
     def enable_Go(self):
@@ -653,24 +655,25 @@ class RoommeasureGUI(Tk):
 
         rEQ_path = f'{UHOME}/DRC/roomEQ.py'
 
-        # display a temporary message
-        job_tmp_msg = threading.Thread( target=self.tmp_msg,
-                                        args=('running roomEQ', 10),
+        frd_paths = ''
+        for ch in channels:
+            frd_paths += f' "{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd"'
+
+        cmdline = f'{rEQ_path} {frd_paths.strip()} {args}'
+
+        # display temporary messages
+        msgs = (f'running roomEQ ...',
+                f'DRC FIR saved under ~/rm/{self.ent_folder.get()}'
+                f'/{self.cmb_drcfs.get()}' )
+
+        job_tmp_msgs = threading.Thread( target=self.tmp_msgs,
+                                        args=(msgs, 5),
                                         daemon=True               )
-        job_tmp_msg.start()
+        job_tmp_msgs.start()
 
         # Running roomEQ.py in a shell in backgroung ... ...
-        for ch in channels:
-
-            frd_path = f'{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd'
-
-            cmdline = f'{rEQ_path} {frd_path} {args}'
-
-            print( f'(GUI) running: {cmdline}' )
-
-            Popen( cmdline, shell=True)
-            # audiotools readFRD() needs some time to manage temporary files :-/
-            sleep(1)
+        print( f'(GUI) running: {cmdline}' )
+        Popen( cmdline, shell=True)
 
 
 if __name__ == '__main__':
