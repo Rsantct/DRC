@@ -213,22 +213,29 @@ if not suffix:
     import pathlib
     suffix = os.path.basename(pathlib.Path().absolute())
 
-# fs information
+# fs sampled frequency information
 if fs == fs_FRD:
-    print( "(i) fs=" + str(fs) + " same as enclosed in " + FRDbasename )
+    print( f'(i) fs={fs} same as enclosed in {FRDbasename}' )
 else:
-    print( "(i) fs=" + str(fs) +  " differs from " + str(fs_FRD) + " in " + FRDbasename )
+    print( f'(i) fs={fs} differs from enclosed in {FRDbasename}' )
 
 # Resolution information
-print( "(i) read bins:", len(freq), ", FIR bins:", int(m/2) )
+print( f'(i) FRD bins: {len(freq)}, FIR bins: {int(m/2)}' )
 res_minphaFIR = round(fs / m, 2)
 res_FRD       = round((fs / 2) / len(freq), 2)
-if (m) / (2 * len(freq)) > 1:
+
+oversampled = undersampled = False
+
+if m > 2 * len(freq):
     print( f'(!!!) minphase FIR resolution {res_minphaFIR} Hz EXCEEDS '
            f'the {res_FRD} Hz resolution from {FRDbasename}'            )
     oversampled = True
-else:
-    oversampled = False
+
+elif m < 2 * len(freq):
+    print( f'(!!!) minphase FIR resolution {res_minphaFIR} Hz IS WORSE than '
+           f'the {res_FRD} Hz resolution from {FRDbasename}'            )
+    undersampled = True
+
 
 #######################################################################################
 # 1. TARGET CALCULATION: a smoothed version of the given freq response
@@ -384,12 +391,17 @@ if dev:
                         label='estimated result',
                         color='green', linewidth=1.5)
 
-title = f'{FRDbasename}'
-title += f'\n(ref. level @ {str(ref_level)} dB --> 0 dB)'
+title = f'{FRDbasename}\n(ref. level @ {str(ref_level)} dB --> 0 dB)'
+
 if oversampled:
     # these are matplotlib.patch.Patch properties
     props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-    ax.text(1000.0, -27.0, '(i) FIR length oversamples FRD bins', bbox=props)
+    ax.text(1000.0, -27.0, '(i) large FIR length oversamples FRD resolution', bbox=props)
+
+if undersampled:
+    # these are matplotlib.patch.Patch properties
+    props = dict(boxstyle='round', facecolor='pink', alpha=0.5)
+    ax.text(1000.0, -27.0, '(i) short FIR length has lower resolution than FRD', bbox=props)
 
 # nice engineering formatting "1 K"
 ax.xaxis.set_major_formatter( EngFormatter() )
