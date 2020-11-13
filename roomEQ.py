@@ -220,11 +220,15 @@ else:
     print( "(i) fs=" + str(fs) +  " differs from " + str(fs_FRD) + " in " + FRDbasename )
 
 # Resolution information
-print( "(i) read bins:", len(freq), ", EQ bins:", m/2 )
-if (m/2) / len(freq) > 1:
-    print( "(!) The length m=2^" + str(int(np.log2(m))) \
-           + " EXCEEDS the original in " + FRDbasename)
-
+print( "(i) read bins:", len(freq), ", FIR bins:", int(m/2) )
+res_minphaFIR = round(fs / m, 2)
+res_FRD       = round((fs / 2) / len(freq), 2)
+if (m) / (2 * len(freq)) > 1:
+    print( f'(!!!) minphase FIR resolution {res_minphaFIR} Hz EXCEEDS '
+           f'the {res_FRD} Hz resolution from {FRDbasename}'            )
+    oversampled = True
+else:
+    oversampled = False
 
 #######################################################################################
 # 1. TARGET CALCULATION: a smoothed version of the given freq response
@@ -350,19 +354,19 @@ if dev:
 
 # raw response curve:
 ax.plot(freq, mag,
-                        label="raw response (" + str(len(mag)) + " bins)",
-                        color="silver", linestyle=":", linewidth=.5)
+                        label=f'FRD ({str(len(mag))} bins)',
+                        color='grey', linestyle=':', linewidth=.5)
 
 # target (smoothed) curve:
 ax.plot(freq, target,
-                        label="smoothed response",
-                        color="blue", linestyle='-')
+                        label='FRD smoothed',
+                        color='blue', linestyle='-')
 
 # the chunk curve used for getting the ref level:
 if autoRef:
     ax.plot(freq[ f1_idx : f2_idx], rmag[ f1_idx : f2_idx ],
-                        label="range to estimate ref level",
-                        color="black", linestyle="--", linewidth=2)
+                        label='range to estimate ref level',
+                        color='black', linestyle='--', linewidth=2)
 
 # window for positive gains
 if not noPos:
@@ -380,7 +384,12 @@ if dev:
                         label='estimated result',
                         color='green', linewidth=1.5)
 
-title = FRDbasename + "\n(ref. level @ " + str(ref_level) + " dB --> 0 dB)"
+title = f'{FRDbasename}'
+title += f'\n(ref. level @ {str(ref_level)} dB --> 0 dB)'
+if oversampled:
+    # these are matplotlib.patch.Patch properties
+    props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+    ax.text(1000.0, -27.0, '(i) FIR length oversamples FRD bins', bbox=props)
 
 # nice engineering formatting "1 K"
 ax.xaxis.set_major_formatter( EngFormatter() )
