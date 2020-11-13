@@ -1,3 +1,5 @@
+# DRC
+
 This soft is intended to measure a loudspeaker's in-room response, then calculate a FIR filter to perform DRC equalization (digital room correction). You'll ned to use a convolver inserted in the loudspeakers signal path, such **Brutefir** as used [here](https://github.com/AudioHumLab/pe.audio.sys)
 
 The applied test signal will be a **log sweep** chirp.
@@ -53,8 +55,6 @@ The **reference level** on which it is applied the EQ is automatically detected,
 
 
 ```
-~$ roomEQ.py 
-
     roomEQ.py
 
     Calculates a room equalizer FIR from a given in-room response, usually an
@@ -64,28 +64,27 @@ The **reference level** on which it is applied the EQ is automatically detected,
 
         roomEQ.py response.frd  [ options ]
 
-            -fs=    Output FIR sampling freq (default 48000 Hz)
+            -name=      A meaningful suffix to name the output FIR file
+                        (default current folder name)
 
-            -e=     Exponent 2^XX for FIR length in taps.
-                    (default 15, i.e. 2^15=32 Ktaps)
+            -fs=        Output FIR sampling freq (default 48000 Hz)
 
-            -ref=   Reference level in dB (default autodetected)
+            -e=         Exponent 2^XX for FIR length in taps.
+                        (default 15, i.e. 2^15=32 Ktaps)
 
-            -sch=   Schroeder freq. (default 200 Hz)
+            -ref=       Reference level in dB (default autodetected)
 
-            -wFc=   Gaussian window to limit positive EQ: center freq
-                    (default 1000 Hz)
+            -schro=     Schroeder freq. (default 200 Hz)
 
-            -wOct=  Gaussian window to limit positive EQ: wide in octaves
-                    (default 10 octaves 20 ~ 20 KHz)
+            -wFc=       Gaussian window to limit positive EQ: center freq
+                        (default 1000 Hz)
 
-            -noPos  Does not allow positive gains at all
+            -wOct=      Gaussian window to limit positive EQ: wide in octaves
+                        (default 10 octaves 20 ~ 20 KHz)
 
-            -doFIR  Generates the pcm FIR after estimating the final EQ.
+            -noPos      Does not allow positive gains at all
 
-            -plot   FIR visualizer
-
-            -dev    Auxiliary plots
+            -doFIR      Generates the pcm FIR after estimating the final EQ.
 
 ```
 
@@ -96,9 +95,11 @@ Example of a very strong room mode in the listening area:
 
 ## FIR application
 
-The obtained FIR filter, must be loaded in a convolver as **Brutefir** in Linux, or in a generic reverb plugin as Wave's IR1 in a DAW, or in a hardware convolver as miniDSP.
+The obtained FIR filter, must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
 
 Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or [pre.di.c](https://github.com/AudioHumLab) from the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
+
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/DRC_in_action.png" width="480">
 
 
 ## Using the measurement software

@@ -13,7 +13,7 @@ roommeasure.py
 
     Usage:
 
-        roommeasure_GUI.py  Launches a graphical user interface
+        DRC_GUI.py          Launches a Graphical User Interface
 
       or
 
@@ -33,7 +33,7 @@ roommeasure.py
                             to be interleaved at a microphone location.
                             (default 'C' will be used as filename prefix)
 
-         -s=XXX             Shroeder freq, influences the smoothing transition
+         -schro=XXX         Schroeder freq, influences the smoothing transition
                             for the resulting smoothed freq response file.
                             (default 200 Hz)
 
