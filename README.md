@@ -57,15 +57,12 @@ The **reference level** on which it is applied the EQ is automatically detected,
 ```
     roomEQ.py
 
-    Calculates a room equalizer FIR from a given in-room response, usually an
-    averaged one as the provided from 'roommeasure.py'.
+    Calculates room equalizer FIRs from a given in-room freq. responses,
+    usually an averaged ones as the provided from 'roommeasure.py'.
 
     Usage:
 
-        roomEQ.py response.frd  [ options ]
-
-            -name=      A meaningful suffix to name the output FIR file
-                        (default current folder name)
+        roomEQ.py response.frd [response2.frd ...]   [ options ]
 
             -fs=        Output FIR sampling freq (default 48000 Hz)
 
