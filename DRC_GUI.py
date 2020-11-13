@@ -168,7 +168,7 @@ class RoommeasureGUI(Tk):
         lbl_locat.grid(         row=4,  column=2, sticky=E )
         self.cmb_locat.grid(    row=4,  column=3, sticky=W )
 
-        lbl_plot.grid(          row=3,  column=4, sticky=E )
+        lbl_plot.grid(          row=3,  column=4, sticky=W )
         lbl_schro.grid(         row=4,  column=4, sticky=E )
         self.ent_schro.grid(    row=4,  column=5, sticky=W )
 
