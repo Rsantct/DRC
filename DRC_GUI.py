@@ -655,6 +655,12 @@ class RoommeasureGUI(Tk):
 
         rEQ_path = f'{UHOME}/DRC/roomEQ.py'
 
+        frd_paths = ''
+        for ch in channels:
+            frd_paths += f' "{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd"'
+
+        cmdline = f'{rEQ_path} {frd_paths.strip()} {args}'
+
         # display temporary messages
         msgs = (f'running roomEQ ...',
                 f'DRC FIR saved under ~/rm/{self.ent_folder.get()}'
@@ -666,17 +672,8 @@ class RoommeasureGUI(Tk):
         job_tmp_msgs.start()
 
         # Running roomEQ.py in a shell in backgroung ... ...
-        for ch in channels:
-
-            frd_path = f'{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd'
-
-            cmdline = f'{rEQ_path} {frd_path} {args}'
-
-            print( f'(GUI) running: {cmdline}' )
-
-            Popen( cmdline, shell=True)
-            # audiotools readFRD() needs some time to manage temporary files :-/
-            sleep(1)
+        print( f'(GUI) running: {cmdline}' )
+        Popen( cmdline, shell=True)
 
 
 if __name__ == '__main__':
