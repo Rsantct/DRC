@@ -124,30 +124,6 @@ def main(FRDname, ax):
     mag  = FR[:, 1]     # >>>> magnitudes vector  <<<<
 
 
-    # fs sampled frequency information
-    if fs == fs_FRD:
-        print( f'(i) fs={fs} same as enclosed in {FRDbasename}' )
-    else:
-        print( f'(i) fs={fs} differs from enclosed in {FRDbasename}' )
-
-    # Resolution information
-    print( f'(i) FRD bins: {len(freq)}, FIR bins: {int(m/2)}' )
-    res_minphaFIR = round(fs / m, 2)
-    res_FRD       = round((fs / 2) / len(freq), 2)
-
-    oversampled = undersampled = False
-
-    if m > 2 * len(freq):
-        print( f'(!!!) minphase FIR resolution {res_minphaFIR} Hz EXCEEDS '
-               f'the {res_FRD} Hz resolution from {FRDbasename}'            )
-        oversampled = True
-
-    elif m < 2 * len(freq):
-        print( f'(!!!) minphase FIR resolution {res_minphaFIR} Hz IS WORSE than '
-               f'the {res_FRD} Hz resolution from {FRDbasename}'            )
-        undersampled = True
-
-
     ############################################################################
     # 1. TARGET CALCULATION: a smoothed version of the given freq response
     ############################################################################
@@ -278,12 +254,12 @@ def main(FRDname, ax):
 
     # raw response curve:
     ax.plot(freq, mag,
-                            label=f'FRD ({str(len(mag))} bins)',
+                            label='FRD',
                             color='grey', linestyle=':', linewidth=.5)
 
     # target (smoothed) curve:
     ax.plot(freq, target,
-                            label='FRD smoothed',
+                            label='FRD schoeder smoothed',
                             color='blue', linestyle='-')
 
     # the chunk curve used for getting the ref level:
@@ -308,18 +284,17 @@ def main(FRDname, ax):
                             label='estimated result',
                             color='green', linewidth=1.5)
 
+
+    # A text box with resolution info
+    # (these are matplotlib.patch.Patch properties)
+    props = dict(boxstyle='round', facecolor='green', alpha=0.3)
+    ax.text( 4000.0, -15.0,
+             f'FIR {int(m/1024)} Ktaps, freq. resol: {round(fs/m, 1)} Hz',
+             bbox=props)
+
+    # plot title
     title = f'{FRDbasename}\n(ref. level @ {str(ref_level)} dB --> 0 dB)'
     ax.set_title(title)
-
-    if oversampled:
-        # these are matplotlib.patch.Patch properties
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
-        ax.text(1000.0, -27.0, '(i) large FIR length oversamples FRD resolution', bbox=props)
-
-    if undersampled:
-        # these are matplotlib.patch.Patch properties
-        props = dict(boxstyle='round', facecolor='pink', alpha=0.5)
-        ax.text(1000.0, -27.0, '(i) short FIR length has lower resolution than FRD', bbox=props)
 
     # nice engineering formatting "1 K"
     ax.xaxis.set_major_formatter( EngFormatter() )
@@ -330,7 +305,7 @@ def main(FRDname, ax):
         label.set_rotation(70)
         label.set_horizontalalignment('center')
 
-    ax.legend()
+    ax.legend(loc='lower right')
 
 
     ############################################################################
@@ -437,13 +412,20 @@ if __name__ == '__main__':
                              figsize=(9, 4.5 * nrows) ) # in inches, wide aspect
 
     # Processing FRDs
-    for i, FRDname in enumerate(FRDnames):
-        # processing FRDname
-        main(FRDname, axs[i])
+    # (if only one, plt.subplots will not return an array of axes)
+    if len(FRDnames) == 1:
+        main(FRDnames[0], axs)
+    elif len(FRDnames) > 1:
+        for i, FRDname in enumerate(FRDnames):
+            main(FRDname, axs[i])
+    else:
+        print(__doc__)
+        sys.exit()
 
+    # Tightening plot layout
     plt.tight_layout()
 
-    # saving graphs by using the folder beholding the last FRD file name
+    # Saving graphs by using the folder beholding the last FRD file name
     png_folder = os.path.dirname( FRDnames[-1] )
     if not png_folder:
         png_folder = os.getcwd()
@@ -451,8 +433,10 @@ if __name__ == '__main__':
     print( f'(i) Saving graph to file: {png_path}' )
     fig.savefig(png_path)
 
+    # Display plots
     plt.show()
 
+    # ...
     if viewFIRs:
         print( "FIR plotting with audiotools/IR_tool.py ..." )
         os.system("IRs_tool.py '" + EQpcmname + "' '" +
