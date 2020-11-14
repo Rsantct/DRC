@@ -55,7 +55,7 @@
 
     -noclearance        Ommit time clearance validation.
 
-    -nosmooth           Will plot raw freq response. Default smooth at 1/24 oct
+    -nosmooth           Don't smooth freq response. Default smooth at 1/24 oct
 
     -auxplots           plot aux graphs (work in progress)
 
@@ -132,8 +132,8 @@ system_type = 'electronic'      # 'acoustic', 'electronic', 'level-dependent'
 Po          = 2e-5              # SPL reference pressure
 c           = 343               # speed of sound
 
-binsFRD     = 2**14             # Freq bins for output .frd files, default 16 Kbins
-Noct        = 24                # smoothing 1/N oct for freq response plots
+FRDpoints   = 1000              # logspaced freq points for output .frd files
+Noct        = 24                # smoothing 1/N oct for freq response data
 
 yplotmax    = 6                 # TF plots above 0 dB
 yplotspan   = 54                # total scale of TF plots
@@ -336,15 +336,17 @@ def plot_system_response(png_folder=f'{UHOME}'):
 
 
     #--- Freq Response
+    F, DUT_mag = DUT_FRD
+    _, REF_mag = REF_FRD
     # plot warning level lines
-    axFRE.plot(FREQ, full(FREQ.shape, clipWarning), label='',
+    axFRE.plot(F, full(F.shape, clipWarning), label='',
                 linestyle='--', linewidth=0.5,  color='purple')
-    axFRE.plot(FREQ, full(FREQ.shape, 0.0),         label='',
+    axFRE.plot(F, full(F.shape, 0.0),         label='',
                 linestyle='--',       linewidth=0.75, color='purple')
 
     # plot curves
-    axFRE.semilogx( FREQ, 20 * log10(DUT_FR), color='blue', label='DUT' )
-    axFRE.semilogx( FREQ, 20 * log10(REF_FR), color='gray', label='REF' )
+    axFRE.semilogx( F, 20 * log10(DUT_mag), color='blue', label='DUT' )
+    axFRE.semilogx( F, 20 * log10(REF_mag), color='gray', label='REF' )
 
     # formatting
     axFRE.set_title('Freq. response')
@@ -390,34 +392,22 @@ def plot_aux_graphs(png_folder=f'{UHOME}'):
     print( "--- Plotting aux graphs..." )
 
 
-def fft_to_FRD(wholeFFT, fs=fs, smooth_Noct=0, Nbins=binsFRD):
-    """
-        Input:
-            wholeFFT        A whole FFT array
-            fs              Sampling freq
-            smooth_Noct     Do smooth 1/N oct the output curve
-            Nbins           Number of freq bins of the output curve
-        Output:
-            (f, mag)        A real valued positive semi-spectrum tuple FRD data
-                            (mag is given in lineal values not in dB)
-    """
-
-    N = len(wholeFFT)
+def fft_to_FRD(wholeFFT, smooth_Noct=0):
 
     # Frequencies
     f = linspace(0, int(fs/2), int(N/2) )
 
     # Taking the magnitude from the positive freqs fft part
-    mag = abs( wholeFFT[0:int(N/2)] )
+    mag = abs( wholeFFT[0 : int(N/2)] )
 
-    # interpolates to Nbins
-    f, mag = tools.interp_semispectrum(f, mag, fs, Nbins)
+    # reducing the fft linspaced spectrum into a logspaced one
+    f, mag = tools.logspaced_semispectrum(f, mag, FRDpoints)
 
     # Smoothing
     if smooth_Noct:
         mag = smooth(f, mag, Noct=smooth_Noct)
 
-    return f, mag
+    return (f, mag)
 
 
 def prepare_sweep():
@@ -540,8 +530,9 @@ def do_meas():
 
         DUT_TF, REF_TF          Freq domain Transfer Functions (whole complex FFTs)
 
-        FREQ, DUT_FR, REF_FR    Freq Response Data rendered over the configured
-                                <binsFRD> frequency bins.
+        DUT_FRD, REF_FRD        Freq Response Data rendered over the configured
+                                <FRDpoints> frequency logspaced points.
+                                These are given as tuples (freq, mag)
 
         TimeClearanceOK         Boolean about the detected time clearance
 
@@ -549,7 +540,7 @@ def do_meas():
 
     global dut,    ref
     global DUT_TF, REF_TF
-    global FREQ, DUT_FR, REF_FR
+    global DUT_FRD, REF_FRD
     global TimeClearanceOK
 
     #---------------------------------------------------------------------------
@@ -637,37 +628,28 @@ def do_meas():
     #lwindosweep=circshift(lwindosweep,-offset); # then replaced by this line
     lwindosweep = roll(lwindosweep, -offset)
 
-    # (i) NOTICE we use whole FFTs
+    # FFT: from time domain (lcase) to freq domain (UCASE)
     LWINDOSWEEP = S_dac * fft.fft(lwindosweep) * sig_frac   # sig_frac ~ atten
     REF         = S_adc * fft.fft(ref)
     DUT         = S_adc * fft.fft(dut)         * CF         # Calibration Factor
 
     # The DECONVOLUTION (i.e ~ freq domain division) provides the TF of DUT
     # (*) Above referred as 'Frequency Domain Ratios'
-
     DUT_TF   = DUT / LWINDOSWEEP
     REF_TF   = REF / LWINDOSWEEP
 
-    # ADD ON: getting a FRD (freq response data) from the measured TFs (fft)
-    if Noct:
-        print( '--- Smoothing spectrum for DUT and REF (this can take a while ...)' )
-        t_start = time()
+    # The original code Logsweep1quasi.m continues finding the loudspeaker
+    # quasi-anechoic response, by using markers to windowing the recorded
+    # time domain signal.
+    # Here we don't need that, because we use the stationary in-room
+    # loudspeaker response.
 
-    FREQ, DUT_FR = fft_to_FRD(DUT_TF, fs, smooth_Noct=Noct)
-    _   , REF_FR = fft_to_FRD(REF_TF, fs, smooth_Noct=Noct)
-
-    if Noct:
-        print(f'--- Smoothing computed in {str( round(time() - t_start, 1) )} s' )
+    # ADD ON: getting a smoothed FRD (freq response data) from the measured TFs (fft)
+    DUT_FRD = fft_to_FRD(DUT_TF, smooth_Noct=Noct)
+    REF_FRD = fft_to_FRD(REF_TF, smooth_Noct=Noct)
 
     # END
-
     # (i)   The results are the above referenced global scoped variables.
-    #
-    #       The orginal code Logsweep1quasi.m continues finding the loudspeaker
-    #       quasi-anechoic response, by using markers to windowing the recorded
-    #       time domain signal.
-    #       Here we don't need that, because we use the stationary in-room
-    #       loudspeaker response.
 
 
 #-------------------------------------------------------------------------------
@@ -759,7 +741,8 @@ if __name__ == "__main__":
         print( '****************************************' )
 
     # Checking FREQ DOMAIN SPECTRUM LEVEL
-    maxdB = max( 20 * log10(DUT_FR) )
+    _, DUT_mag = DUT_FRD
+    maxdB = max( 20 * log10(DUT_mag) )
 
     if  maxdB > 0.0:
         print( '****************************************' )
