@@ -279,11 +279,12 @@ def LS_meas(ch, seq):
     # Order LS to do the measurement
     LS.do_meas()
 
-    magdB = 20 * np.log10( LS.DUT_FR )
+    f, mag = LS.DUT_FRD
+    magdB = 20 * np.log10( mag )
 
     # Saving the curve to a sequenced frd filename
     tools.saveFRD(  fname   = f'{folder}/{ch}_{str(seq)}.frd',
-                    freq    = LS.FREQ,
+                    freq    = f,
                     mag     = magdB,
                     fs      = LS.fs,
                     comments= f'roommeasure.py ch:{ch} loc:{str(seq)}',
@@ -301,12 +302,12 @@ def LS_meas(ch, seq):
             'color': css4_colors[(7 + seq) % 148],
             'label': f'{ch}_{str(seq)}'             }
 
-    LS.plot_FRDs( LS.FREQ, (c,), title=f'{os.path.basename(folder)} ({ch})',
-                                 figure=figIdx,
-                                 png_fname=f'{folder}/{ch}.png'
+    LS.plot_FRDs( f, (c,),  title=f'{os.path.basename(folder)} ({ch})',
+                            figure=figIdx,
+                             png_fname=f'{folder}/{ch}.png'
                 )
 
-    return LS.FREQ, LS.DUT_FR  # DUT_FR given in lineal magnitude not dB
+    return f, mag  # LS.DUT_FRD is given in lineal magnitude not dB
 
 
 def do_meas_loop(gui_trigger=None, gui_msg=None):
@@ -425,9 +426,9 @@ def do_averages():
                 'label': f'{ch} avg smoothed',
                 'color': 'red'                  }
 
-        LS.plot_FRDs( LS.FREQ, (c1,c2), title=f'{os.path.basename(folder)} ({ch})',
-                                        figure= 20 + figIdx,
-                                        png_fname=f'{folder}/{ch}_avg.png' )
+        LS.plot_FRDs( f, (c1,c2),   title=f'{os.path.basename(folder)} ({ch})',
+                                    figure= 20 + figIdx,
+                                    png_fname=f'{folder}/{ch}_avg.png' )
 
         figIdx += 1
 
