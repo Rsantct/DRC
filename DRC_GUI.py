@@ -54,6 +54,7 @@ class RoommeasureGUI(Tk):
         takes    = list(range(1,21))
         sweeps   = [2**15, 2**16, 2**17, 2**18]
         timers   = ['manual', '3', '5', '10']
+        taps     = [2**13, 2**14, 2**15, 2**16]
 
         ### VARS
         self.var_beep     = IntVar()
@@ -130,8 +131,6 @@ class RoommeasureGUI(Tk):
                                               font=(None, 32))
 
         #### FILTER CALCULATION SECTION
-        taps             = [2**14, 2**15, 2**16]
-
         lbl_drc          = ttk.Label(content, text='DRC-EQ FILTER:',
                                               font=(None, 0, 'bold') )
         lbl_reflev       = ttk.Label(content, text='ref. level (dB)')
@@ -331,7 +330,8 @@ class RoommeasureGUI(Tk):
                 self.var_msg.set('POOR TIME CLEARANCE! check sweep length')
 
             # Checking SPECTRUM LEVEL
-            maxdB = max( 20 * rm.np.log10( rm.LS.DUT_FR ) )
+            _, mag = rm.LS.DUT_FRD
+            maxdB = max( 20 * rm.np.log10( mag ) )
 
             if  maxdB > 0.0:
                 self.var_msg.set(f'CLIPPING DETECTED: +{round(maxdB,1)} dB')
