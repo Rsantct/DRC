@@ -36,18 +36,42 @@
 
             -schro=     Schroeder freq. (default 200 Hz)
 
-            -wFc=       Gaussian window to limit positive EQ: center freq
-                        (default 1000 Hz)
+                        Gaussian windows to progressively limit positive EQ:
 
-            -wOct=      Gaussian window to limit positive EQ: wide in octaves
-                        (default 10 octaves 20 ~ 20 KHz)
+            -wLfc=      Low window center freq  (default: at 5 oct ~ 630 Hz)
+
+            -wHfc=      High window center freq (default: at 5 oct ~ 630 Hz)
+
+            -wLoct=     Span in octaves for the left side of wL  (def: 5 oct)
+
+            -wHoct=     Span in octaves for the right side of wH (def: 5 oct)
 
             -noPos      Does not allow positive gains at all
 
             -doFIR      Generates the pcm FIR after estimating the final EQ.
 
 
-    NOTE:   this tool depends on github.com/AudioHumLab/audiotools
+    ABOUT POSITIVE EQ GAIN:
+
+    If desired, then a gaussian window will be used to limit positive gains.
+
+    Two windows are available: wL works on the lower freq band, wH on highs.
+
+    These windows by default are centered at 5 octaves (630Hz) with symmetric
+    span shapes of 5 oct, so minimized at 20 Hz and 20 Khz ends.
+
+    If the measured level extends over most of the range 20 Hz ~ 20 KHz
+    (the 10 octaves audio band), the default shape usually works fine.
+
+    If the measured response has significant limitations on the upper band,
+    you may want to extend the right side of wH by setting wHoct > 5.
+
+    Usually the default 5 oct left side window span (low freq) works fine.
+
+
+    NOTE:
+
+    This tool depends on github.com/AudioHumLab/audiotools
 
 """
 import os
@@ -87,8 +111,8 @@ fs      = 48000     # FIR fs
 viewFIRs = False
 
 # Reference level:
-autoRef = True
-f1, f2  = 500, 2000 # Range of freqs to get the ref level
+ref_level = None
+f1, f2  = 500, 2000 # Range of mid freqs to get the ref level
 
 # TARGET over the original given .frd
 Noct    = 96        # Initial fine smoothing 1/96 oct.
@@ -97,16 +121,20 @@ octSch  = 2         # Octaves referred to Schroeder to initiate the transition
                     # from fine smoothing towards a wider one 1/1 oct.
 Tspeed  = "medium"  # Transition speed for audiotools/smoothSpectrum.py
 
-# Gaussian window to limit positive gains:
-wFc     = 1000      # center freq
-wOct    = 10        # wide in octaves
+# Gaussian windows to limit positive gains:
+wLfc    = 630       # Left window center freq (default: at 5 oct ~ 630 Hz)
+wHfc    = 630       # Right window center
+wLoct   = 5         # span in octaves for the left side of wL.
+wHoct   = 5         # span in octaves for the right side of wH.
 noPos   = False     # avoids positive gains
 
 
-def main(FRDname, ax):
+def main(FRDname, ax, ref_level=None):
 
     FRDbasename = os.path.basename(FRDname)
     FRDdirname  = os.path.dirname(FRDname)
+
+    print( f'--- processing {FRDbasename}')
 
     # Retreiving channel Id for naming files
     ch = FRDbasename
@@ -131,7 +159,7 @@ def main(FRDname, ax):
     # 1.1 Reference level
     # 'rmag' is a heavily smoothed curve 1/1oct useful to getting the ref level
     rmag = smooth(freq, mag, Noct=1)
-    if autoRef:
+    if ref_level == None:
         f1_idx = (np.abs(freq - f1)).argmin()
         f2_idx = (np.abs(freq - f2)).argmin()
         # 'r2mag' is a portion of the magnitudes within the reference range:
@@ -142,8 +170,10 @@ def main(FRDname, ax):
         # Calculate the reference level
         ref_level = round( np.average( r2mag, weights=weights ), 2)
         print( f'(i) estimated ref level: {str(ref_level)} dB --> 0 dB' )
+        autoRef = True
     else:
         print( f'(i) given ref level:     {str(ref_level)} dB --> 0 dB' )
+        autoRef = False
 
     # 1.2 'target' curve: a smoothed version of the given freq response
     # 'f0': the bottom freq to begin increasing smoothing towards 1/1 oct at Nyquist
@@ -172,13 +202,24 @@ def main(FRDname, ax):
     eqNeg = np.clip(eq, a_min=None, a_max=0)
 
     # Ponderation window for positive gains
-    wPos = tools.logspaced_gauss(fc=wFc, wideOct=wOct, freq=freq)
+    # window left side (low freqs) and right side (high freqs)
+    w_Low    = tools.logspaced_gauss(fc=wLfc, wideOct=wLoct * 2, freq=freq)
+    w_High   = tools.logspaced_gauss(fc=wHfc, wideOct=wHoct * 2, freq=freq)
+
+    Lfc_idx  = len( np.where(freq < wLfc )[0] ) - 1
+    Hfc_idx  = len( np.where(freq < wHfc)[0] ) - 1
+
+    w_Low    = w_Low [ : Lfc_idx]
+    w_High   = w_High[Hfc_idx : ]
+    w_Mid    = np.ones( len(freq) - len(w_Low) - len(w_High) )
+
+    w = np.concatenate( (w_Low, w_Mid, w_High) )
 
     # Applying the window to positive gains (noPos deactivates positive gains)
     if noPos:
         eqPos.fill( 0.0 )
     else:
-        eqPos *= wPos
+        eqPos *= w
 
     # Joining hemispheres to have an updated 'eq' curve with limited positive gains
     eq = eqPos + eqNeg
@@ -268,10 +309,10 @@ def main(FRDname, ax):
                             label='range to estimate ref level',
                             color='black', linestyle='--', linewidth=2)
 
-    # window for positive gains
+    # window for positive gains (scaled at level 10 for clarity)
     if not noPos:
-        ax.plot(freq, wPos*10, label='positive eq unitary window',
-                               color='grey', linestyle='dotted')
+        ax.plot(freq, w*10, label='positive eq unitary window',
+                            color='grey', linestyle='dotted')
 
     # computed EQ curve:
     ax.plot(newFreq, newEq,
@@ -337,6 +378,8 @@ if __name__ == '__main__':
 
     FRDnames = []
 
+    opcsOK = True
+
     for opc in sys.argv[1:]:
 
         if opc[0] != '-' and opc[-4:] in ('.frd','.txt'):
@@ -358,33 +401,40 @@ if __name__ == '__main__':
 
         elif opc[:5] == '-ref=':
             try:
-                ref_level = opc[5:]
+                ref_level = opc.split('=')[-1]
                 ref_level = round( float(ref_level), 1)
-                autoRef = False
             except:
-                print( __doc__ )
-                sys.exit()
+                opcsOK = False
 
         elif '-sch' in opc:
             try:
                 fSchro = float(opc.split('=')[-1])
             except:
-                print( __doc__ )
-                sys.exit()
+                opcsOK = False
 
-        elif opc[:5].lower() == '-wfc=':
+        elif '-wlfc=' in opc.lower():
             try:
-                wFc = float(opc[5:])
+                wLfc = float(opc.split('=')[-1])
             except:
-                print( __doc__ )
-                sys.exit()
+                opcsOK = False
 
-        elif opc[:6].lower() == '-woct=':
+        elif '-whfc=' in opc.lower():
             try:
-                wOct = float(opc[6:])
+                wHfc = float(opc.split('=')[-1])
             except:
-                print( __doc__ )
-                sys.exit()
+                opcsOK = False
+
+        elif '-wloct=' in opc.lower():
+            try:
+                wLoct = float(opc.split('=')[-1])
+            except:
+                opcsOK = False
+
+        elif '-whoct=' in opc.lower():
+            try:
+                wHoct = float(opc.split('=')[-1])
+            except:
+                opcsOK = False
 
         elif '-nopos' in opc.lower():
             noPos = True
@@ -402,6 +452,11 @@ if __name__ == '__main__':
             print( __doc__ )
             sys.exit()
 
+    if not opcsOK:
+        print( __doc__ )
+        sys.exit()
+
+
 
     # prepare pyplot
     plt.rcParams.update({'font.size': 8})
@@ -414,10 +469,12 @@ if __name__ == '__main__':
     # Processing FRDs
     # (if only one, plt.subplots will not return an array of axes)
     if len(FRDnames) == 1:
-        main(FRDnames[0], axs)
+        main(FRDnames[0], axs, ref_level)
+
     elif len(FRDnames) > 1:
         for i, FRDname in enumerate(FRDnames):
-            main(FRDname, axs[i])
+            main(FRDname, axs[i], ref_level)
+
     else:
         print(__doc__)
         sys.exit()

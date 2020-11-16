@@ -32,10 +32,15 @@ class RoommeasureGUI(Tk):
         super().__init__()  # this initiates the parent class Tk in order to
                             # make self a typical root = Tk()
 
-        self.screenW = self.winfo_screenwidth()
-        self.screenH = self.winfo_screenheight()
+        # A patch to get background colors for children windows working in Mac OS
+        # https://stackoverflow.com/questions/1529847/how-to-change-the-foreground-or-background-colour-of-a-tkinter-button-on-mac-os
+        self.bgcolor = self['background']
+        ttk.Style().configure('bgPatch.TFrame',  background=self.bgcolor)
+        ttk.Style().configure('bgPatch.TButton', background=self.bgcolor)
 
         #  Main window location
+        self.screenW = self.winfo_screenwidth()
+        self.screenH = self.winfo_screenheight()
         self.xpos = int(self.screenW / 12)
         self.ypos = int(self.screenH / 12)
         self.geometry(f'+{self.xpos}+{self.ypos}')
@@ -57,9 +62,13 @@ class RoommeasureGUI(Tk):
         taps     = [2**13, 2**14, 2**15, 2**16]
 
         ### VARS
-        self.var_beep     = IntVar()
-        self.var_validate = IntVar()
-        self.var_poseq    = IntVar()
+        self.var_beep       = IntVar()
+        self.var_validate   = IntVar()
+        self.var_poseq      = IntVar()
+        self.var_wLowSpan   = IntVar()
+        self.var_wHighSpan  = IntVar()
+        self.var_wLowFc     = IntVar()
+        self.var_wHighFc    = IntVar()
 
         ### VARS SHARED WITH rm.do_meas_loop()
         self.meas_trigger = threading.Event()
@@ -119,7 +128,7 @@ class RoommeasureGUI(Tk):
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
                                                     variable=self.var_beep)
-        self.btn_help    = ttk.Button(content, text='help', command=self.help)
+        self.btn_help    = ttk.Button(content, text='help', command=self.help_meas)
         self.btn_close   = ttk.Button(content, text='close', command=self.destroy)
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
         # needs to check [ ]validate
@@ -139,6 +148,8 @@ class RoommeasureGUI(Tk):
         self.ent_drcsch  = ttk.Entry(content,                     width=5)
         lbl_poseq        = ttk.Label(content, text='allow positive limited EQ:')
         self.chk_poseq   = ttk.Checkbutton(content, variable=self.var_poseq)
+        self.btn_eqhlp   = ttk.Button(content, text='EQ help', command=self.help_eq)
+        btn_eqlim        = ttk.Button(content, text='EQ limits', command=self.eq_limits)
         lbl_drcfs        = ttk.Label(content, text='FIR sample rate')
         self.cmb_drcfs   = ttk.Combobox(content, values=srates, width=8)
         lbl_drctaps      = ttk.Label(content, text='FIR taps')
@@ -149,6 +160,7 @@ class RoommeasureGUI(Tk):
         ### GRID ARRANGEMENT
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
 
+        # sound card
         lbl_scard.grid(         row=0,  column=0, sticky=W, pady=5 )
         btn_tsweep.grid(        row=0,  column=1, sticky=W, pady=5 )
         self.chk_validate.grid( row=0,  column=2 )
@@ -161,16 +173,19 @@ class RoommeasureGUI(Tk):
         lbl_sweep.grid(         row=2,  column=4, sticky=E )
         self.cmb_sweep.grid(    row=2,  column=5, sticky=W )
 
+        # measure
         lbl_meas.grid(          row=3,  column=0, sticky=W, pady=10 )
         lbl_ch.grid(            row=4,  column=0, sticky=E )
         self.cmb_ch.grid(       row=4,  column=1, sticky=W )
         lbl_locat.grid(         row=4,  column=2, sticky=E )
         self.cmb_locat.grid(    row=4,  column=3, sticky=W )
 
+        # plot
         lbl_plot.grid(          row=3,  column=4, sticky=W )
         lbl_schro.grid(         row=4,  column=4, sticky=E )
         self.ent_schro.grid(    row=4,  column=5, sticky=W )
 
+        # manage jack
         lbl_rjack.grid(         row=5,  column=0, sticky=W, pady=10 )
         lbl_rjaddr.grid(        row=6,  column=0, sticky=E )
         self.ent_rjaddr.grid(   row=6,  column=1, sticky=W )
@@ -179,6 +194,7 @@ class RoommeasureGUI(Tk):
         lbl_rjpass.grid(        row=6,  column=4, sticky=E )
         self.ent_rjpass.grid(   row=6,  column=5, sticky=W )
 
+        # run
         lbl_run.grid(           row=7,  column=0, sticky=W, pady=10 )
         lbl_timer.grid(         row=8,  column=0, sticky=E )
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
@@ -189,12 +205,16 @@ class RoommeasureGUI(Tk):
         self.btn_close.grid(    row=9,  column=4, sticky=E )
         self.btn_go.grid(       row=9,  column=5, sticky=E )
 
+        # messages window
         frm_msg.grid(           row=10, column=0, sticky=W+E, columnspan=6, pady=10 )
         self.lbl_msg.grid(                        sticky=W )
 
+        # drc eq
         lbl_drc.grid(           row=11, column=0, sticky=W, pady=10 )
-        lbl_poseq.grid(         row=11, column=3, sticky=E, columnspan=2 )
-        self.chk_poseq.grid(    row=11, column=5, sticky=W )
+        lbl_poseq.grid(         row=11, column=1, sticky=E, columnspan=2 )
+        self.chk_poseq.grid(    row=11, column=3, sticky=W )
+        btn_eqlim.grid(         row=11, column=4, sticky=W )
+        self.btn_eqhlp.grid(    row=11, column=5, sticky=E )
         lbl_reflev.grid(        row=12, column=0, sticky=E )
         self.ent_reflev.grid(   row=12, column=1, sticky=W )
         lbl_drcsch.grid(        row=12, column=2, sticky=E, columnspan=2 )
@@ -387,45 +407,44 @@ class RoommeasureGUI(Tk):
                                      daemon = True )
         job_test.start()
 
+    # Help for measure
+    def help_meas(self):
+        self.helpW( help_text=rm.__doc__, disable_items=[self.btn_help])
 
-    # Display help in a new window
-    def help(self):
+
+    # Displays help in a new window
+    def helpW(self, help_text, disable_items=[]):
 
         def arakiri():
-            self.btn_help['state'] = 'normal'
+            for item in disable_items:
+                item['state'] = 'normal'
             whlp.destroy()
 
-        bgcolor     = 'light grey'
+        bgcolor     = self.bgcolor
         bgcolortxt  = 'snow2'
-
-        help_fname  = f'{os.path.dirname(__file__)}/roommeasure.hlp'
-        # this is for Mac OS users having renamed this script file
-        help_fname  = help_fname.replace('_GUI.command', '.hlp')
-
-        with open(help_fname, 'r') as f:
-            tmp = f.read()
 
         whlp = Toplevel(bg=bgcolor)
         whlp.geometry('+350+100')
 
-        fhlp = Frame(whlp, bg=bgcolor)
+        fhlp = ttk.Frame( whlp, style='bgPath.TFrame' )
         fhlp.grid(row=0, column=0)
 
         txt_help = Text( fhlp, width=100, height=40, wrap=None, bg=bgcolortxt)
-        txt_help.insert('end', tmp)
+        txt_help.insert('end', help_text)
+
         yscroll  = ttk.Scrollbar(fhlp, orient='vertical',   command=txt_help.yview)
         xscroll  = ttk.Scrollbar(fhlp, orient='horizontal', command=txt_help.xview)
         txt_help['yscrollcommand'] = yscroll.set
         txt_help['xscrollcommand'] = xscroll.set
-        txt_help.grid( row=0, column=0, pady=5 )
 
-        fbtn = Frame(whlp, bg=bgcolor)
-        fbtn.grid( row=1, column=0 )
+        btn_ok   = ttk.Button(fhlp, text='OK', command=arakiri,
+                                               style='bgPath.TButton' )
 
-        btn_ok   = Button(fbtn, text='OK', command=arakiri,
-                                           highlightbackground=bgcolor)
-        btn_ok.grid(    row=1,  column=0,   pady=5 )
-        self.btn_help['state'] = 'disabled'
+        txt_help    .grid(   row=0, column=0, pady=5 )
+        btn_ok      .grid(   row=1, column=0, pady=5 )
+
+        for item in disable_items:
+            item['state'] = 'disabled'
 
 
     # Show the rm.LS saved graphs, arranged on the screen
@@ -602,6 +621,74 @@ class RoommeasureGUI(Tk):
         job_meas.start()
 
 
+    # Help for DRC-EQ
+    def help_eq(self):
+        from roomEQ import __doc__ as eq_doc
+        self.helpW( help_text=eq_doc, disable_items=[self.btn_eqhlp])
+
+
+    # Configure DRC EQ LIMITS (roomEQ command line args)
+    def eq_limits(self):
+
+        def update_and_close():
+            self.var_wLowSpan   .set( int(self.cmb_eqwLspan.get() ) )
+            self.var_wHighSpan  .set( int(self.cmb_eqwHspan.get() ) )
+            self.var_wLowFc     .set( int(self.ent_eqwLFc.get()   ) )
+            self.var_wHighFc    .set( int(self.ent_eqwHFc.get()   ) )
+            wEq.destroy()
+
+
+        wEq = Toplevel( bg=self.bgcolor )
+        wEq.geometry( f'+{self.xpos}+{self.ypos}' )
+
+        fEq = ttk.Frame( wEq, style='bgPatch.TFrame', padding=(10,10,12,12) )
+        fEq.grid()
+
+        # widgets (using gray text color for unusual settings)
+        lbl_eqwLspan        = ttk.Label(fEq, text='w_low left span (def: 5 octaves)',
+                                             foreground='gray33')
+        self.cmb_eqwLspan   = ttk.Combobox(fEq, values=(5, 10, 15, 20), width=4)
+
+        lbl_eqwHspan        = ttk.Label(fEq, text='w_high right span (def: 5 octaves)')
+        self.cmb_eqwHspan   = ttk.Combobox(fEq, values=(5, 10, 15, 20), width=4)
+
+        lbl_eqwLFc          = ttk.Label(fEq, text='window low Fc (def: 630 Hz)',
+                                             foreground='gray33',
+                                             font=(None, 10, ''))
+        self.ent_eqwLFc     = ttk.Entry(fEq, width=5,
+                                             font=(None, 10, ''))
+
+        lbl_eqwHFc          = ttk.Label(fEq, text='window high Fc (def: 630 Hz)',
+                                             foreground='gray33',
+                                             font=(None, 10, ''))
+        self.ent_eqwHFc     = ttk.Entry(fEq, width=5,
+                                             font=(None, 10, ''))
+
+        btn_ok              = ttk.Button( fEq, text='OK', command=update_and_close,
+                                                          style='bgPatch.TButton' )
+
+        # grid arrangement
+        lbl_eqwLspan        .grid( row=0,  column=0, sticky=E, pady=5 )
+        self.cmb_eqwLspan   .grid( row=0,  column=1, sticky=W )
+
+        lbl_eqwLFc          .grid( row=1,  column=0, sticky=E, pady=5 )
+        self.ent_eqwLFc     .grid( row=1,  column=1, sticky=W )
+
+        lbl_eqwHFc          .grid( row=2,  column=0, sticky=E, pady=5 )
+        self.ent_eqwHFc     .grid( row=2,  column=1, sticky=W )
+
+        lbl_eqwHspan        .grid( row=3,  column=0, sticky=E, pady=5 )
+        self.cmb_eqwHspan   .grid( row=3,  column=1, sticky=W )
+
+        btn_ok              .grid( row=4,  column=1, pady=5 )
+
+        # auto fill values as per global variables
+        self.cmb_eqwLspan.set( self.var_wLowSpan.get() )
+        self.cmb_eqwHspan.set( self.var_wHighSpan.get() )
+        self.ent_eqwLFc.insert(0, self.var_wLowFc.get() )
+        self.ent_eqwHFc.insert(0, self.var_wHighFc.get() )
+
+
     # CALCULATE DRC
     def drc(self):
 
@@ -626,7 +713,7 @@ class RoommeasureGUI(Tk):
             print(f'(GUI) bad ref. level (dB)')
             return
 
-        # Schroedr freq
+        # Schroeder freq
         if self.ent_drcsch.get().replace('.','').isdecimal:
             schro  = self.ent_drcsch.get()
         else:
@@ -646,6 +733,10 @@ class RoommeasureGUI(Tk):
 
         # roomEQ command line args
         args = f'-fs={fs} -e={taps_exp} -schro={schro} -doFIR'
+        args += f' -wLoct={self.var_wLowSpan.get()}'
+        args += f' -wLfc={self.var_wLowFc.get()}'
+        args += f' -wHfc={self.var_wHighFc.get()}'
+        args += f' -wHoct={self.var_wHighSpan.get()}'
 
         if reflev:
             args += f' -ref={reflev}'
@@ -710,6 +801,10 @@ if __name__ == '__main__':
     app.ent_reflev.insert(0, 'auto')
     app.ent_drcsch.insert(0, '200')
     app.var_poseq.set(1)
+    app.var_wLowSpan.set(5)
+    app.var_wHighSpan.set(5)
+    app.var_wLowFc.set(630)
+    app.var_wHighFc.set(630)
 
     # LAUNCH GUI
     app.mainloop()
