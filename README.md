@@ -73,15 +73,37 @@ The **reference level** on which it is applied the EQ is automatically detected,
 
             -schro=     Schroeder freq. (default 200 Hz)
 
-            -wFc=       Gaussian window to limit positive EQ: center freq
-                        (default 1000 Hz)
+                        Gaussian windows to progressively limit positive EQ:
 
-            -wOct=      Gaussian window to limit positive EQ: wide in octaves
-                        (default 10 octaves 20 ~ 20 KHz)
+            -wLfc=      Low window center freq  (default: at 5 oct ~ 630 Hz)
+
+            -wHfc=      High window center freq (default: at 5 oct ~ 630 Hz)
+
+            -wLoct=     Span in octaves for the left side of wL  (def: 5 oct)
+
+            -wHoct=     Span in octaves for the right side of wH (def: 5 oct)
 
             -noPos      Does not allow positive gains at all
 
             -doFIR      Generates the pcm FIR after estimating the final EQ.
+
+
+    ABOUT POSITIVE EQ GAIN:
+
+    If desired, then a gaussian window will be used to limit positive gains.
+
+    Two windows are available: wL works on the lower freq band, wH on highs.
+
+    These windows by default are centered at 5 octaves (630Hz) with symmetric
+    span shapes of 5 oct, so minimized at 20 Hz and 20 Khz ends.
+
+    If the measured level extends over most of the range 20 Hz ~ 20 KHz
+    (the 10 octaves audio band), the default shape usually works fine.
+
+    If the measured response has significant limitations on the upper band,
+    you may want to extend the right side of wH by setting wHoct > 5.
+
+    Usually the default 5 oct left side window span (low freq) works fine.
 
 ```
 
