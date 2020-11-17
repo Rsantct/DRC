@@ -53,3 +53,10 @@ You are done, you can run the DRC graphic user interface:
 
     ~/DRC/DRC_GUI.py &
 
+
+### Update
+
+    ~/DRC/update-DRC.sh master
+
+    ~/audiotools/update-audiotools.sh master
+
