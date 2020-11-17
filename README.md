@@ -151,15 +151,12 @@ You'll need to install our audio tools from **[AudioHumLab/audiotools](https://g
 
 This software is intended to be installed under the user's home folder. Please run the following commands:
 
-    cd
-    wget https://github.com/Rsantct/DRC/archive/master.zip
-    unzip master
-    rm master.zip
-    mv DRC-master DRC
-    chmod +x DRC/*.py
+    cd ~
+    curl -LO https://raw.githubusercontent.com/Rsantct/DRC/master/update-DRC.sh
+    sh update-DRC.sh master
 
 ## Updating
 
-    sh ~/DRC/update.sh
+    sh ~/DRC/update-DRC.sh
 
 
