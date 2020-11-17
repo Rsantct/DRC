@@ -43,7 +43,7 @@ Exiting from the python interpreter:
 ### Download and install AudioHumLab/DRC
 
     curl -O  https://raw.githubusercontent.com/Rsantct/DRC/master/update-DRC.sh
-    sh update-audiotools.sh master
+    sh update-DRC.sh master
 
         (i) Will download from: [ https://github.com/AudioHumLab ]
             Is this OK? [y/N]  Y
