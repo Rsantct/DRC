@@ -123,7 +123,7 @@ Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or
 
 ## Using the measurement software
 
-You can use a Linux o Mac OS (Homebrew) laptop, equipped with a suitable sound card and measurement mic.
+You can use a Linux or Mac OS laptop, equipped with a suitables sound card and measurement mic.
 
 
 ### Dependencies
