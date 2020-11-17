@@ -18,8 +18,8 @@ else
 fi
 
 echo
-echo "WARNING: Will download from: [ ""$gitsite"" ]"
-read -r -p "         Is this OK? [y/N] " tmp
+echo "(i) Will download from: [ ""$gitsite"" ]"
+read -r -p "    Is this OK? [y/N] " tmp
 if [ "$tmp" != "y" ] && [ "$tmp" != "Y" ]; then
     echo 'Bye.'
     exit 0
