@@ -57,7 +57,7 @@
                             (Choose the right ones by checking logsweep2TF.py -h)
 
          -folder=path       A folder to store the measured FRD files,
-                            relative to your $HOME (default ~/rm/meas)
+                            relative to your $HOME (default: roommeas/meas)
 
 
                             USER INTERACTION:
@@ -172,7 +172,7 @@ timer               = 0         # A timer to countdown between measurements,
 channels            = ['C']     # Channels to interleaving measurements.
 
 # Results:
-folder              = f'{UHOME}/rm/meas'
+folder              = f'{UHOME}/roommeas/meas'
                                 # Smoothing the resulting response:
 Schro               = 200       # Schroeder freq (Hz)
 Noct                = 24        # Initial 1/Noct smoothing below Schro,
@@ -245,7 +245,7 @@ def read_command_line():
             jackUser = opc[7:]
 
         elif '-f' in opc:
-            folder = f'{UHOME}/rm/{opc.split("=")[-1]}'
+            folder = f'{UHOME}/{opc.split("=")[-1]}'
 
         else:
             opcsOK = False
