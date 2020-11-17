@@ -122,7 +122,7 @@ class RoommeasureGUI(Tk):
         # - RUN AREA
         lbl_run          = ttk.Label(content, text='RUN:',
                                               font=(None, 0, 'bold') )
-        lbl_folder       = ttk.Label(content, text='output folder: ~/rm/')
+        lbl_folder       = ttk.Label(content, text='output folder: ~/')
         self.ent_folder  = ttk.Entry(content,                     width=15)
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
@@ -362,13 +362,16 @@ class RoommeasureGUI(Tk):
             else:
                 self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
 
-            # Plotting test signals
-            rm.LS.plot_system_response( png_folder=f'{UHOME}/rm/' )
+            # Plotting test signals to png
+            folder = self.ent_folder.get()
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            rm.LS.plot_system_response( png_folder=folder )
             rm.LS.plt.close('all')
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            self.do_show_image_at( imagePath=f'{UHOME}/rm/system_response.png',
+            self.do_show_image_at( imagePath=f'{folder}/system_response.png',
                                     resize=False )
 
 
@@ -379,7 +382,6 @@ class RoommeasureGUI(Tk):
             pbk         =   self.cmb_pbk.get()
             fs          =   int(self.cmb_fs.get())
             sweeplength =   int(self.cmb_sweep.get())
-            folder      =   self.ent_folder.get()
 
             # PREPARING roommeasure.LS stuff as per given options:
             # - sound card
@@ -480,7 +482,7 @@ class RoommeasureGUI(Tk):
         # OPC: Joined images window and container frame
         else:
             self.do_show_images( png_tuples,
-                                 wtitle=f'~/rm/{os.path.basename(rm.folder)}' )
+                                 wtitle=f'~/{os.path.basename(rm.folder)}' )
 
 
     # MAIN MEAS procedure and SAVING of curves
@@ -571,11 +573,11 @@ class RoommeasureGUI(Tk):
 
             # - output folder
             if folder:
-                rm.folder   = f'{UHOME}/rm/{folder}'
+                rm.folder   = f'{UHOME}/{folder}'
             rm.prepare_frd_folder()
             #   updates the GUI w/ the real folder because subindex could be added
             self.ent_folder.delete(0, END)
-            self.ent_folder.insert(0, os.path.basename(rm.folder))
+            self.ent_folder.insert(0, rm.folder.replace(UHOME, '')[1:])
 
             # - beeps:
             rm.beepL        = rm.tools.make_beep(f=880, fs=rm.LS.fs)
@@ -748,13 +750,13 @@ class RoommeasureGUI(Tk):
 
         frd_paths = ''
         for ch in channels:
-            frd_paths += f' "{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd"'
+            frd_paths += f' "{UHOME}/{self.ent_folder.get()}/{ch}_avg.frd"'
 
         cmdline = f'{rEQ_path} {frd_paths.strip()} {args}'
 
         # display temporary messages
         msgs = (f'running roomEQ ...',
-                f'DRC FIR saved under ~/rm/{self.ent_folder.get()}'
+                f'DRC FIR saved under ~/{self.ent_folder.get()}'
                 f'/{self.cmb_drcfs.get()}' )
 
         job_tmp_msgs = threading.Thread( target=self.tmp_msgs,
@@ -793,7 +795,7 @@ if __name__ == '__main__':
     # - Schroeder freq for smoothing result curve:
     app.ent_schro.insert(0, '200')
     # - Output folder
-    app.ent_folder.insert(0, 'meas')
+    app.ent_folder.insert(0, 'roommeas/meas')
 
     # - DRC:
     app.cmb_drcfs.set('44100')
