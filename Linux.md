@@ -1,10 +1,10 @@
 ## Install on Debian based Linux:
 
-### Debian packages:
+### Standard Python modules from Debian packages:
 
     sudo apt install python3-numpy python3-matplotlib python3-scipy python3-pip
 
-### Standard Python modules:
+### Standard Python modules from Python PIP:
 
     sudo pip3 install --upgrade pip
     sudo pip3 install --upgrade setuptools
