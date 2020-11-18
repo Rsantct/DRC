@@ -334,6 +334,19 @@ def plot_system_response(png_folder=f'{UHOME}'):
     axTCL.set_title(f'Time Clearance:\nrecorder lags  player <---o---> ' \
                     f'recorder leads player', fontsize='medium')
 
+    # A warning text box
+    msg = ''
+    if maxX < 200:
+        msg = 'bad spike shape'
+    elif maxX < 500:
+        msg = 'poor spike shape'
+    if msg:
+        # (these are matplotlib.patch.Patch properties)
+        props = dict(boxstyle='round', facecolor='silver', alpha=0.3)
+        axTCL.text( 0.0, -250.0,
+                 msg,
+                 bbox=props)
+
 
     #--- Freq Response
     F, DUT_mag = DUT_FRD
