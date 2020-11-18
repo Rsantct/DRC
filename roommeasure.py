@@ -17,6 +17,8 @@
 # along with 'Rsantct.DRC'.  If not, see <https://www.gnu.org/licenses/>.
 
 """
+    roommeasure.py
+
     Gets the stationary frequency response from an in-rooom loudspeaker,
     from several microphone locations.
 
