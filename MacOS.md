@@ -25,13 +25,13 @@ Exiting from the python interpreter:
     rafael@mbp ~ % 
 
 
-### Update standard Python modules:
+### Standard Python modules:
 
     sudo pip3 install --upgrade pip
     sudo pip3 install --upgrade setuptools
     sudo pip3 install numpy matplotlib scipy sounddevice pyaml
 
-### Download and install AudioHumLab/audiotools
+### AudioHumLab/audiotools
 
     curl -O  https://raw.githubusercontent.com/Rsantct/audiotools/master/update-audiotools.sh
     sh update-audiotools.sh master
@@ -39,24 +39,3 @@ Exiting from the python interpreter:
         (i) Will download from: [ https://github.com/AudioHumLab ]
             Is this OK? [y/N]  Y
              
-             
-### Download and install AudioHumLab/DRC
-
-    curl -O  https://raw.githubusercontent.com/Rsantct/DRC/master/update-DRC.sh
-    sh update-DRC.sh master
-
-        (i) Will download from: [ https://github.com/AudioHumLab ]
-            Is this OK? [y/N]  Y
-
-
-You are done, you can run the DRC graphic user interface:
-
-    ~/DRC/DRC_GUI.py &
-
-
-### Update
-
-    ~/DRC/update-DRC.sh master
-
-    ~/audiotools/update-audiotools.sh master
-

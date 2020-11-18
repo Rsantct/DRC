@@ -36,11 +36,13 @@
 
             -schro=     Schroeder freq. (default 200 Hz)
 
-                        Gaussian windows to progressively limit positive EQ:
+            -doFIR      Generates the pcm FIR after estimating the final EQ.
 
-            -wLfc=      Low window center freq  (default: at 5 oct ~ 630 Hz)
+                ~~~ Gaussian windows to progressively limit positive EQ: ~~~
 
-            -wHfc=      High window center freq (default: at 5 oct ~ 630 Hz)
+            -wLfc=      Low window center freq (default: midband centered at 1000 Hz)
+
+            -wHfc=      High window center freq (default: same as wLfc)
 
             -wLoct=     Span in octaves for the left side of wL  (def: 5 oct)
 
@@ -48,7 +50,6 @@
 
             -noPos      Does not allow positive gains at all
 
-            -doFIR      Generates the pcm FIR after estimating the final EQ.
 
 
     ABOUT POSITIVE EQ GAIN:
@@ -57,7 +58,7 @@
 
     Two windows are available: wL works on the lower freq band, wH on highs.
 
-    These windows by default are centered at 5 octaves (630Hz) with symmetric
+    These windows by default are centered at midband 1000 Hz with symmetric
     span shapes of 5 oct, so minimized at 20 Hz and 20 Khz ends.
 
     If the measured level extends over most of the range 20 Hz ~ 20 KHz
@@ -122,8 +123,8 @@ octSch  = 2         # Octaves referred to Schroeder to initiate the transition
 Tspeed  = "medium"  # Transition speed for audiotools/smoothSpectrum.py
 
 # Gaussian windows to limit positive gains:
-wLfc    = 630       # Left window center freq (default: at 5 oct ~ 630 Hz)
-wHfc    = 630       # Right window center
+wLfc    = 1000      # Left window center freq (default: midband centered at 1000 Hz)
+wHfc    = 1000      # Right window center
 wLoct   = 5         # span in octaves for the left side of wL.
 wHoct   = 5         # span in octaves for the right side of wH.
 noPos   = False     # avoids positive gains

@@ -122,8 +122,8 @@ class RoommeasureGUI(Tk):
         # - RUN AREA
         lbl_run          = ttk.Label(content, text='RUN:',
                                               font=(None, 0, 'bold') )
-        lbl_folder       = ttk.Label(content, text='output folder: ~/rm/')
-        self.ent_folder  = ttk.Entry(content,                     width=15)
+        lbl_folder       = ttk.Label(content, text='output folder: ~/')
+        self.ent_folder  = ttk.Entry(content,                     width=18)
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
@@ -148,7 +148,7 @@ class RoommeasureGUI(Tk):
         self.ent_drcsch  = ttk.Entry(content,                     width=5)
         lbl_poseq        = ttk.Label(content, text='allow positive limited EQ:')
         self.chk_poseq   = ttk.Checkbutton(content, variable=self.var_poseq)
-        self.btn_eqhlp   = ttk.Button(content, text='EQ help', command=self.help_eq)
+        self.btn_eqhlp   = ttk.Button(content, text='help', command=self.help_eq)
         btn_eqlim        = ttk.Button(content, text='EQ limits', command=self.eq_limits)
         lbl_drcfs        = ttk.Label(content, text='FIR sample rate')
         self.cmb_drcfs   = ttk.Combobox(content, values=srates, width=8)
@@ -161,8 +161,8 @@ class RoommeasureGUI(Tk):
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
 
         # sound card
-        lbl_scard.grid(         row=0,  column=0, sticky=W, pady=5 )
-        btn_tsweep.grid(        row=0,  column=1, sticky=W, pady=5 )
+        lbl_scard.grid(         row=0,  column=0, sticky=W, pady=10 )
+        btn_tsweep.grid(        row=0,  column=1, sticky=W, pady=10 )
         self.chk_validate.grid( row=0,  column=2 )
         lbl_cap.grid(           row=1,  column=0, sticky=E )
         self.cmb_cap.grid(      row=1,  column=1)
@@ -196,34 +196,35 @@ class RoommeasureGUI(Tk):
 
         # run
         lbl_run.grid(           row=7,  column=0, sticky=W, pady=10 )
-        lbl_timer.grid(         row=8,  column=0, sticky=E )
+        lbl_timer.grid(         row=8,  column=0, sticky=E, pady=5 )
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
         self.chk_beep.grid(     row=8,  column=2 )
         lbl_folder.grid(        row=8,  column=4, sticky=E )
         self.ent_folder.grid(   row=8,  column=5, sticky=W )
-        self.btn_help.grid(     row=9,  column=3, sticky=E, pady=15  )
-        self.btn_close.grid(    row=9,  column=4, sticky=E )
+        self.btn_help.grid(     row=9,  column=4, sticky=W, pady=10 )
         self.btn_go.grid(       row=9,  column=5, sticky=E )
+        self.btn_close.grid(    row=10, column=5, sticky=E, pady=10 )
 
         # messages window
-        frm_msg.grid(           row=10, column=0, sticky=W+E, columnspan=6, pady=10 )
+        frm_msg.grid(           row=11, column=0, sticky=W+E, columnspan=6,
+                                                              pady=15 )
         self.lbl_msg.grid(                        sticky=W )
 
         # drc eq
-        lbl_drc.grid(           row=11, column=0, sticky=W, pady=10 )
-        lbl_poseq.grid(         row=11, column=1, sticky=E, columnspan=2 )
-        self.chk_poseq.grid(    row=11, column=3, sticky=W )
-        btn_eqlim.grid(         row=11, column=4, sticky=W )
-        self.btn_eqhlp.grid(    row=11, column=5, sticky=E )
-        lbl_reflev.grid(        row=12, column=0, sticky=E )
-        self.ent_reflev.grid(   row=12, column=1, sticky=W )
-        lbl_drcsch.grid(        row=12, column=2, sticky=E, columnspan=2 )
-        self.ent_drcsch.grid(   row=12, column=4, sticky=W )
-        lbl_drcfs.grid(         row=13, column=0, sticky=E, pady=10 )
-        self.cmb_drcfs.grid(    row=13, column=1, sticky=W )
-        lbl_drctaps.grid(       row=13, column=2, sticky=E )
-        self.cmb_drctaps.grid(  row=13, column=3, sticky=W )
-        self.btn_drc.grid(      row=13, column=5, sticky=E )
+        lbl_drc.grid(           row=12, column=0, sticky=W, pady=10 )
+        lbl_poseq.grid(         row=12, column=1, sticky=E, columnspan=2 )
+        self.chk_poseq.grid(    row=12, column=3, sticky=W )
+        btn_eqlim.grid(         row=12, column=3, sticky=E )
+        lbl_reflev.grid(        row=13, column=0, sticky=E, pady=10 )
+        self.ent_reflev.grid(   row=13, column=1, sticky=W )
+        lbl_drcsch.grid(        row=13, column=2, sticky=E, columnspan=2 )
+        self.ent_drcsch.grid(   row=13, column=4, sticky=W )
+        lbl_drcfs.grid(         row=14, column=0, sticky=E, pady=10 )
+        self.cmb_drcfs.grid(    row=14, column=1, sticky=W )
+        lbl_drctaps.grid(       row=14, column=2, sticky=E )
+        self.cmb_drctaps.grid(  row=14, column=3, sticky=W )
+        self.btn_eqhlp.grid(    row=14, column=4, sticky=W )
+        self.btn_drc.grid(      row=14, column=5, sticky=E )
 
 
 
@@ -362,13 +363,16 @@ class RoommeasureGUI(Tk):
             else:
                 self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
 
-            # Plotting test signals
-            rm.LS.plot_system_response( png_folder=f'{UHOME}/rm/' )
+            # Plotting test signals to png
+            folder = self.ent_folder.get()
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            rm.LS.plot_system_response( png_folder=folder )
             rm.LS.plt.close('all')
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            self.do_show_image_at( imagePath=f'{UHOME}/rm/system_response.png',
+            self.do_show_image_at( imagePath=f'{folder}/system_response.png',
                                     resize=False )
 
 
@@ -379,7 +383,6 @@ class RoommeasureGUI(Tk):
             pbk         =   self.cmb_pbk.get()
             fs          =   int(self.cmb_fs.get())
             sweeplength =   int(self.cmb_sweep.get())
-            folder      =   self.ent_folder.get()
 
             # PREPARING roommeasure.LS stuff as per given options:
             # - sound card
@@ -415,9 +418,12 @@ class RoommeasureGUI(Tk):
     # Displays help in a new window
     def helpW(self, help_text, disable_items=[]):
 
-        def arakiri():
+        def normalize_items(dummy=None):
             for item in disable_items:
                 item['state'] = 'normal'
+
+        def arakiri():
+            normalize_items()
             whlp.destroy()
 
         bgcolor     = self.bgcolor
@@ -425,6 +431,7 @@ class RoommeasureGUI(Tk):
 
         whlp = Toplevel(bg=bgcolor)
         whlp.geometry('+350+100')
+        whlp.bind('<Destroy>', normalize_items)
 
         fhlp = ttk.Frame( whlp, style='bgPath.TFrame' )
         fhlp.grid(row=0, column=0)
@@ -480,7 +487,7 @@ class RoommeasureGUI(Tk):
         # OPC: Joined images window and container frame
         else:
             self.do_show_images( png_tuples,
-                                 wtitle=f'~/rm/{os.path.basename(rm.folder)}' )
+                                 wtitle=f'~/{os.path.basename(rm.folder)}' )
 
 
     # MAIN MEAS procedure and SAVING of curves
@@ -571,11 +578,11 @@ class RoommeasureGUI(Tk):
 
             # - output folder
             if folder:
-                rm.folder   = f'{UHOME}/rm/{folder}'
+                rm.folder   = f'{UHOME}/{folder}'
             rm.prepare_frd_folder()
             #   updates the GUI w/ the real folder because subindex could be added
             self.ent_folder.delete(0, END)
-            self.ent_folder.insert(0, os.path.basename(rm.folder))
+            self.ent_folder.insert(0, rm.folder.replace(UHOME, '')[1:])
 
             # - beeps:
             rm.beepL        = rm.tools.make_beep(f=880, fs=rm.LS.fs)
@@ -652,13 +659,13 @@ class RoommeasureGUI(Tk):
         lbl_eqwHspan        = ttk.Label(fEq, text='w_high right span (def: 5 octaves)')
         self.cmb_eqwHspan   = ttk.Combobox(fEq, values=(5, 10, 15, 20), width=4)
 
-        lbl_eqwLFc          = ttk.Label(fEq, text='window low Fc (def: 630 Hz)',
+        lbl_eqwLFc          = ttk.Label(fEq, text='window low Fc (def: 1000 Hz)',
                                              foreground='gray33',
                                              font=(None, 10, ''))
         self.ent_eqwLFc     = ttk.Entry(fEq, width=5,
                                              font=(None, 10, ''))
 
-        lbl_eqwHFc          = ttk.Label(fEq, text='window high Fc (def: 630 Hz)',
+        lbl_eqwHFc          = ttk.Label(fEq, text='window high Fc (def: 1000 Hz)',
                                              foreground='gray33',
                                              font=(None, 10, ''))
         self.ent_eqwHFc     = ttk.Entry(fEq, width=5,
@@ -748,13 +755,18 @@ class RoommeasureGUI(Tk):
 
         frd_paths = ''
         for ch in channels:
-            frd_paths += f' "{UHOME}/rm/{self.ent_folder.get()}/{ch}_avg.frd"'
+            frd_path   = f'{UHOME}/{self.ent_folder.get()}/{ch}_avg.frd'
+            if os.path.isfile(frd_path):
+                frd_paths += f' "{frd_path}"'
+            else:
+                self.var_msg.set(f'freq. response file  \'{ch}_avg.frd\'  not found')
+                return
 
         cmdline = f'{rEQ_path} {frd_paths.strip()} {args}'
 
         # display temporary messages
         msgs = (f'running roomEQ ...',
-                f'DRC FIR saved under ~/rm/{self.ent_folder.get()}'
+                f'DRC FIR saved under ~/{self.ent_folder.get()}'
                 f'/{self.cmb_drcfs.get()}' )
 
         job_tmp_msgs = threading.Thread( target=self.tmp_msgs,
@@ -793,7 +805,7 @@ if __name__ == '__main__':
     # - Schroeder freq for smoothing result curve:
     app.ent_schro.insert(0, '200')
     # - Output folder
-    app.ent_folder.insert(0, 'meas')
+    app.ent_folder.insert(0, 'roommeas/meas')
 
     # - DRC:
     app.cmb_drcfs.set('44100')
@@ -803,8 +815,8 @@ if __name__ == '__main__':
     app.var_poseq.set(1)
     app.var_wLowSpan.set(5)
     app.var_wHighSpan.set(5)
-    app.var_wLowFc.set(630)
-    app.var_wHighFc.set(630)
+    app.var_wLowFc.set(1000)    # Low window midband centered at 1000 Hz
+    app.var_wHighFc.set(1000)   # idem
 
     # LAUNCH GUI
     app.mainloop()
