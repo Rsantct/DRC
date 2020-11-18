@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-""" This is a Tkinter based GUI to running DRC scripts
+""" This is a Tkinter based GUI to running AudioHumLab/DRC scripts
 """
 from subprocess import Popen
 from time import sleep
+import glob
 import os
 UHOME = os.path.expanduser("~")
 
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox, font
 
 # https://tkdocs.com/tutorial/fonts.html#images
 from PIL import ImageTk, Image
@@ -32,6 +33,10 @@ class RoommeasureGUI(Tk):
         super().__init__()  # this initiates the parent class Tk in order to
                             # make self a typical root = Tk()
 
+        # Getting default font size for relative use
+        f = font.nametofont('TkTextFont')
+        self.curr_font_size = f.actual()['size']
+
         # A patch to get background colors for children windows working in Mac OS
         # https://stackoverflow.com/questions/1529847/how-to-change-the-foreground-or-background-colour-of-a-tkinter-button-on-mac-os
         self.bgcolor = self['background']
@@ -44,7 +49,7 @@ class RoommeasureGUI(Tk):
         self.xpos = int(self.screenW / 12)
         self.ypos = int(self.screenH / 12)
         self.geometry(f'+{self.xpos}+{self.ypos}')
-        self.title('DRC - GUI')
+        self.title('AudioHumLab/DRC')
 
         ### EVENTS HANDLING
         self.bind('<Key>', self.handle_keypressed)
@@ -92,6 +97,19 @@ class RoommeasureGUI(Tk):
         btn_tsweep       = ttk.Button(content, text='test sweep',
                                                command=self.test_logsweep)
 
+        # - REMOTE JACK SECTION
+        lbl_rjack        = ttk.Label(content, text='MANAGE JACK LOUDSPEAKER:',
+                                              font=(None,
+                                                    self.curr_font_size - 2,
+                                                    'bold') )
+        lbl_rjaddr       = ttk.Label(content, text='addr')
+        self.ent_rjaddr  = ttk.Entry(content,                     width=15)
+        lbl_rjuser       = ttk.Label(content, text='user')
+        self.ent_rjuser  = ttk.Entry(content,                     width=15)
+        self.ent_rjuser.insert(0, 'paudio')
+        lbl_rjpass       = ttk.Label(content, text='passwd')
+        self.ent_rjpass  = ttk.Entry(content, show='*',           width=15)
+
         # - MEASURE SECTION
         lbl_meas         = ttk.Label(content, text='MEASURE:',
                                               font=(None, 0, 'bold') )
@@ -104,25 +122,15 @@ class RoommeasureGUI(Tk):
 
         # - PLOT SECTION
         lbl_plot         = ttk.Label(content, text='PLOT:',
-                                              font=(None, 0, 'bold') )
+                                              font=(None,
+                                                    self.curr_font_size - 2,
+                                                    'bold') )
         lbl_schro        = ttk.Label(content, text='smooth Schroeder')
         self.ent_schro   = ttk.Entry(content,                     width=5)
 
-        # - REMOTE JACK SECTION
-        lbl_rjack        = ttk.Label(content, text='MANAGE JACK\nLOUDSPEAKER:',
-                                              font=(None, 0, 'bold') )
-        lbl_rjaddr       = ttk.Label(content, text='addr')
-        self.ent_rjaddr  = ttk.Entry(content,                     width=15)
-        lbl_rjuser       = ttk.Label(content, text='user')
-        self.ent_rjuser  = ttk.Entry(content,                     width=15)
-        self.ent_rjuser.insert(0, 'paudio')
-        lbl_rjpass       = ttk.Label(content, text='passwd')
-        self.ent_rjpass  = ttk.Entry(content, show='*',           width=15)
-
-        # - RUN AREA
-        lbl_run          = ttk.Label(content, text='RUN:',
-                                              font=(None, 0, 'bold') )
-        lbl_folder       = ttk.Label(content, text='output folder: ~/')
+        # - RUN SECTION
+        btn_selfol       = ttk.Button(content, text='results folder:',
+                                               command=self.selectfolder)
         self.ent_folder  = ttk.Entry(content,                     width=18)
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
@@ -173,33 +181,32 @@ class RoommeasureGUI(Tk):
         lbl_sweep.grid(         row=2,  column=4, sticky=E )
         self.cmb_sweep.grid(    row=2,  column=5, sticky=W )
 
+        # manage jack
+        lbl_rjack.grid(         row=3,  column=0, sticky=W, columnspan=2, pady=5 )
+        lbl_rjaddr.grid(        row=4,  column=0, sticky=E )
+        self.ent_rjaddr.grid(   row=4,  column=1, sticky=W )
+        lbl_rjuser.grid(        row=4,  column=2, sticky=E )
+        self.ent_rjuser.grid(   row=4,  column=3, sticky=W )
+        lbl_rjpass.grid(        row=4,  column=4, sticky=E )
+        self.ent_rjpass.grid(   row=4,  column=5, sticky=W )
+
         # measure
-        lbl_meas.grid(          row=3,  column=0, sticky=W, pady=10 )
-        lbl_ch.grid(            row=4,  column=0, sticky=E )
-        self.cmb_ch.grid(       row=4,  column=1, sticky=W )
-        lbl_locat.grid(         row=4,  column=2, sticky=E )
-        self.cmb_locat.grid(    row=4,  column=3, sticky=W )
+        lbl_meas.grid(          row=5,  column=0, sticky=W, pady=10 )
+        lbl_ch.grid(            row=6,  column=0, sticky=E )
+        self.cmb_ch.grid(       row=6,  column=1, sticky=W )
+        lbl_locat.grid(         row=6,  column=2, sticky=E )
+        self.cmb_locat.grid(    row=6,  column=3, sticky=W )
 
         # plot
-        lbl_plot.grid(          row=3,  column=4, sticky=W )
-        lbl_schro.grid(         row=4,  column=4, sticky=E )
-        self.ent_schro.grid(    row=4,  column=5, sticky=W )
-
-        # manage jack
-        lbl_rjack.grid(         row=5,  column=0, sticky=W, pady=10 )
-        lbl_rjaddr.grid(        row=6,  column=0, sticky=E )
-        self.ent_rjaddr.grid(   row=6,  column=1, sticky=W )
-        lbl_rjuser.grid(        row=6,  column=2, sticky=E )
-        self.ent_rjuser.grid(   row=6,  column=3, sticky=W )
-        lbl_rjpass.grid(        row=6,  column=4, sticky=E )
-        self.ent_rjpass.grid(   row=6,  column=5, sticky=W )
+        lbl_plot.grid(          row=5,  column=4, sticky=W )
+        lbl_schro.grid(         row=6,  column=4, sticky=E )
+        self.ent_schro.grid(    row=6,  column=5, sticky=W )
 
         # run
-        lbl_run.grid(           row=7,  column=0, sticky=W, pady=10 )
-        lbl_timer.grid(         row=8,  column=0, sticky=E, pady=5 )
+        lbl_timer.grid(         row=8,  column=0, sticky=E, pady=10)
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
-        self.chk_beep.grid(     row=8,  column=2 )
-        lbl_folder.grid(        row=8,  column=4, sticky=E )
+        self.chk_beep.grid(     row=8,  column=3, sticky=W )
+        btn_selfol.grid(        row=8,  column=4, sticky=E )
         self.ent_folder.grid(   row=8,  column=5, sticky=W )
         self.btn_help.grid(     row=9,  column=4, sticky=W, pady=10 )
         self.btn_go.grid(       row=9,  column=5, sticky=E )
@@ -246,6 +253,15 @@ class RoommeasureGUI(Tk):
             sleep(timeout)
             if clear:
                 self.var_msg.set('')
+
+
+    def selectfolder(self):
+        tmp = filedialog.askdirectory(initialdir=f'{UHOME}')
+        if tmp:
+            rm.folder = tmp
+            # updates the GUI
+            self.ent_folder.delete(0, END)
+            self.ent_folder.insert(0, rm.folder.replace(UHOME, '')[1:])
 
 
     def enable_Go(self):
@@ -372,7 +388,7 @@ class RoommeasureGUI(Tk):
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            self.do_show_image_at( imagePath=f'{folder}/system_response.png',
+            self.do_show_image_at( imagePath=f'{folder}/sweep_response.png',
                                     resize=False )
 
 
@@ -579,10 +595,14 @@ class RoommeasureGUI(Tk):
             # - output folder
             if folder:
                 rm.folder   = f'{UHOME}/{folder}'
-            rm.prepare_frd_folder()
-            #   updates the GUI w/ the real folder because subindex could be added
-            self.ent_folder.delete(0, END)
-            self.ent_folder.insert(0, rm.folder.replace(UHOME, '')[1:])
+            if os.path.exists(rm.folder):
+                if glob.glob(f'{rm.folder}/*.frd'):
+                    ans = messagebox.askyesno(
+                        message='Are you sure to overwrite *.frd files?',
+                        icon='question',
+                        title=f'Output folder: {rm.folder}')
+                    if not ans:
+                        return False
 
             # - beeps:
             rm.beepL        = rm.tools.make_beep(f=880, fs=rm.LS.fs)
@@ -759,7 +779,7 @@ class RoommeasureGUI(Tk):
             if os.path.isfile(frd_path):
                 frd_paths += f' "{frd_path}"'
             else:
-                self.var_msg.set(f'freq. response file  \'{ch}_avg.frd\'  not found')
+                self.var_msg.set(f'\'{ch}\' channel avg freq. response file NOT found')
                 return
 
         cmdline = f'{rEQ_path} {frd_paths.strip()} {args}'
