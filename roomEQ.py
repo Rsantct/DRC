@@ -70,6 +70,13 @@
     Usually the default 5 oct left side window span (low freq) works fine.
 
 
+    ABOUT SCHROEDER FREQ.
+
+    The Schroeder frequency determines the range beyond which the modal room
+    behavior is no longer considered, so the target EQ curve will be progressively
+    smoothed out to rule out fine EQ beyond the Schroeder frequency.
+
+
     NOTE:
 
     This tool depends on github.com/AudioHumLab/audiotools
