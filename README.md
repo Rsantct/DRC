@@ -121,33 +121,23 @@ Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/DRC_in_action.png" width="480">
 
 
-## Using the measurement software
+## Using DRC
 
 You can use a Linux or Mac OS laptop, equipped with a suitables sound card and measurement mic.
 
+Just run the DRC Graphic User Interface from a terminal:
 
-### Dependencies
-
-You'll need the following standard libraries (Linux Debian flavor install commands are shown below).
-
-#### Python3
-
-    sudo apt install python3-numpy python3-matplotlib python3-scipy
-
-Maybe you'll need to update the compilation tools and PIP (the Python packages manager):
-
-    sudo apt install python3-pip
-    sudo apt install build-essential libssl-dev libffi-dev python-dev
-    sudo pip3 install --upgrade pip
-    sudo pip3 install --upgrade setuptools
-    sudo pip3 install sounddevice
+    ~/DRC/DRC_GUI.py &
 
 
-#### AudioHumLab/audiotools
+Note that you need to install Python3 and some of its standard modules, see:
 
-You'll need to install our audio tools from **[AudioHumLab/audiotools](https://github.com/AudioHumLab/audiotools)**
+- [MacOS.md](https://github.com/Rsantct/DRC/blob/master/MacOS.md)
 
-## Install 
+- [Linux.md](https://github.com/Rsantct/DRC/blob/master/Linux.md)
+
+
+## Installing DRC
 
 This software is intended to be installed under the user's home folder. Please run the following commands:
 
@@ -155,8 +145,12 @@ This software is intended to be installed under the user's home folder. Please r
     curl -LO https://raw.githubusercontent.com/Rsantct/DRC/master/update-DRC.sh
     sh update-DRC.sh master
 
-## Updating
 
-    sh ~/DRC/update-DRC.sh
+## Updating DRC
+
+    sh DRC/update-DRC.sh master
+
+    sh audiotools/update-audiotools.sh master
+
 
 
