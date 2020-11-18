@@ -121,9 +121,18 @@ Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/DRC_in_action.png" width="480">
 
 
+## Installing DRC
+
+This software is intended to be installed under the user's home folder. Please run the following commands:
+
+    cd ~
+    curl -LO https://raw.githubusercontent.com/Rsantct/DRC/master/update-DRC.sh
+    sh update-DRC.sh master
+
+
 ## Using DRC
 
-You can use a Linux or Mac OS laptop, equipped with a suitables sound card and measurement mic.
+You can use a **Linux** or **Mac OS** laptop, equipped with a suitable sound card and measurement mic.
 
 Just run the DRC Graphic User Interface from a terminal:
 
@@ -135,15 +144,6 @@ Note that you need to install Python3 and some of its standard modules, see:
 - [MacOS.md](https://github.com/Rsantct/DRC/blob/master/MacOS.md)
 
 - [Linux.md](https://github.com/Rsantct/DRC/blob/master/Linux.md)
-
-
-## Installing DRC
-
-This software is intended to be installed under the user's home folder. Please run the following commands:
-
-    cd ~
-    curl -LO https://raw.githubusercontent.com/Rsantct/DRC/master/update-DRC.sh
-    sh update-DRC.sh master
 
 
 ## Updating DRC
