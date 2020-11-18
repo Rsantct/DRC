@@ -27,11 +27,20 @@ Exiting from the python interpreter:
 
 ### Standard Python modules:
 
+- pip: the standard Python packages manager.
+- numpy, scipy, matplotlib: scientific modules.
+- sounddevice: universal sound interfacing based on PortAudio.
+- pyaml: an standard parser.
+
+Open a terminal an run:
+
     sudo pip3 install --upgrade pip
     sudo pip3 install --upgrade setuptools
     sudo pip3 install numpy matplotlib scipy sounddevice pyaml
 
 ### AudioHumLab/audiotools
+
+Open a terminal an run:
 
     curl -O  https://raw.githubusercontent.com/Rsantct/audiotools/master/update-audiotools.sh
     sh update-audiotools.sh master

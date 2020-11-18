@@ -49,7 +49,7 @@ A multipoint measurement:
 
 The script **`roomEQ.py`** is in charge to calculate the FIR filter for DRC EQ, from a given `.frd` freq response file, as the one provided from **`roommeasure.py`**, or other software e.g : ARTA or Room EQ Wizard.
 
-**`roomEQ.py`** allows to generate FIR with variable length (resolution) and/or sampling frequency.
+**`roomEQ.py`** allows to generate a FIR with selectable resolution (length) and sampling frequency.
 
 The **reference level** on which it is applied the EQ is automatically detected, but you can manually choose it after visualizing the proposed curves.
 
@@ -105,6 +105,14 @@ The **reference level** on which it is applied the EQ is automatically detected,
     you may want to extend the right side of wH by setting wHoct > 5.
 
     Usually the default 5 oct left side window span (low freq) works fine.
+
+
+    ABOUT SCHROEDER FREQ.:
+
+    The Schroeder frequency determines the range beyond which the modal room
+    behavior is no longer considered, so the target EQ curve will be progressively
+    smoothed out to rule out fine EQ beyond the Schroeder frequency.
+
 
 ```
 

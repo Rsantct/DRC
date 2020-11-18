@@ -108,12 +108,12 @@
     So you won't need to rewire your cable from L to R and so on ;-)
 
     (i) Default remote sound card analog port:  'system:capture_1'
-        Default remotr loudspeaker jack ports:  'brutefir:L.in', 'brutefir:R.in'
+        Default remote loudspeaker jack ports:  'brutefir:L.in', 'brutefir:R.in'
 
         You can modify them by editing remote_jack.yml
 
     (!) Be aware that you'll need a good network link to manage the remote system,
-        otherwise you may experience delayed remote behavior.
+        otherwise you may experience delayed remote behavior on switching jack ports.
 
 
     WIRING:
@@ -126,7 +126,7 @@
 
       out R --->---
                    |        Optional reference loop for logsweep2TF.py
-      in  R ---<---         time clearance checkup.
+      in  R ---<---         time clearance (test sweep).
 
 """
 
