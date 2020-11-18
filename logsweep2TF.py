@@ -37,7 +37,7 @@
 
       out R --->---
                    |        Optional reference loop for
-      in  R ---<---         Time Clearance checkup.
+      in  R ---<---         time clearance checkup.
 
 
     Usage:      python3 logsweep2TF.py  [options ... ...]
@@ -381,8 +381,8 @@ def plot_system_response(png_folder=f'{UHOME}'):
     axFRE.legend()
 
     plt.tight_layout()
-    plt.savefig(f'{png_folder}/system_response.png')
-    print( "--- Plotting system response graphs..." )
+    plt.savefig(f'{png_folder}/sweep_response.png')
+    print( "--- Plotting sweep system response graphs..." )
 
 
 def plot_aux_graphs(png_folder=f'{UHOME}'):
