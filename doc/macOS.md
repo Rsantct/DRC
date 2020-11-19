@@ -59,13 +59,13 @@ Please follow the below steps:
 
 - Configure Apple's 'Python Launcher'
 
-    Finder > Applications > Python 3.x > Python Launcher
+    - Finder > Applications > Python 3.x > Python Launcher
     
-        Settings for file type:  Python Script
+        - Settings for file type:  Python Script
 
-        Interpreter: /usr/local/bin/python3
+        - Interpreter: /usr/local/bin/python3
             
-        [x] Run in a Terminal window
+        - [x] Run in a Terminal window
 
 
 
