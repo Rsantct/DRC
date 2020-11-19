@@ -150,7 +150,7 @@ Just run the DRC Graphic User Interface from a terminal:
 
 Note that you need to install Python3 and some of its standard modules, see:
 
-- [MacOS.md](https://github.com/Rsantct/DRC/blob/master/MacOS.md)
+- [macOS.md](https://github.com/Rsantct/DRC/blob/master/macOS.md)
 
 - [Linux.md](https://github.com/Rsantct/DRC/blob/master/Linux.md)
 
