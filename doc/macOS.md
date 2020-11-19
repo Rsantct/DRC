@@ -68,6 +68,7 @@ Please follow the below steps:
         [x] Run in a Terminal window
 
 
+
 - Configure **DRC_GUI.py** to be open whit Apple's 'Python Launcher':
 
     - In Finder, go to your DRC folder, right click on the DRC_GUI.py file, then choose 'Get information' (CMD + I)
@@ -75,12 +76,14 @@ Please follow the below steps:
         --> Open with: 'Python Launcher'
 
 
+
 - Make the desktop shortcut, by open a terminal and running:
 
+    ```
     osascript -e 'tell application "Finder" to make alias file to POSIX file "'$HOME'/DRC/DRC_GUI.py" at POSIX file "'$HOME'/Desktop"'
 
     mv $HOME/Desktop/DRC_GUI.py $HOME/Desktop/DRC_GUI
-
+    ```
 
 
 
