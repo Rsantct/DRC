@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """ This is a Tkinter based GUI to running AudioHumLab/DRC scripts
 """
-from subprocess import Popen
-from time import sleep
-import glob
-import os
-UHOME = os.path.expanduser("~")
-
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, font
-
 # https://tkdocs.com/tutorial/fonts.html#images
 from PIL import ImageTk, Image
 
+from subprocess import Popen
 import threading
+from time import sleep
+import glob
+import os
+import sys
+
+UHOME = os.path.expanduser("~")
+sys.path.append(f'{UHOME}/DRC')
 
 import roommeasure as rm
 
