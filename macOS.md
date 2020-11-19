@@ -32,7 +32,7 @@ Exiting from the python interpreter:
 - sounddevice: universal sound interfacing based on PortAudio.
 - pyaml: an standard parser.
 
-Open a terminal an run:
+Open a terminal and run:
 
     sudo pip3 install --upgrade pip
     sudo pip3 install --upgrade setuptools
@@ -40,7 +40,7 @@ Open a terminal an run:
 
 ### AudioHumLab/audiotools
 
-Open a terminal an run:
+Open a terminal and run:
 
     curl -O  https://raw.githubusercontent.com/Rsantct/audiotools/master/update-audiotools.sh
     sh update-audiotools.sh master
@@ -48,3 +48,13 @@ Open a terminal an run:
         (i) Will download from: [ https://github.com/AudioHumLab ]
             Is this OK? [y/N]  Y
              
+### Optional desktop shortcut
+
+After installig DRC on your Mac as described in then main **README.md**, you can have a desktop shortcut for the DRC_GUI app.
+
+Open a terminal and run:
+
+    osascript -e 'tell application "Finder" to make alias file to POSIX file "'$HOME'/DRC/DRC_GUI.py" at POSIX file "'$HOME'/Desktop"'
+    mv $HOME/Desktop/DRC_GUI.py $HOME/Desktop/DRC_GUI
+
+
