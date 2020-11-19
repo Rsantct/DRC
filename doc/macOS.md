@@ -54,25 +54,34 @@ Open a terminal and run:
 
 After installig DRC on your Mac as described in then main **README.md**, you can have a desktop shortcut for the DRC_GUI app.
 
-1. Open a terminal and run:
+Please follow the below steps:
+
+
+- Configure Apple's 'Python Launcher'
+
+    Finder > Applications > Python 3.x > Python Launcher
+    
+        Settings for file type:  Python Script
+
+        Interpreter: /usr/local/bin/python3
+            
+        [x] Run in a Terminal window
+
+
+- Configure **DRC_GUI.py** to be open whit Apple's 'Python Launcher':
+
+    - In Finder, go to your DRC folder, right click on the DRC_GUI.py file, then choose 'Get information' (CMD + I)
+
+        --> Open with: 'Python Launcher'
+
+
+- Make the desktop shortcut, by open a terminal and running:
 
     osascript -e 'tell application "Finder" to make alias file to POSIX file "'$HOME'/DRC/DRC_GUI.py" at POSIX file "'$HOME'/Desktop"'
 
     mv $HOME/Desktop/DRC_GUI.py $HOME/Desktop/DRC_GUI
 
-2. Configure DRC_GUI.py to be open whit Apple's 'Python Launcher':
 
-In Finder, go to your DRC folder
-
-Right click on the DRC_GUI.py file, then choose 'Get information'
-
-    Open with: 'Python Launcher'
-        
-3. Configure Apple's 'Python Launcher'
-
-    Interpreter: /usr/local/bin/python3
-            
-    [x] Run in a Terminal window
 
 
 
