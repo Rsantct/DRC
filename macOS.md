@@ -30,7 +30,7 @@ Exiting from the python interpreter:
 - pip: the standard Python packages manager.
 - numpy, scipy, matplotlib: scientific modules.
 - sounddevice: universal sound interfacing based on PortAudio.
-- pyaml: an standard parser.
+- pyaml: a standard parser.
 
 Open a terminal and run:
 
