@@ -263,7 +263,7 @@ class RoommeasureGUI(Tk):
             # updates the GUI
             self.ent_folder.delete(0, END)
             self.ent_folder.insert(0, rm.folder.replace(UHOME, '')[1:])
-
+            self.var_msg.set('')
 
     def enable_Go(self):
         if self.var_validate.get():
@@ -426,6 +426,7 @@ class RoommeasureGUI(Tk):
         job_test = threading.Thread( target = do_test,
                                      daemon = True )
         job_test.start()
+
 
     # Help for measure
     def help_meas(self):
@@ -596,14 +597,21 @@ class RoommeasureGUI(Tk):
             # - output folder
             if folder:
                 rm.folder   = f'{UHOME}/{folder}'
-            if os.path.exists(rm.folder):
-                if glob.glob(f'{rm.folder}/*.frd'):
-                    ans = messagebox.askyesno(
-                        message='Are you sure to overwrite *.frd files?',
-                        icon='question',
-                        title=f'Output folder: {rm.folder}')
-                    if not ans:
-                        return False
+                # - alerting on existing .frd files under <folder>
+                if os.path.exists(rm.folder):
+                    if glob.glob(f'{rm.folder}/*.frd'):
+                        ans = messagebox.askyesno(
+                            message='Are you sure to overwrite *.frd files?',
+                            icon='question',
+                            title=f'Output folder: {rm.folder}')
+                        if not ans:
+                            return False
+                else:
+                    rm.prepare_frd_folder()
+            else:
+                self.var_msg.set('Please set  [ results folder: ]')
+                return False
+
 
             # - beeps:
             rm.beepL        = rm.tools.make_beep(f=880, fs=rm.LS.fs)
