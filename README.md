@@ -128,7 +128,7 @@ The obtained FIR filter is given in two formats:
 - a raw PCM impulse 32 bit float file per channel
 - a stereo WAV 32 bit float file
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/file_manager.png" width="800">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/file_manager.png" width="400">
 
 
 The impulses must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
