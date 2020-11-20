@@ -724,8 +724,8 @@ class RoommeasureGUI(Tk):
         fs      = self.cmb_drcfs.get()
 
         # taps
-        tmp    = self.cmb_drctaps.get()
-        taps_exp = int( rm.np.log2( int(tmp) ) )
+        taps     = int(self.cmb_drctaps.get())
+        taps_exp = int( rm.np.log2(taps) )
 
         # ref level
         if self.ent_reflev.get() == 'auto':
@@ -760,7 +760,7 @@ class RoommeasureGUI(Tk):
         channels = [c for c in tmp]
 
         # roomEQ command line args
-        args = f'-fs={fs} -e={taps_exp} -schro={schro} -doFIR'
+        args = f'-fs={fs} -e={taps_exp} -schro={schro} -doPCM -doWAV'
         args += f' -wLoct={self.var_wLowSpan.get()}'
         args += f' -wLfc={self.var_wLowFc.get()}'
         args += f' -wHfc={self.var_wHighFc.get()}'
@@ -787,8 +787,10 @@ class RoommeasureGUI(Tk):
 
         # display temporary messages
         msgs = (f'running roomEQ ...',
-                f'DRC FIR saved under ~/{self.ent_folder.get()}'
-                f'/{self.cmb_drcfs.get()}' )
+                f'impulse files saved: {self.ent_folder.get().split("/")[-1]}'
+                f'/{self.cmb_drcfs.get()}'
+                f'_{int(taps/1024)}Ktaps'
+                )
 
         job_tmp_msgs = threading.Thread( target=self.tmp_msgs,
                                         args=(msgs, 5),
