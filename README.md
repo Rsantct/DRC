@@ -125,8 +125,8 @@ Example of a very strong room mode in the listening area:
 
 The obtained FIR filter is given in two formats: 
 
-- raw PCM impulse files
-- stereo WAV 32 bit float
+- a raw PCM impulse 32 bit float file per channel
+- a stereo WAV 32 bit float file
 
 The impulses must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
 
