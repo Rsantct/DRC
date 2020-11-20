@@ -36,9 +36,16 @@
 
             -schro=     Schroeder freq. (default 200 Hz)
 
-            -doFIR      Generates the pcm FIR after estimating the final EQ.
+            -doPCM      Generates a .pcm FIR impulse file
 
-                ~~~ Gaussian windows to progressively limit positive EQ: ~~~
+            -doWAV      Generates a .wav FIR impulse file
+
+            -WAVbits=   Bit depth for .wav file: 16 (int) or 32 (float)
+                        (default 32 bit floating point pcm)
+
+
+                Gaussian windows to progressively limit positive EQ:
+
 
             -wLfc=      Low window center freq (default: midband centered at 1000 Hz)
 
@@ -107,16 +114,16 @@ from smoothSpectrum import smoothSpectrum as smooth
 
 ### roomEQ.py DEFAULTS:
 
-# Just calculates EQ, do not generates FIR
-doFIR  = False
-
 # For developers, aux plots about managing curves
 dev = False
 
 # Output:
-m       = 2**15     # FIR length
-fs      = 48000     # FIR fs
+m        = 2**15     # FIR length
+fs       = 48000     # FIR fs
 viewFIRs = False
+doPCM    = False
+doWAV    = False
+WAVbits  = 32
 
 # Reference level:
 ref_level = None
@@ -360,21 +367,15 @@ def main(FRDname, ax, ref_level=None):
     ############################################################################
     # 5. Saving FIR to .pcm
     ############################################################################
-    if doFIR:
-
-        # Separates the output FIR in a meaningful folder (fs and taps length)
-        fir_folder = f'{FRDdirname}/{str(fs)}_{tools.Ktaps(m).replace(" ","")}'
-        os.system(f'mkdir -p {fir_folder}')
-
-        EQpcmname = f'{fir_folder}/drc.{ch}.pcm'
-
-        # Saving FIR file:
-        print( f'(i) Saving roomEQ FIR:' )
-        print( f'    {EQpcmname}' )
+    if doPCM:
+        EQpcmname = f'{out_folder}/drc.{ch}.pcm'
         tools.savePCM32(imp, EQpcmname)
+        print( f'(i) Saving PCM: {EQpcmname}' )
 
     else:
-        print( '(i) Skiping FIR saving' )
+        print( '(i) Skiping PCM saving' )
+
+    return imp
 
 
 if __name__ == '__main__':
@@ -450,8 +451,14 @@ if __name__ == '__main__':
         elif '-v' in opc:
             viewFIRs = True
 
-        elif '-dofir' in opc.lower():
-            doFIR = True
+        elif '-dopcm' in opc.lower():
+            doPCM = True
+
+        elif '-dowav' in opc.lower():
+            doWAV = True
+
+        elif '-wavbits' in opc.lower():
+            WAVbits = int(opc.split('=')[-1])
 
         elif '-dev' in opc:
             dev = True
@@ -465,7 +472,6 @@ if __name__ == '__main__':
         sys.exit()
 
 
-
     # prepare pyplot
     plt.rcParams.update({'font.size': 8})
 
@@ -474,18 +480,37 @@ if __name__ == '__main__':
     fig, axs = plt.subplots( nrows=nrows, ncols=1,
                              figsize=(9, 4.5 * nrows) ) # in inches, wide aspect
 
+
+    # Prepare output folder with a meaningful name with fs and taps length
+    if doPCM or doWAV:
+        FRDs_dirname = os.path.dirname( FRDnames[0] )
+        if not FRDs_dirname:
+            FRDs_dirname = os.getcwd()
+        out_folder = f'{FRDs_dirname}/{str(fs)}_{tools.Ktaps(m).replace(" ","")}'
+        os.system(f'mkdir -p {out_folder}')
+
     # Processing FRDs
     # (if only one, plt.subplots will not return an array of axes)
+    IRs = []
     if len(FRDnames) == 1:
-        main(FRDnames[0], axs, ref_level)
+        IRs.append( main(FRDnames[0], axs, ref_level) )
 
     elif len(FRDnames) > 1:
         for i, FRDname in enumerate(FRDnames):
-            main(FRDname, axs[i], ref_level)
+            IRs.append( main(FRDname, axs[i], ref_level) )
 
     else:
         print(__doc__)
         sys.exit()
+
+    # Optional WAV file
+    if doWAV and IRs:
+        wavfname = f'{out_folder}/drc.wav'
+        wavdata  = np.vstack( IRs ).transpose()
+        tools.saveWAV( fname=wavfname, rate=fs, data=wavdata, bits=WAVbits )
+        print(f'(i) saving WAV: {wavfname}')
+    elif not IRs:
+        print('(!) something was wrong no impulses found to save WAV :-/')
 
     # Tightening plot layout
     plt.tight_layout()

@@ -12,6 +12,7 @@ from time import sleep
 import glob
 import os
 import sys
+import platform
 
 UHOME = os.path.expanduser("~")
 sys.path.append(f'{UHOME}/DRC')
@@ -38,11 +39,13 @@ class RoommeasureGUI(Tk):
         f = font.nametofont('TkTextFont')
         self.curr_font_size = f.actual()['size']
 
-        # A patch to get background colors for children windows working in Mac OS
+        # A patch to set background colors for children windows working in Mac OS
         # https://stackoverflow.com/questions/1529847/how-to-change-the-foreground-or-background-colour-of-a-tkinter-button-on-mac-os
         self.bgcolor = self['background']
         ttk.Style().configure('bgPatch.TFrame',  background=self.bgcolor)
         ttk.Style().configure('bgPatch.TButton', background=self.bgcolor)
+        # bold button
+        ttk.Style().configure('bbPatch.TButton', font=(None, 0, 'bold'))
 
         #  Main window location
         self.screenW = self.winfo_screenwidth()
@@ -115,7 +118,7 @@ class RoommeasureGUI(Tk):
         lbl_meas         = ttk.Label(content, text='MEASURE:',
                                               font=(None, 0, 'bold') )
         lbl_ch           = ttk.Label(content, text='channels')
-        self.cmb_ch      = ttk.Combobox(content, values=channels, width=4)
+        self.cmb_ch      = ttk.Combobox(content, values=channels, width=6)
         lbl_locat        = ttk.Label(content, text='mic locations')
         self.cmb_locat    = ttk.Combobox(content, values=takes,    width=4)
         lbl_sweep        = ttk.Label(content, text='sweep length')
@@ -130,8 +133,9 @@ class RoommeasureGUI(Tk):
         self.ent_schro   = ttk.Entry(content,                     width=5)
 
         # - RUN SECTION
-        btn_selfol       = ttk.Button(content, text='results folder:',
-                                               command=self.selectfolder)
+        btn_selfol       = ttk.Button(content, text='RESULTS FOLDER:',
+                                               command=self.selectfolder,
+                                               style='bbPatch.TButton' )
         self.ent_folder  = ttk.Entry(content,                     width=18)
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
@@ -152,7 +156,7 @@ class RoommeasureGUI(Tk):
         lbl_drc          = ttk.Label(content, text='DRC-EQ FILTER:',
                                               font=(None, 0, 'bold') )
         lbl_reflev       = ttk.Label(content, text='ref. level (dB)')
-        self.ent_reflev  = ttk.Entry(content,                 width=7)
+        self.ent_reflev  = ttk.Entry(content,                 width=6)
         lbl_drcsch       = ttk.Label(content, text='Schroeder for smoothing transition')
         self.ent_drcsch  = ttk.Entry(content,                     width=5)
         lbl_poseq        = ttk.Label(content, text='allow positive limited EQ:')
@@ -160,9 +164,11 @@ class RoommeasureGUI(Tk):
         self.btn_eqhlp   = ttk.Button(content, text='help', command=self.help_eq)
         btn_eqlim        = ttk.Button(content, text='EQ limits', command=self.eq_limits)
         lbl_drcfs        = ttk.Label(content, text='FIR sample rate')
-        self.cmb_drcfs   = ttk.Combobox(content, values=srates, width=8)
+        self.cmb_drcfs   = ttk.Combobox(content, values=srates, width=6)
         lbl_drctaps      = ttk.Label(content, text='FIR taps')
         self.cmb_drctaps = ttk.Combobox(content, values=taps, width=7)
+        lbl_wavbits      = ttk.Label(content, text='wav bit depth')
+        self.cmb_wavbits = ttk.Combobox(content, values=(16,32), width=6)
         self.btn_drc     = ttk.Button(content, text='calculate', command=self.drc)
 
 
@@ -207,8 +213,8 @@ class RoommeasureGUI(Tk):
         lbl_timer.grid(         row=8,  column=0, sticky=E, pady=10)
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
         self.chk_beep.grid(     row=8,  column=3, sticky=W )
-        btn_selfol.grid(        row=8,  column=4, sticky=E )
-        self.ent_folder.grid(   row=8,  column=5, sticky=W )
+        btn_selfol.grid(        row=9,  column=0, sticky=E )
+        self.ent_folder.grid(   row=9,  column=1, sticky=W )
         self.btn_help.grid(     row=9,  column=4, sticky=W, pady=10 )
         self.btn_go.grid(       row=9,  column=5, sticky=E )
         self.btn_close.grid(    row=10, column=5, sticky=E, pady=10 )
@@ -231,9 +237,10 @@ class RoommeasureGUI(Tk):
         self.cmb_drcfs.grid(    row=14, column=1, sticky=W )
         lbl_drctaps.grid(       row=14, column=2, sticky=E )
         self.cmb_drctaps.grid(  row=14, column=3, sticky=W )
-        self.btn_eqhlp.grid(    row=14, column=4, sticky=W )
-        self.btn_drc.grid(      row=14, column=5, sticky=E )
-
+        lbl_wavbits.grid(       row=15, column=0, sticky=E )
+        self.cmb_wavbits.grid(  row=15, column=1, sticky=W )
+        self.btn_eqhlp.grid(    row=15, column=4, sticky=W )
+        self.btn_drc.grid(      row=15, column=5, sticky=E )
 
 
         ### GRID RESIZING BEHAVIOR
@@ -244,6 +251,13 @@ class RoommeasureGUI(Tk):
             content.rowconfigure(   i, weight=1)
         for i in range(ncolumns):
             content.columnconfigure(i, weight=1)
+
+
+    def open_files_manager(self, path):
+        if platform.system() == "Darwin":
+            Popen(["open", path])
+        else:
+            Popen(["xdg-open", path])
 
 
     def tmp_msgs(self, msgs, timeout=5, clear=False):
@@ -263,6 +277,7 @@ class RoommeasureGUI(Tk):
             # updates the GUI
             self.ent_folder.delete(0, END)
             self.ent_folder.insert(0, rm.folder.replace(UHOME, '')[1:])
+            self.var_msg.set('')
 
 
     def enable_Go(self):
@@ -355,7 +370,7 @@ class RoommeasureGUI(Tk):
 
     def test_logsweep(self):
 
-        def do_test():
+        def do_test(png_folder):
 
             self.var_msg.set('TESTING SWEEP RECORDING ... (please wait)')
             self.btn_go['state'] = 'disabled'
@@ -381,15 +396,12 @@ class RoommeasureGUI(Tk):
                 self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
 
             # Plotting test signals to png
-            folder = self.ent_folder.get()
-            if not os.path.exists(folder):
-                os.makedirs(folder)
-            rm.LS.plot_system_response( png_folder=folder )
+            rm.LS.plot_system_response( png_folder=png_folder )
             rm.LS.plt.close('all')
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            self.do_show_image_at( imagePath=f'{folder}/sweep_response.png',
+            self.do_show_image_at( imagePath=f'{png_folder}/sweep_response.png',
                                     resize=False )
 
 
@@ -418,14 +430,28 @@ class RoommeasureGUI(Tk):
             return True
 
 
+        # Prepare results png folder
+        folder = self.ent_folder.get()
+
+        if not folder:
+            self.var_msg.set('Please set  [ RESULTS FOLDER: ]')
+            return
+
+        folder = f'{UHOME}/{folder}'
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        # Configure LS
         if not configure_LS():
             return
 
-        # THREADING THE TEST PROCRESS
+        # Do test
         # (i) threading avoids blocking the Tk event-listen mainloop
         job_test = threading.Thread( target = do_test,
+                                     args   = (folder,),
                                      daemon = True )
         job_test.start()
+
 
     # Help for measure
     def help_meas(self):
@@ -450,7 +476,7 @@ class RoommeasureGUI(Tk):
         whlp.geometry('+350+100')
         whlp.bind('<Destroy>', normalize_items)
 
-        fhlp = ttk.Frame( whlp, style='bgPath.TFrame' )
+        fhlp = ttk.Frame( whlp, style='bgPatch.TFrame' )
         fhlp.grid(row=0, column=0)
 
         txt_help = Text( fhlp, width=100, height=40, wrap=None, bg=bgcolortxt)
@@ -462,7 +488,7 @@ class RoommeasureGUI(Tk):
         txt_help['xscrollcommand'] = xscroll.set
 
         btn_ok   = ttk.Button(fhlp, text='OK', command=arakiri,
-                                               style='bgPath.TButton' )
+                                               style='bgPatch.TButton' )
 
         txt_help    .grid(   row=0, column=0, pady=5 )
         btn_ok      .grid(   row=1, column=0, pady=5 )
@@ -527,6 +553,9 @@ class RoommeasureGUI(Tk):
 
         # Showing the rm.LS saved graphs, arranged on the screen
         self.do_show_rm_LS_graphs(joined=True)
+
+        # Open desktop file manager
+        self.open_files_manager(f'{UHOME}/{self.ent_folder.get()}')
 
         # Re enabling the GO! & CLOSE button
         self.btn_go['state'] = 'normal'
@@ -596,14 +625,21 @@ class RoommeasureGUI(Tk):
             # - output folder
             if folder:
                 rm.folder   = f'{UHOME}/{folder}'
-            if os.path.exists(rm.folder):
-                if glob.glob(f'{rm.folder}/*.frd'):
-                    ans = messagebox.askyesno(
-                        message='Are you sure to overwrite *.frd files?',
-                        icon='question',
-                        title=f'Output folder: {rm.folder}')
-                    if not ans:
-                        return False
+                # - alerting on existing .frd files under <folder>
+                if os.path.exists(rm.folder):
+                    if glob.glob(f'{rm.folder}/*.frd'):
+                        ans = messagebox.askyesno(
+                            message='Are you sure to overwrite *.frd files?',
+                            icon='question',
+                            title=f'Output folder: {rm.folder}')
+                        if not ans:
+                            return False
+                else:
+                    rm.prepare_frd_folder()
+            else:
+                self.var_msg.set('Please set  [ RESULTS FOLDER: ]')
+                return False
+
 
             # - beeps:
             rm.beepL        = rm.tools.make_beep(f=880, fs=rm.LS.fs)
@@ -724,8 +760,8 @@ class RoommeasureGUI(Tk):
         fs      = self.cmb_drcfs.get()
 
         # taps
-        tmp    = self.cmb_drctaps.get()
-        taps_exp = int( rm.np.log2( int(tmp) ) )
+        taps     = int(self.cmb_drctaps.get())
+        taps_exp = int( rm.np.log2(taps) )
 
         # ref level
         if self.ent_reflev.get() == 'auto':
@@ -760,7 +796,8 @@ class RoommeasureGUI(Tk):
         channels = [c for c in tmp]
 
         # roomEQ command line args
-        args = f'-fs={fs} -e={taps_exp} -schro={schro} -doFIR'
+        args =  f'-fs={fs} -e={taps_exp} -schro={schro} -doPCM -doWAV'
+        args += f' -WAVbits={self.cmb_wavbits.get()}'
         args += f' -wLoct={self.var_wLowSpan.get()}'
         args += f' -wLfc={self.var_wLowFc.get()}'
         args += f' -wHfc={self.var_wHighFc.get()}'
@@ -787,8 +824,10 @@ class RoommeasureGUI(Tk):
 
         # display temporary messages
         msgs = (f'running roomEQ ...',
-                f'DRC FIR saved under ~/{self.ent_folder.get()}'
-                f'/{self.cmb_drcfs.get()}' )
+                f'impulse files saved: {self.ent_folder.get().split("/")[-1]}'
+                f'/{self.cmb_drcfs.get()}'
+                f'_{int(taps/1024)}Ktaps'
+                )
 
         job_tmp_msgs = threading.Thread( target=self.tmp_msgs,
                                         args=(msgs, 5),
@@ -798,6 +837,9 @@ class RoommeasureGUI(Tk):
         # Running roomEQ.py in a shell in backgroung ... ...
         print( f'(GUI) running: {cmdline}' )
         Popen( cmdline, shell=True)
+
+        # Open desktop file manager
+        self.open_files_manager(f'{UHOME}/{self.ent_folder.get()}')
 
 
 if __name__ == '__main__':
@@ -838,6 +880,7 @@ if __name__ == '__main__':
     app.var_wHighSpan.set(5)
     app.var_wLowFc.set(1000)    # Low window midband centered at 1000 Hz
     app.var_wHighFc.set(1000)   # idem
+    app.cmb_wavbits.set(32)
 
     # LAUNCH GUI
     app.mainloop()

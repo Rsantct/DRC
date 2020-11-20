@@ -123,7 +123,12 @@ Example of a very strong room mode in the listening area:
 
 ## FIR application
 
-The obtained FIR filter, must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
+The obtained FIR filter is given in two formats: 
+
+- a raw PCM impulse 32 bit float file per channel
+- a stereo WAV 32 bit float file
+
+The impulses must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
 
 Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or [pre.di.c](https://github.com/AudioHumLab) from the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
 
@@ -143,16 +148,18 @@ This software is intended to be installed under the user's home folder. Please r
 
 You can use a **Linux** or **Mac OS** laptop, equipped with a suitable sound card and measurement mic.
 
-Just run the DRC Graphic User Interface from a terminal:
-
-    ~/DRC/DRC_GUI.py &
-
-
 Note that you need to install Python3 and some of its standard modules, see:
 
 - [macOS.md](https://github.com/Rsantct/DRC/blob/master/doc/macOS.md)
 
 - [Linux.md](https://github.com/Rsantct/DRC/blob/master/doc/Linux.md)
+
+
+To run this software, just launch the DRC Graphic User Interface from a terminal:
+
+    ~/DRC/DRC_GUI.py &
+
+For macOS users you can prepare a desktop icon, see details in file [macOS.md](https://github.com/Rsantct/DRC/blob/master/doc/macOS.md)
 
 
 ## Updating DRC
