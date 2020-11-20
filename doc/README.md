@@ -121,9 +121,9 @@ Example of a very strong room mode in the listening area:
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/roomEQ_hard-modes.png" width="800">
 
 
-## FIR application
+## FIR application (impulse response)
 
-The obtained FIR filter is given in two formats: 
+The obtained FIR filter (impulse response) is given in two formats: 
 
 - a raw PCM impulse 32 bit float file per channel
 - a stereo WAV 32 bit float file
