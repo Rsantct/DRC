@@ -35,7 +35,7 @@ class RoommeasureGUI(Tk):
         super().__init__()  # this initiates the parent class Tk in order to
                             # make self a typical root = Tk()
 
-        # Getting default font size for relative use
+        # Getting default font size for late relative usage
         f = font.nametofont('TkTextFont')
         self.curr_font_size = f.actual()['size']
 
@@ -809,7 +809,7 @@ class RoommeasureGUI(Tk):
         if noPos:
             args += f' -noPos'
 
-        rEQ_path = f'{UHOME}/DRC/roomEQ.py'
+        rEQ_path = __file__.replace( os.path.basename(__file__), 'roomEQ.py')
 
         frd_paths = ''
         for ch in channels:
@@ -842,9 +842,17 @@ class RoommeasureGUI(Tk):
         self.open_files_manager(f'{UHOME}/{self.ent_folder.get()}')
 
 
+def macOS_launcher_patch():
+    cmd =   'osascript -e'
+    cmd +=  ' \'tell application "Terminal" to set miniaturized of'
+    cmd +=  ' every window whose name contains "DRC_GUI" to true\''
+    Popen(cmd, shell=True)
+
+
 if __name__ == '__main__':
 
     app = RoommeasureGUI()
+
 
     ### DEFAULT GUI PARAMETERS
 
@@ -881,6 +889,15 @@ if __name__ == '__main__':
     app.var_wLowFc.set(1000)    # Low window midband centered at 1000 Hz
     app.var_wHighFc.set(1000)   # idem
     app.cmb_wavbits.set(32)
+
+
+    ### A DESKTOP PATCH to minimize the terminal launcher
+    if platform.system() == 'Darwin':
+        macOS_launcher_patch()
+    elif platform.system() == 'Linux':
+        # pending
+        pass
+
 
     # LAUNCH GUI
     app.mainloop()
