@@ -176,8 +176,8 @@ class RoommeasureGUI(Tk):
         content.grid(           row=0,  column=0, sticky=(N, S, E, W) )
 
         # sound card
-        lbl_scard.grid(         row=0,  column=0, sticky=W, pady=10 )
-        btn_tsweep.grid(        row=0,  column=1, sticky=W, pady=10 )
+        lbl_scard.grid(         row=0,  column=0, sticky=W, pady=6 )
+        btn_tsweep.grid(        row=0,  column=1, sticky=W)
         self.chk_validate.grid( row=0,  column=2 )
         lbl_cap.grid(           row=1,  column=0, sticky=E )
         self.cmb_cap.grid(      row=1,  column=1)
@@ -189,7 +189,7 @@ class RoommeasureGUI(Tk):
         self.cmb_sweep.grid(    row=2,  column=5, sticky=W )
 
         # manage jack
-        lbl_rjack.grid(         row=3,  column=0, sticky=W, columnspan=2, pady=5 )
+        lbl_rjack.grid(         row=3,  column=0, sticky=W, columnspan=2, pady=6 )
         lbl_rjaddr.grid(        row=4,  column=0, sticky=E )
         self.ent_rjaddr.grid(   row=4,  column=1, sticky=W )
         lbl_rjuser.grid(        row=4,  column=2, sticky=E )
@@ -198,7 +198,7 @@ class RoommeasureGUI(Tk):
         self.ent_rjpass.grid(   row=4,  column=5, sticky=W )
 
         # measure
-        lbl_meas.grid(          row=5,  column=0, sticky=W, pady=10 )
+        lbl_meas.grid(          row=5,  column=0, sticky=W, pady=6 )
         lbl_ch.grid(            row=6,  column=0, sticky=E )
         self.cmb_ch.grid(       row=6,  column=1, sticky=W )
         lbl_locat.grid(         row=6,  column=2, sticky=E )
@@ -210,30 +210,30 @@ class RoommeasureGUI(Tk):
         self.ent_schro.grid(    row=6,  column=5, sticky=W )
 
         # run
-        lbl_timer.grid(         row=8,  column=0, sticky=E, pady=10)
+        lbl_timer.grid(         row=8,  column=0, sticky=E, pady=6)
         self.cmb_timer.grid(    row=8,  column=1, sticky=W )
         self.chk_beep.grid(     row=8,  column=3, sticky=W )
-        btn_selfol.grid(        row=9,  column=0, sticky=E )
+        btn_selfol.grid(        row=9,  column=0, sticky=E, pady=6 )
         self.ent_folder.grid(   row=9,  column=1, sticky=W )
-        self.btn_help.grid(     row=9,  column=4, sticky=W, pady=10 )
+        self.btn_help.grid(     row=9,  column=4, sticky=W )
         self.btn_go.grid(       row=9,  column=5, sticky=E )
-        self.btn_close.grid(    row=10, column=5, sticky=E, pady=10 )
+        self.btn_close.grid(    row=10, column=5, sticky=E, pady=6 )
 
         # messages window
         frm_msg.grid(           row=11, column=0, sticky=W+E, columnspan=6,
-                                                              pady=15 )
+                                                              pady=12 )
         self.lbl_msg.grid(                        sticky=W )
 
         # drc eq
-        lbl_drc.grid(           row=12, column=0, sticky=W, pady=10 )
+        lbl_drc.grid(           row=12, column=0, sticky=W, pady=6 )
         lbl_poseq.grid(         row=12, column=1, sticky=E, columnspan=2 )
         self.chk_poseq.grid(    row=12, column=3, sticky=W )
         btn_eqlim.grid(         row=12, column=3, sticky=E )
-        lbl_reflev.grid(        row=13, column=0, sticky=E, pady=10 )
+        lbl_reflev.grid(        row=13, column=0, sticky=E )
         self.ent_reflev.grid(   row=13, column=1, sticky=W )
         lbl_drcsch.grid(        row=13, column=2, sticky=E, columnspan=2 )
         self.ent_drcsch.grid(   row=13, column=4, sticky=W )
-        lbl_drcfs.grid(         row=14, column=0, sticky=E, pady=10 )
+        lbl_drcfs.grid(         row=14, column=0, sticky=E )
         self.cmb_drcfs.grid(    row=14, column=1, sticky=W )
         lbl_drctaps.grid(       row=14, column=2, sticky=E )
         self.cmb_drctaps.grid(  row=14, column=3, sticky=W )
@@ -253,7 +253,7 @@ class RoommeasureGUI(Tk):
             content.columnconfigure(i, weight=1)
 
 
-    def open_files_manager(self, path):
+    def open_file_manager(self, path):
         if platform.system() == "Darwin":
             Popen(["open", path])
         else:
@@ -555,7 +555,7 @@ class RoommeasureGUI(Tk):
         self.do_show_rm_LS_graphs(joined=True)
 
         # Open desktop file manager
-        self.open_files_manager(f'{UHOME}/{self.ent_folder.get()}')
+        self.open_file_manager(f'{UHOME}/{self.ent_folder.get()}')
 
         # Re enabling the GO! & CLOSE button
         self.btn_go['state'] = 'normal'
@@ -839,7 +839,7 @@ class RoommeasureGUI(Tk):
         Popen( cmdline, shell=True)
 
         # Open desktop file manager
-        self.open_files_manager(f'{UHOME}/{self.ent_folder.get()}')
+        self.open_file_manager(f'{UHOME}/{self.ent_folder.get()}')
 
 
 def macOS_launcher_patch():
@@ -876,7 +876,7 @@ if __name__ == '__main__':
     # - Schroeder freq for smoothing result curve:
     app.ent_schro.insert(0, '200')
     # - Output folder
-    app.ent_folder.insert(0, 'roommeas/meas')
+    #app.ent_folder.insert(0, 'roommeas')
 
     # - DRC:
     app.cmb_drcfs.set('44100')
