@@ -10,7 +10,7 @@ The main meas script is **`logsweep2TF.py`**. It is based on a public licensed M
 
 This software not only performs the freq response calculation of your sound system, it also provides a **_time clearance_** checking of the meassurement chain, depending on the total latency and the selected log-sweep lenght.
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/imagestime_clearance.png" width="480">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/time_clearance.png" width="480">
 
 Graphical information will help you also to detect inaudible gaps that can appear from your hardware stuff. The following both channels direct loop ilustrates this anomalie:
 
