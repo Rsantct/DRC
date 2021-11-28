@@ -10,11 +10,11 @@ The main meas script is **`logsweep2TF.py`**. It is based on a public licensed M
 
 This software not only performs the freq response calculation of your sound system, it also provides a **_time clearance_** checking of the meassurement chain, depending on the total latency and the selected log-sweep lenght.
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/time_clearance.png" width="480">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc//imagestime_clearance.png" width="480">
 
 Graphical information will help you also to detect inaudible gaps that can appear from your hardware stuff. The following both channels direct loop ilustrates this anomalie:
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/gaps_in_recorded.jpg" width="480">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/gaps_in_recorded.jpg" width="480">
 
 
 
@@ -32,17 +32,17 @@ When measuring a [JACK based loudspeaker system](https://github.com/AudioHumLab)
 
 ## GUI appearance:
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/roommeasure_GUI_screen_1.png" width="640">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/roommeasure_GUI_screen_1.png" width="640">
 
 
 Testing the log-sweep recording:
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/test_sweep.png" width="800">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/test_sweep.png" width="800">
 
 
 A multipoint measurement:
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/multipoint_sample.png" width="800">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/multipoint_sample.png" width="800">
 
 
 ## DRC EQ filter calculation
@@ -118,7 +118,7 @@ The **reference level** on which it is applied the EQ is automatically detected,
 
 Example of a very strong room mode in the listening area:
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/roomEQ_hard-modes.png" width="800">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/roomEQ_hard-modes.png" width="800">
 
 
 ## FIR application (impulse response)
@@ -128,14 +128,14 @@ The obtained FIR filter (impulse response) is given in two formats:
 - a raw PCM impulse 32 bit float file per channel
 - a stereo WAV 32 bit float file
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/file_manager.png" width="400">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/file_manager.png" width="400">
 
 
 The impulses must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
 
 Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or [pre.di.c](https://github.com/AudioHumLab) from the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
 
-<img src="https://github.com/Rsantct/DRC/blob/master/doc/DRC_in_action.png" width="480">
+<img src="https://github.com/Rsantct/DRC/blob/master/doc/images/DRC_in_action.png" width="480">
 
 
 ## Installing DRC
