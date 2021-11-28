@@ -1,5 +1,9 @@
 #!/bin/sh
 
+# (i) NOTICE:   When maintaining this script, do NOT edit it directly
+#               from ~/DRC because it will be modified on runtime.
+#               So edit it apart, copy to ~/DRC and test it.
+
 if [ -z $1 ] ; then
     echo "usage:"
     echo "    update-DRC.sh   master   [git_repo]"
@@ -11,11 +15,12 @@ if [ -z $1 ] ; then
 fi
 branch=$1
 
+reponame="AudioHumLab"
 if [ $2 ]; then
-    gitsite="https://github.com/""$2"
-else
-    gitsite="https://github.com/AudioHumLab"
+    reponame=$2
 fi
+gitsite="https://github.com/""$reponame"
+
 
 echo
 echo "(i) Will download from: [ ""$gitsite"" ]"
@@ -27,7 +32,7 @@ fi
 
 cd ~/
 
-# Remove previous 
+# Remove previous
 rm -f ~/$branch.zip*    1>/dev/null 2>&1
 
 # Download project from GitHUb
@@ -46,7 +51,7 @@ chmod +x ~/DRC/*.py
 chmod +x ~/DRC/*.sh
 
 # Leaving a dummy file with the installes branch name
-touch ~/DRC/THIS_BRANCH_IS_$branch
+touch ~/DRC/"$branch"_FROM_"$reponame"
 
 # Removing <branch>.zip
 cd ~/
@@ -56,3 +61,11 @@ rm ~/update-DRC.sh          1>/dev/null 2>&1
 echo
 echo installed under:  "$HOME"/DRC
 echo
+
+# Updating <branch> on GUI window title
+
+sed -i.bak -e \
+    s/self.title\(\'AudioHumLab\\/DRC\'\)/self.title\(\'$reponame\\/DRC\'\)/g  \
+    DRC/DRC_GUI.py
+
+rm DRC/DRC_GUI.py.bak
