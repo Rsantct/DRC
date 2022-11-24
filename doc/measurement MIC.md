@@ -19,6 +19,8 @@ Wiring is as indicated running `logsweep2TF.py --help`:
 
 I recently tested a 2021 Macbook Pro built-in microphone, and the recording is actually decent compared to an ECM800 for unsophisticated room measurements.
 
-You only need to face the Mac keyboard left plane towards the speaker.
+You only need to face the Mac keyboard left plane towards the loudspeaker.
 
 So I updated `logsweep2TF.py` to accept a mono input sound device, like the MBP built-in microphone.
+
+NOTE: early 2015 MBP that I have tested have a poor low end response.
