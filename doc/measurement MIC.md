@@ -2,7 +2,7 @@
 
 You need some sound card + measurement MIC in order to take in room measurements.
 
-My current setup is a cheap Behringer UM-2 USB sound card and ECM800 mic.
+My current setup is a cheap Behringer UM-2 USB sound card and ECM8000 mic.
 
 Wiring is as indicated running `logsweep2TF.py --help`:
 
