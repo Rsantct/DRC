@@ -580,26 +580,19 @@ def do_meas():
     stereo = array([sig_frac * tapsweep, sig_frac * -tapsweep]) # [ch0, ch1]
 
     # Setting sound device interface
-    rec_dev = sd.query_devices(sd.default.device[0], kind='input' )
-    pbk_dev = sd.query_devices(sd.default.device[1], kind='output')
-    rname = rec_dev['name']
-    pname = pbk_dev['name']
-    print(f'    in: {rname}, out: {pname}, fs: {fs}')
-
-    # Necessary if using a mono input device (see sounddevice.playrec API)
-    # (e.g. some laptops as Macbook Pro with HQ-integrated-mic)
-    max_in_ch = rec_dev["max_input_channels"]
+    sd.default.samplerate = fs
+    sd.default.channels = 2
+    rec_dev_name = sd.query_devices(sd.default.device[0], kind='input' )['name']
+    pbk_dev_name = sd.query_devices(sd.default.device[1], kind='output')['name']
+    print(f'    in: {rec_dev_name}, out: {pbk_dev_name}, fs: {sd.default.samplerate}')
 
     # Full duplex Play/Rec
     # (i) .transpose because the player needs an array having a channel per column.
     #     'blocking' waits to finish.
-    z = sd.playrec(stereo.transpose(), fs, max_in_ch, blocking=True)
-    dut = z[:, 0]       # we take LEFT  CHANNEL as DUT
-    if max_in_ch >= 2:
-        ref = z[:, 1]   # we take RIGHT CHANNEL as REFERENCE
-    else:
-        ref = zeros(N)  # or zeros in case of a MONO input device
-    #N = len(dut)   # This line seems to be redundant ¿?
+    z = sd.playrec(stereo.transpose(), blocking=True)
+    dut = z[:, 0]   # we use LEFT  CHANNEL as DUT
+    ref = z[:, 1]   # we use RIGHT CHANNEL as REFERENCE
+    #N = len(dut)   # This seems to be redundant ¿?
     print( 'Finished recording.' )
 
     #-------------  Checking time domain RECORDING LEVELS ----------------------
