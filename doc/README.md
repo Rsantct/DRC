@@ -47,6 +47,8 @@ A multipoint measurement:
 
 ## DRC EQ filter calculation
 
+You can obtain the DRC EQ FIR filters by **simply clicking the (calculate)** button in the GUI window, after the impulse files have been saved.
+
 The script **`roomEQ.py`** is in charge to calculate the FIR filter for DRC EQ, from a given `.frd` freq response file, as the one provided from **`roommeasure.py`**, or other software e.g : ARTA or Room EQ Wizard.
 
 **`roomEQ.py`** allows to generate a FIR with selectable resolution (length) and sampling frequency.
