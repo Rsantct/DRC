@@ -35,9 +35,9 @@
 
       in  L ------<-------  MIC
 
-      out R --->---
+      out R --->---+
                    |        Optional reference loop for
-      in  R ---<---         time clearance checkup.
+      in  R ---<---+        time clearance checkup.
 
 
     Usage:      python3 logsweep2TF.py  [options ... ...]
