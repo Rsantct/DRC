@@ -146,17 +146,21 @@ This software is intended to be installed under the user's home folder. Please r
     curl -LO https://raw.githubusercontent.com/Rsantct/DRC/master/update-DRC.sh
     sh update-DRC.sh master
 
+### DRC dependencies
 
-## Using DRC
+Note that you need to install Python3 and some of its standard modules, and also the **`AudioHum/audiotools`** repo.
 
-You can use a **Linux** or **Mac OS** laptop, equipped with a suitable sound card and measurement mic.
-
-Note that you need to install Python3 and some of its standard modules, see:
+see:
 
 - [macOS.md](https://github.com/Rsantct/DRC/blob/master/doc/macOS.md)
 
 - [Linux.md](https://github.com/Rsantct/DRC/blob/master/doc/Linux.md)
 
+
+
+## Using DRC
+
+You can use a **Linux** or **Mac OS** laptop, equipped with a suitable sound card and measurement mic.
 
 To run this software, just launch the DRC Graphic User Interface from a terminal:
 
