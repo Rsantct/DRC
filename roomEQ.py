@@ -266,23 +266,8 @@ def main(FRDname, ax, ref_level=None):
     print( f'(i) Interpolating spectrum with m = {tools.Ktaps(m)} @ {str(fs)} Hz' )
     newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
 
-    # 3.2 Check for ODD length
-    if len(newEq) % 2 == 0:
-        raise ValueError(f'(!) ERROR, it must be an ODD spectrum: {len(newEq)}')
-        sys.exit()
-
-    # 3.3 dBs --> linear
-    newEqlin = 10.0**(newEq/20.0)
-
-    # 3.4 Impulse is computed by doing the IFFT of the 'newEq' curve.
-    #     (i) 'newEq' is an abstraction reduced to the magnitudes of positive
-    #         frequencies, but IFFT needs a CAUSAL spectrum (with minimum phase)
-    #         also a COMPLET one (having positive and negative frequencies).
-    wholespectrum = pydsd.minphsp( pydsd.wholespmp(newEqlin) ) # min-phase is addded
-
     # freq. domain  --> time domain and windowing
-    imp = np.real( np.fft.ifft( wholespectrum ) )
-    imp = pydsd.semiblackmanharris(m) * imp[:m]
+    imp = tools.semispectrum2impulse(newEq, taps=m, dB=True)
 
     # From now on, 'imp' has a causal response, a natural one, i.e. minimum phase
 
