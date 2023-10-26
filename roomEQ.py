@@ -267,7 +267,7 @@ def main(FRDname, ax, ref_level=None):
     newFreq, newEq = pydsd.lininterp(freq, eq, m, fs)
 
     # freq. domain  --> time domain and windowing
-    imp = tools.semispectrum2impulse(newEq, taps=m, dB=True)
+    imp = tools.semispectrum2impulse(newEq, dB=True)
 
     # From now on, 'imp' has a causal response, a natural one, i.e. minimum phase
 
