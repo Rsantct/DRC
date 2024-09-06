@@ -380,10 +380,10 @@ if __name__ == '__main__':
             FRDnames.append(opc)
 
         elif opc[:4] == '-fs=':
-            if opc[4:] in ('44100', '48000', '96000'):
+            if opc[4:] in ('44100', '48000', '88200', '96000'):
                 fs = int(opc[4:])
             else:
-                print( "fs must be in 44100 | 48000 | 96000" )
+                print( "fs must be in 44100 | 48000 | 88200 | 96000" )
                 sys.exit()
 
         elif opc[:3] == '-e=':
