@@ -63,7 +63,7 @@ class RoommeasureGUI(Tk):
                                if x['max_input_channels'] >= 2 ]
         pbk_devs = [ x['name'] for x in rm.LS.sd.query_devices()[:] \
                                if x['max_output_channels'] >= 2 ]
-        srates   = ['44100', '48000']
+        srates   = ['44100', '48000', '88200', '96000']
         channels = ['C', 'L', 'R', 'LR']
         takes    = list(range(1,21))
         sweeps   = [2**15, 2**16, 2**17, 2**18]
