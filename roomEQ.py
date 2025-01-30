@@ -40,8 +40,8 @@
 
             -doWAV      Generates a .wav FIR impulse file
 
-            -WAVbits=   Bit depth for .wav file: 16 (int) or 32 (float)
-                        (default 32 bit floating point pcm)
+            -WAVfmt=    wav data format: 'int16' 'int32' 'float32'
+                        (default int32)
 
 
                 Gaussian windows to progressively limit positive EQ:
@@ -123,7 +123,7 @@ fs       = 48000     # FIR fs
 viewFIRs = False
 doPCM    = False
 doWAV    = False
-WAVbits  = 32
+WAVfmt   = 'int32'
 
 # Reference level:
 ref_level = None
@@ -442,8 +442,8 @@ if __name__ == '__main__':
         elif '-dowav' in opc.lower():
             doWAV = True
 
-        elif '-wavbits' in opc.lower():
-            WAVbits = int(opc.split('=')[-1])
+        elif '-wavfmt' in opc.lower():
+            WAVfmt = opc.split('=')[-1]
 
         elif '-dev' in opc:
             dev = True
@@ -492,7 +492,7 @@ if __name__ == '__main__':
     if doWAV and IRs:
         wavfname = f'{out_folder}/drc.wav'
         wavdata  = np.vstack( IRs ).transpose()
-        tools.saveWAV( fname=wavfname, rate=fs, data=wavdata, bits=WAVbits )
+        tools.saveWAV( fname=wavfname, rate=fs, data=wavdata, wav_dtype=WAVfmt )
         print(f'(i) saving WAV: {wavfname}')
     elif not IRs:
         print('(!) something was wrong no impulses found to save WAV :-/')
