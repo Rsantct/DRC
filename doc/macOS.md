@@ -1,44 +1,50 @@
 
-## Install on Mac OS
+# Install on Mac OS
 
-### Python3
+## Python
 
-Go to http://www.python.org.
+### Homebrew
 
-Download the current python3 package then install it as usual.
+This is the preferred way to go
+
+    brew install python
+    brew install python-tk
+
+### Python.org
+
+_Deprecated, please use Homebrew as above_
+
+Go to http://www.python.org. Download the current python3 package then install it as usual.
 
 Open a terminal and run python3 for first time:
 
     python3
 
-Maybe you will be requiered to **install Apple's _'command line toools'_**
+Maybe you will be requiered to **install Apple's _command line toools_**, this will take a while ...
 
---> ACCEPT ( this will take a while...) <--
+## Python modules
 
-Exiting from the python interpreter:
+DRC needs some additional modules to work.
 
-    rafael@mbp ~ % python3
-    Python 3.9.0 (v3.9.0:9cf6752276, Oct  5 2020, 11:29:23) 
-    [Clang 6.0 (clang-600.0.57)] on darwin
-    Type "help", "copyright", "credits" or "license" for more information.
-    >>> exit()
-    rafael@mbp ~ % 
-
-
-### Standard Python modules:
-
-- pip: the standard Python packages manager.
 - numpy, scipy, matplotlib: scientific modules.
 - sounddevice: universal sound interfacing based on PortAudio.
 - pyaml: a standard parser.
+- Pillow: python imaging library
 
-Open a terminal and run:
+In most recent Python versions, these must be installed under a _Python Virtual Environment_, that is, not globally.
 
-    sudo pip3 install --upgrade pip
-    sudo pip3 install --upgrade setuptools
-    sudo pip3 install numpy matplotlib scipy sounddevice pyaml
+    $ python3 -m venv --system-site-packages ~/.env
+    $ source ~/.env/bin/activate
+    (.env) $    
+    (.env) $ pip3 install Pillow numpy matplotlib scipy sounddevice pyaml
 
-### AudioHumLab/audiotools
+Deactivate is NOT necessary
+    
+    (.env) $ deactivate
+    $
+
+
+## AudioHumLab/audiotools
 
 Open a terminal and run:
 
@@ -50,7 +56,7 @@ Open a terminal and run:
             Is this OK? [y/N]  Y
     
 
-### Optional desktop shortcut
+## Optional desktop shortcut
 
 After installig DRC on your Mac as described in then main **README.md**, you can have a desktop shortcut for the DRC_GUI app.
 
