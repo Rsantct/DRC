@@ -50,7 +50,7 @@ chmod +x ~/DRC/*.sh
 chmod +x ~/bin/DRC*
 
 # Leaving a dummy file with the installes branch name
-touch ~/DRC/"$branch"_FROM_"$gituser"
+touch ~/DRC/"$branch"_BRANCH_FROM_"$gituser"
 echo
 echo installed under:  "$HOME"/DRC
 echo
