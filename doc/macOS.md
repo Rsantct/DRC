@@ -8,7 +8,7 @@
 This is the preferred way to go
 
     brew install python
-    brew install python-tk
+    brew install python-tk  # the standard GUI library
 
 ### Python.org
 
