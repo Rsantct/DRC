@@ -11,7 +11,7 @@ PC portátil, tarjeta de sonido USB, micrófono y cables.
 
 ## 3. Verificar niveles en la tarjeta de sonido y en altavoces.
 
-Elegir los dispositivos de sonido de entre los mostrados por 
+Elegir los dispositivos de sonido de entre los mostrados por
 
     $ logsweep2TF.py -h
 
@@ -44,7 +44,7 @@ Ejecutarlo sucesivamente, ajustar volumen del altavoz y ajustar en la tarjeta de
 
 - El sweep capturado en el canal de referencia no muestra compresión (saturación).
 
-Más detalles aqui: **https://github.com/Rsantct/DRC/tree/master/logsweep2TF**  
+Más detalles aqui: **https://github.com/Rsantct/DRC/tree/master/logsweep2TF**
 
 
 
@@ -66,7 +66,7 @@ Recordemos que un buen resultado DRC depende de disponer de
 
 
 ## 5. Medir.
-    
+
 Se recomienda `-e18`, la S/N ratio y el 'time clearance' serán mejores que con `-e17`.
 
 Por ejemplo mediremos en 7 posiciones de micro e intercalando las medidas de los altavoces izquierdo y derecho con la opción `-cLR`, por lo que deberemos cambiar el canal de entrada al sistema a medida que se nos indique por el terminal:
@@ -100,7 +100,7 @@ Ejecutaremos el programa para cada canal, indicando la respuesta promediada (sin
 
     roomEQ.py L_room_avg.frd -fs=44100
     roomEQ.py R_room_avg.frd -fs=44100
-    
+
 Se generará una carpeta para el juego de filtros, identificada con la Fs y número de taps definidos:
 
     $ ls 44100_32Ktaps/
@@ -110,18 +110,18 @@ Se generará una carpeta para el juego de filtros, identificada con la Fs y núm
 Podemos visulizar estos IR (impulse response) con su respuesta en frecuencia:
 
     IRs_viewer.py drc.L.pcm 44100 -eq
-    
+
 
 ## 7. Llevar los filtros al convolver
 
 ### Ejemplo para un sistema de altavoces basado en **FIRtro**
 
-Desde el terminal de nuestro PC de medición, subimos los FIR pcm al sistema, en este caso un sistema **[pe.audio.sys](https://github.com/AudioHumLab/pe.audio.sys)**:
+Desde el terminal de nuestro PC de medición, subimos los FIR pcm al sistema, en este caso un sistema **[pe.audio.sys](https://github.com/Rsantct/pe.audio.sys)**:
 
 Subimos los archivos mediante FTP, por ejemplo desde un terminal:
-    
+
     echo "put drc.?.pcm" | sftp myUser@myFIRtroIP
-    
+
 Nos conectamos al sistema de gestión de altavoces y actualizamos el convolver para usarlos:
 
     $ ssh myUser@myFIRtroIP
@@ -130,13 +130,13 @@ Nos conectamos al sistema de gestión de altavoces y actualizamos el convolver p
     # Movemos los .pcm hacia la carpeta de nuestro altavoz, con un nombre conveniente:
     $ mv drc.L.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.L.sofa.pcm
     $ mv drc.R.pcm pe.audio.sys/loudspeakers/miAltavoz/drc.R.sofa.pcm
-    
+
     # Editamos el convolver para que pueda usarlos:
     $ nano pe.audio.sys/loudspeakers/miAltavoz/brutefir_config
-    
+
     # reiniciamos el sistema
     $ peaudiosys_restart.sh
-    
+
     # comprobamos que el juego de nuevos drc aparece junto a otro previamente existente:
     $ control get_drc_sets
     ["equilat", "sofa"]

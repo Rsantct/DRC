@@ -1,20 +1,23 @@
 #!/bin/sh
 
 if [ -z $1 ] ; then
-    echo "usage:"
-    echo "    update-DRC.sh  [branch]"
     echo
-    echo "    You can use another GitHub branch name than  'master' "
+    echo "  Usage:"
+    echo
+    echo "      update-DRC.sh [branch]"
+    echo
+    echo "      normal branch is 'master'"
     echo
     exit 0
 fi
 branch=$1
 
-reponame="Rsantct"
+
+gituser="Rsantct"
 if [ $2 ]; then
-    reponame=$2
+    gituser=$2
 fi
-gitsite="https://github.com/""$reponame"
+gitsite="https://github.com/""$gituser"
 
 
 echo
@@ -25,34 +28,28 @@ if [ "$tmp" != "y" ] && [ "$tmp" != "Y" ]; then
     exit 0
 fi
 
-cd ~/
+mkdir -p ~/Downloads
 
-# Remove previous
-rm -f ~/$branch.zip*    1>/dev/null 2>&1
+cd ~/Downloads
 
-# Download project from GitHUb
-curl -LO "$gitsite"/DRC/archive/$branch.zip
-# Unzip ( ~/DRC-$branch/... )
-unzip -o $branch.zip
+rm -f "$branch".zip    1>/dev/null 2>&1
 
-# Remove old
+curl -LO "$gitsite"/DRC/archive/"$branch".zip
+
+unzip -o "$branch".zip
+
+rm -f "$branch".zip    1>/dev/null 2>&1
+
 rm -rf ~/DRC     1>/dev/null 2>&1
 
-# Rename folder
-mv ~/DRC-$branch ~/DRC
-
-# Executable flags
+cp -r ./DRC-"$branch"/DRC    ~/
+cp    ./DRC-"$branch"/bin/*  ~/bin/
 chmod +x ~/DRC/*.py
 chmod +x ~/DRC/*.sh
+chmod +x ~/bin/DRC*
 
 # Leaving a dummy file with the installes branch name
-touch ~/DRC/"$branch"_FROM_"$reponame"
-
-# Removing <branch>.zip
-cd ~/
-rm -f ~/$branch.zip         1>/dev/null 2>&1
-rm ~/update-DRC.sh          1>/dev/null 2>&1
-
+touch ~/DRC/"$branch"_FROM_"$gituser"
 echo
 echo installed under:  "$HOME"/DRC
 echo
@@ -60,7 +57,9 @@ echo
 # Updating <branch> on GUI window title
 
 sed -i.bak -e \
-    s/self.title\(\'AudioHumLab\\/DRC\'\)/self.title\(\'$reponame\\/DRC\'\)/g  \
-    DRC/DRC_GUI.py
+    s/self.title\(\'Rsantct\\/DRC\'\)/self.title\(\'$gituser\\/DRC\'\)/g  \
+    DRC/DRC-GUI.py
 
-rm DRC/DRC_GUI.py.bak
+rm DRC/DRC-GUI.py.bak
+
+cd

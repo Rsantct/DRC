@@ -13,12 +13,12 @@ Open a terminal and run the below commands:
     sudo pip3 install sounddevice pyaml
 
 
-### AudioHumLab/audiotools
+### Rsantct/audiotools
 
     curl -O  https://raw.githubusercontent.com/Rsantct/audiotools/master/update-audiotools.sh
-    
+
     sh update-audiotools.sh master
 
-        (i) Will download from: [ https://github.com/AudioHumLab ]
+        (i) Will download from: [ https://github.com/Rsantct ]
             Is this OK? [y/N]  Y
 
