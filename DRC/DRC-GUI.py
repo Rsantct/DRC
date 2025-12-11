@@ -317,7 +317,7 @@ class RoommeasureGUI(Tk):
         if resize:
             ih2 = int(self.screenH / 3)
             iw2 = int(ih2 * iaspect)
-            image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
+            image2 = image.resize((iw2, ih2), Image.LANCZOS)
             imageObj = ImageTk.PhotoImage(image2)
         else:
             imageObj = ImageTk.PhotoImage(image)
@@ -359,7 +359,7 @@ class RoommeasureGUI(Tk):
             iaspect = iw / ih
             ih2 = int(self.screenH / 3)
             iw2 = int(ih2 * iaspect)
-            image2 = image.resize((iw2, ih2), Image.ANTIALIAS)
+            image2 = image.resize((iw2, ih2), Image.LANCZOS)
             imageObj = ImageTk.PhotoImage(image2)
 
             # http://effbot.org/pyfaq/why-do-my-tkinter-images-not-appear.htm (*)
