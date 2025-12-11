@@ -546,7 +546,7 @@ class RoommeasureGUI(Tk):
         # Smoothing curve and saving to disk:
         self.var_msg.set('SMOOTHING AND SAVING TO DISK ...')
         rm.do_averages()
-        self.var_msg.set('DONE')
+        self.var_msg.set('DONE! Ready to calculate the DRC-EQ filters below')
 
         # Ending the rm.LS dummy Agg backend plotting
         rm.LS.plt.close('all')
@@ -797,7 +797,7 @@ class RoommeasureGUI(Tk):
 
         # roomEQ command line args
         args =  f'-fs={fs} -e={taps_exp} -schro={schro} -doPCM -doWAV'
-        args += f' -WAVbits={self.cmb_wavbits.get()}'
+        args += f' -WAVfmt=int{self.cmb_wavbits.get()}'
         args += f' -wLoct={self.var_wLowSpan.get()}'
         args += f' -wLfc={self.var_wLowFc.get()}'
         args += f' -wHfc={self.var_wHighFc.get()}'
