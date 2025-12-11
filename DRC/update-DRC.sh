@@ -21,7 +21,8 @@ gitsite="https://github.com/""$gituser"
 
 
 echo
-echo "(i) Will download from: [ ""$gitsite"" ]"
+echo "(i) Will download from: ""$gitsite""/""$branch"
+echo
 read -r -p "    Is this OK? [y/N] " tmp
 if [ "$tmp" != "y" ] && [ "$tmp" != "Y" ]; then
     echo 'Bye.'
@@ -32,15 +33,15 @@ mkdir -p ~/Downloads
 
 cd ~/Downloads
 
-rm -f "$branch".zip    1>/dev/null 2>&1
+rm -f "$branch".zip 1>/dev/null 2>&1
 
 curl -LO "$gitsite"/DRC/archive/"$branch".zip
 
 unzip -o "$branch".zip
 
-rm -f "$branch".zip    1>/dev/null 2>&1
+rm -f "$branch".zip 1>/dev/null 2>&1
 
-rm -rf ~/DRC     1>/dev/null 2>&1
+rm -rf ~/DRC  1>/dev/null 2>&1
 
 cp -r ./DRC-"$branch"/DRC    ~/
 cp    ./DRC-"$branch"/bin/*  ~/bin/
@@ -53,13 +54,5 @@ touch ~/DRC/"$branch"_FROM_"$gituser"
 echo
 echo installed under:  "$HOME"/DRC
 echo
-
-# Updating <branch> on GUI window title
-
-sed -i.bak -e \
-    s/self.title\(\'Rsantct\\/DRC\'\)/self.title\(\'$gituser\\/DRC\'\)/g  \
-    DRC/DRC-GUI.py
-
-rm DRC/DRC-GUI.py.bak
 
 cd

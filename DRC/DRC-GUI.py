@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-""" This is a Tkinter based GUI to running AudioHumLab/DRC scripts
+""" This is a Tkinter based GUI to running Rsantct/DRC scripts
 """
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox, font
@@ -53,7 +53,7 @@ class RoommeasureGUI(Tk):
         self.xpos = int(self.screenW / 12)
         self.ypos = int(self.screenH / 12)
         self.geometry(f'+{self.xpos}+{self.ypos}')
-        self.title('AudioHumLab/DRC')
+        self.title('Rsantct/DRC')
 
         ### EVENTS HANDLING
         self.bind('<Key>', self.handle_keypressed)
