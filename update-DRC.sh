@@ -1,21 +1,16 @@
 #!/bin/sh
 
-# (i) NOTICE:   When maintaining this script, do NOT edit it directly
-#               from ~/DRC because it will be modified on runtime.
-#               So edit it apart, copy to ~/DRC and test it.
-
 if [ -z $1 ] ; then
     echo "usage:"
-    echo "    update-DRC.sh   master   [git_repo]"
+    echo "    update-DRC.sh  [branch]"
     echo
-    echo "    (i) Default git_repo:                     'AudioHumLab'"
-    echo "        You can use another branch name than  'master' "
+    echo "    You can use another GitHub branch name than  'master' "
     echo
     exit 0
 fi
 branch=$1
 
-reponame="AudioHumLab"
+reponame="Rsantct"
 if [ $2 ]; then
     reponame=$2
 fi
