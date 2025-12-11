@@ -86,7 +86,7 @@
 
     NOTE:
 
-    This tool depends on github.com/AudioHumLab/audiotools
+    This tool depends on github.com/Rsantct/audiotools
 
 """
 import os
