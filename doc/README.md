@@ -1,6 +1,6 @@
 # DRC
 
-This soft is intended to measure a loudspeaker's in-room response, then calculate a FIR filter to perform DRC equalization (digital room correction). You'll ned to use a convolver inserted in the loudspeakers signal path, such **Brutefir** as used [here](https://github.com/AudioHumLab/pe.audio.sys)
+This soft is intended to measure a loudspeaker's in-room response, then calculate a FIR filter to perform DRC equalization (digital room correction). You'll ned to use a convolver inserted in the loudspeakers signal path, such **Brutefir** as used [here](https://github.com/Rsantct/pe.audio.sys)
 
 The applied test signal will be a **log sweep** chirp.
 
@@ -28,7 +28,7 @@ The spatial amplitude for mic locations relies in the user criteria, depending o
 
 ### JACK management
 
-When measuring a [JACK based loudspeaker system](https://github.com/AudioHumLab), **`roommeasure.py`** can help on routing the loudspeaker system stereo soundcard analog input towards the convenient loudspeaker channel. So you won't need to rewire your cable from L to R and so on ;-)
+When measuring a [JACK based loudspeaker system](https://github.com/Rsantct), **`roommeasure.py`** can help on routing the loudspeaker system stereo soundcard analog input towards the convenient loudspeaker channel. So you won't need to rewire your cable from L to R and so on ;-)
 
 ## GUI appearance:
 
@@ -125,7 +125,7 @@ Example of a very strong room mode in the listening area:
 
 ## FIR application (impulse response)
 
-The obtained FIR filter (impulse response) is given in two formats: 
+The obtained FIR filter (impulse response) is given in two formats:
 
 - a raw PCM impulse 32 bit float file per channel
 - a stereo WAV 32 bit float file
@@ -135,7 +135,7 @@ The obtained FIR filter (impulse response) is given in two formats:
 
 The impulses must be loaded into a convolver as **Brutefir** in Linux, or into a generic reverb plugin as Wave's IR1 in a DAW, or into a hardware convolver as miniDSP.
 
-Here we propose the evolutions [pe.audio.sys](https://github.com/AudioHumLab) or [pre.di.c](https://github.com/AudioHumLab) from the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
+Here we propose the evolutions [pe.audio.sys](https://github.com/Rsantct) or [pre.di.c](https://github.com/AudioHumLab) from the original project [FIRtro](https://github.com/AudioHumLab/FIRtro/wiki/01---Introducción) (currently not maintained), which are based on the excellent **Brutefir** convolver.
 
 <img src="https://github.com/Rsantct/DRC/blob/master/doc/images/DRC_in_action.png" width="480">
 
@@ -150,7 +150,7 @@ This software is intended to be installed under the user's home folder. Please r
 
 ### DRC dependencies
 
-Note that you need to install Python3 and some of its standard modules, and also the **`AudioHum/audiotools`** repo.
+Note that you need to install Python3 and some of its standard modules, and also the **`Rsantct/audiotools`** repo.
 
 see:
 

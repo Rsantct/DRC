@@ -35,16 +35,16 @@ In most recent Python versions, these must be installed under a _Python Virtual 
 
     $ python3 -m venv --system-site-packages ~/.env
     $ source ~/.env/bin/activate
-    (.env) $    
+    (.env) $
     (.env) $ pip3 install Pillow numpy matplotlib scipy sounddevice pyaml
 
 Deactivate is NOT necessary
-    
+
     (.env) $ deactivate
     $
 
 
-## AudioHumLab/audiotools
+## Rsantct/audiotools
 
 Open a terminal and run:
 
@@ -52,9 +52,9 @@ Open a terminal and run:
 
     sh update-audiotools.sh master
 
-        (i) Will download from: [ https://github.com/AudioHumLab ]
+        (i) Will download from: [ https://github.com/Rsantct ]
             Is this OK? [y/N]  Y
-    
+
 
 ## Optional desktop shortcut
 
@@ -66,11 +66,11 @@ Please follow the below steps:
 - Configure Apple's 'Python Launcher'
 
     - Finder > Applications > Python 3.x > Python Launcher
-    
+
         - Settings for file type:  Python Script
 
         - Interpreter: /usr/local/bin/python3
-            
+
         - [x] Run in a Terminal window
 
 
