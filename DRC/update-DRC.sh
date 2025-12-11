@@ -1,29 +1,36 @@
-#!/bin/sh
+#!/bin/bash
 
-if [ -z $1 ] ; then
+function print_help {
     echo
-    echo "  Usage:"
+    echo "  Usage:   update-DRC.sh [branch]"
     echo
-    echo "      update-DRC.sh [branch]"
+    echo "           default branch is 'master'"
     echo
-    echo "      normal branch is 'master'"
-    echo
+}
+
+ocp=$1
+
+if [[ $1 ==  *"-h"* ]]; then
+    print_help
     exit 0
 fi
-branch=$1
 
+branch="master"
+if [[ $1 ]]; then
+    branch=$1
+fi
 
 gituser="Rsantct"
-if [ $2 ]; then
+if [[ $2 ]]; then
     gituser=$2
 fi
 gitsite="https://github.com/""$gituser"
 
-
+print_help
 echo
-echo "(i) Will download from: ""$gitsite""/""$branch"
+echo "    (i) Will download from: ""$gitsite""/""$branch"
 echo
-read -r -p "    Is this OK? [y/N] " tmp
+read -r -p "    Is that OK? [y/N] " tmp
 if [ "$tmp" != "y" ] && [ "$tmp" != "Y" ]; then
     echo 'Bye.'
     exit 0
@@ -50,7 +57,7 @@ chmod +x ~/DRC/*.sh
 chmod +x ~/bin/DRC*
 
 # Leaving a dummy file with the installes branch name
-touch ~/DRC/"$branch"_BRANCH_FROM_"$gituser"
+touch ~/DRC/"$branch"_FROM_"$gituser"
 echo
 echo installed under:  "$HOME"/DRC
 echo
