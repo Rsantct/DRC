@@ -198,6 +198,8 @@ def choose_soundcard():
 
 def test_soundcard(i="default",o="default", fs=fs, ch=2):
 
+    ch = get_avail_input_channels()
+
     dummy1sec = zeros(int(fs))
 
     print( 'Trying:' )
