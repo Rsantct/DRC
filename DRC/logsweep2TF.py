@@ -159,6 +159,25 @@ S_adc = 1.0
 ## S_adc=+1.49;         % USB Dual Pre JV pot minimum (gain=3, Windows 7)
 
 
+class Fmt:
+    RED     = '\033[31m'
+    BLUE    = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN    = '\033[36m'
+    GRAY    = '\033[90m'
+    BOLD    = '\033[1m'
+    END     = '\033[0m'
+
+
+def get_avail_input_channels():
+    n = 0
+    try:
+        n = sd.query_devices(kind='input').get('max_input_channels', 0)
+    except Exception as e:
+        print(f'ERROR getting input device: {str(e)}')
+        sys.exit()
+    return n
+
 
 def choose_soundcard():
 
@@ -572,26 +591,39 @@ def do_meas():
     #---------------------------------------------------------------------------
     #---------- 2. data gathering: send out sweep, record system output --------
     #---------------------------------------------------------------------------
+
+    # Prepare test signal array
+    input_channels = get_avail_input_channels()
+    if  input_channels == 1:
+        testSignal = array([sig_frac * tapsweep])                       # [ch0]
+    else:
+        # Antiphased signals on channels avoids codec midtap modulation.
+        # 'sig_frac' means the applied attenuation
+        testSignal = array([sig_frac * tapsweep, sig_frac * -tapsweep]) # [ch0, ch1]
+
     print( '--- Starting recording ...' )
     print( '(i) Some sound cards act strangely. Check carefully!' )
 
-    # Antiphased signals on channels avoids codec midtap modulation.
-    # 'sig_frac' means the applied attenuation
-    stereo = array([sig_frac * tapsweep, sig_frac * -tapsweep]) # [ch0, ch1]
-
     # Setting sound device interface
     sd.default.samplerate = fs
-    sd.default.channels = 2
+    sd.default.channels = input_channels
     rec_dev_name = sd.query_devices(sd.default.device[0], kind='input' )['name']
     pbk_dev_name = sd.query_devices(sd.default.device[1], kind='output')['name']
-    print(f'    in: {rec_dev_name}, out: {pbk_dev_name}, fs: {sd.default.samplerate}')
+
+    print(f'{Fmt.BLUE}    in:  {rec_dev_name}')
+    print(f'    out: {pbk_dev_name}')
+    print(f'    fs: {sd.default.samplerate} {Fmt.BOLD}CHANNELS: {input_channels}{Fmt.END}' )
 
     # Full duplex Play/Rec
-    # (i) .transpose because the player needs an array having a channel per column.
+    # (i) .transpose because the player needs an array having a column per channel.
     #     'blocking' waits to finish.
-    z = sd.playrec(stereo.transpose(), blocking=True)
-    dut = z[:, 0]   # we use LEFT  CHANNEL as DUT
-    ref = z[:, 1]   # we use RIGHT CHANNEL as REFERENCE
+    z = sd.playrec(testSignal.transpose(), channels=input_channels, blocking=True)
+    dut = z[:, 0]                               # DUT --> LEFT CHANNEL
+    if  input_channels == 1:
+        ref = (0.5 * sig_frac * tapsweep).transpose()
+    else:
+        ref = z[:, 1]                           # REF --> RIGHT CHANNEL
+
     #N = len(dut)   # This seems to be redundant ¿?
     print( 'Finished recording.' )
 
