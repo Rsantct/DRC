@@ -80,32 +80,31 @@
 #
 
 #---------------------------- IMPORTING MODULES: -------------------------
-import os
-import sys
-from time import time
+import  os
+import  sys
+from    time import time
+import  sounddevice as sd
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
-import matplotlib
+import  matplotlib
 # Later we will be able to call matplotlib.use('Agg') to replace the regular
 # display backend (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid
 # incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
-import matplotlib.pyplot as plt
+import  matplotlib.pyplot as plt
 
-from matplotlib.ticker import EngFormatter
-from numpy import *
-from scipy.signal import correlate as signal_correlate # to differentiate it from numpy
+from    matplotlib.ticker import EngFormatter
+from    numpy import *                                    # code clarity
+from    scipy.signal import correlate as signal_correlate # differentiate from numpy
 
 # scipy.signal.correlate shows a FutureWarning, we do inhibit it:
-import warnings
+import  warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
-
-# https://python-sounddevice.readthedocs.io
-import sounddevice as sd
 
 UHOME = os.path.expanduser("~")
 sys.path.append(UHOME + "/audiotools")
-from smoothSpectrum import smoothSpectrum as smooth
-import tools
+from    smoothSpectrum import smoothSpectrum as smooth
+import  tools
+import  common as cm
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT OPTIONS: --------------------------------
@@ -167,6 +166,17 @@ class Fmt:
     GRAY    = '\033[90m'
     BOLD    = '\033[1m'
     END     = '\033[0m'
+
+
+def get_mic_cal(fpath)
+
+    if os.path.isfile(fpath):
+        res, _ = tools.readFRD()
+
+    else:
+        res = None
+
+    return res
 
 
 def get_avail_input_channels():
@@ -244,7 +254,7 @@ def do_print_info():
     print( 'Amplitude:      ' + str(sig_frac) + ' (' + str(sig_frac_dBFS) + ' dBFS)' )
     print( 'fs:             ' + str(fs) + ' Hz' )
     print( 'N:              ' + str(N) + ' (test signal total lenght in samples)' )
-    print( 'Duration:       ' + str(round((N/float(fs)), 2)) + ' s (N/fs)' )
+    print( 'Duration:       ' + str( round((N/float(fs)), 2)) + ' s (N/fs)' )
     print( 'Time clearance: ' + str( round(N/(4.0*fs), 2) ) )
     print( 'System_type:    ' + system_type )
     print()
@@ -456,25 +466,25 @@ def prepare_sweep():
     # The played tapsweep (len=N) will be compund of
     # a logsweep (len=N-Npad) plus a zeros tail (len=Npad).
     Npad = int(N/4.0)
-    Ns   = N - Npad                         # most of array is used for sweep ;-)
+    Ns   = N - Npad                             # most of array is used for sweep ;-)
 
-    ts   = linspace(0, Ns/float(fs), Ns)    # sweep's time points array
+    ts   = linspace(0, Ns/float(fs), Ns)        # sweep's time points array
 
     #--- tapered sweep window:
     # Parameters to define a window to make a tapered sweep version,
     # fade in until f1 then fade out from f2 on:
-    f_start     = 5.0                       # beginning of turnon half-Hann
-    f1          = 10.0                      # end of turnon half-Hann
-    f2          = 0.91 * fs / 2             # beginning of turnoff half-Hann
-    f_stop      = fs/2.0                    # end of turnoff half-Hann
-    Ts          = Ns/float(fs)              # sweep duration. Lenght N-Npad samples.
-    Ls          = Ts / log(f_stop/f_start)  # time for frequency to increase by factor e
+    f_start     = 5.0                           # beginning of turnon half-Hann
+    f1          = 10.0                          # end of turnon half-Hann
+    f2          = 0.91 * fs / 2                 # beginning of turnoff half-Hann
+    f_stop      = fs/2.0                        # end of turnoff half-Hann
+    Ts          = Ns/float(fs)                  # sweep duration. Lenght N-Npad samples.
+    Ls          = Ts / log(f_stop/f_start)      # time for frequency to increase by factor e
 
     indexf1 = int(round(fs * Ls * log(f1/f_start) ) + 1) # end of starting taper
     indexf2 = int(round(fs * Ls * log(f2/f_start) ) + 1) # beginning of ending taper
 
     print( "--- Calculating logsweep from ", int(f_start), "to", int(f_stop), "Hz" )
-    sweep       = zeros(N)                  # initialize
+    sweep       = zeros(N)                      # initialize
     sweep[0:Ns] = sin( 2*pi * f_start * Ls * (exp(ts/Ls) - 1) )
     #
     #  /\/\/\/\/\/\/\/\----  this is the LOGSWEEP + Npad, with total lenght N.
