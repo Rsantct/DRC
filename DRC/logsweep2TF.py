@@ -82,9 +82,9 @@
 #---------------------------- IMPORTING MODULES: -------------------------
 import  os
 import  sys
-from    time import time
+from    time        import time
 import  sounddevice as sd
-from    fmt import Fmt
+from    fmt         import Fmt
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
 import  matplotlib
@@ -93,9 +93,9 @@ import  matplotlib
 # incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
 import  matplotlib.pyplot as plt
 
-from    matplotlib.ticker import EngFormatter
-from    numpy import *                                    # code clarity
-from    scipy.signal import correlate as signal_correlate # differentiate from numpy
+from    matplotlib.ticker   import EngFormatter
+from    numpy               import *                                # for code clarity
+from    scipy.signal        import correlate as signal_correlate    # to differentiate from numpy
 
 # scipy.signal.correlate shows a FutureWarning, we do inhibit it:
 import  warnings
@@ -171,19 +171,49 @@ def get_mic_response(fpath):
     return res
 
 
-def mic_corrected_response(x_frd):
+def mic_corrected_response(raw_frd):
 
-    x_freqs, x_dBs = x_frd
+    def plot_mic_compensation():
 
-    # We must map the mic_response freq points to ours
-    mic_dBs = zeros_like(x_dBs)
+        plt.figure('MIC correction', figsize=(6, 3))
 
-    # Then correct the given frd with the mic_frd
-    x_dBs -= mic_dBs
+        #plt.semilogx(mic_freq, mic_db, label='MIC response TXT', linestyle='--', color='red')
 
-    print(f'{Fmt.BOLD}*FAKE*{Fmt.END} {Fmt.GREEN}MIC correction was applied.{Fmt.END}')
+        plt.semilogx(raw_freq, mic_db_interp, label='MIC response', linestyle='--', color='red')
 
-    return x_freqs, x_dBs
+        plt.semilogx(raw_freq, raw_db, label='Raw measurement', alpha=0.6, color='gray')
+
+        plt.semilogx(raw_freq, corrected_db, label='Corrected measurement', linewidth=2, color='blue')
+
+        plt.title('MIC compensated response', fontsize=14)
+        plt.xlabel('Freq (Hz)')
+        plt.ylabel('Amplitude (dB)')
+        plt.grid(True, which="both", ls="-", alpha=0.5)
+        plt.legend()
+        plt.xlim(20, 20000)
+        plt.ylim(-60,10)
+        plt.tight_layout()
+        # Not plt.show() because more figures are to be plotted
+
+
+    # extract freq and mag arrays from the given `xfrd` tuple
+    raw_freq, raw_db = raw_frd
+
+    # extract freq and mag arrays from the `mic_response` 2D array
+    mic_freq = mic_response[:, 0]
+    mic_db   = mic_response[:, 1]
+
+    # Interpolate mic response to the given raw_freq points
+    mic_db_interp = interp(log10(raw_freq), log10(mic_freq), mic_db)
+
+    # Finally, correct the given frd with the mic_frd
+    corrected_db = raw_db - mic_db_interp
+
+    print(f'{Fmt.GREEN}MIC correction was applied.{Fmt.END}')
+
+    plot_mic_compensation()
+
+    return raw_freq, raw_db
 
 
 def get_avail_input_channels():
@@ -324,7 +354,7 @@ def plot_system_response(png_folder=f'{UHOME}'):
                 [        frequency____response       ]  2/3
     """
 
-    fig = plt.figure(figsize=(9.0, 9.0))  # in inches
+    fig = plt.figure('system response', figsize=(9.0, 9.0))  # in inches
 
     axDUT = plt.subplot2grid(shape=(3, 2), loc=(0, 0))
     axTCL = plt.subplot2grid(shape=(3, 2), loc=(0, 1))
@@ -396,8 +426,8 @@ def plot_system_response(png_folder=f'{UHOME}'):
                 linestyle='--',       linewidth=0.75, color='purple')
 
     # plot curves
-    axFRE.semilogx( F, 20 * log10(DUT_mag), color='blue', label='DUT' )
-    axFRE.semilogx( F, 20 * log10(REF_mag), color='gray', label='REF' )
+    axFRE.semilogx( F, DUT_mag, color='blue', label='DUT' )
+    axFRE.semilogx( F, REF_mag, color='gray', label='REF' )
 
     # formatting
     axFRE.set_title('Freq. response')
@@ -712,7 +742,13 @@ def do_meas():
     DUT_FRD = fft_to_FRD(DUT_TF, smooth_Noct=Noct)
     REF_FRD = fft_to_FRD(REF_TF, smooth_Noct=Noct)
 
-    if mic_response.any():
+    # converting magnitudes to dB
+    dut_freq, dut_mag = DUT_FRD
+    ref_freq, ref_mag = DUT_FRD
+    DUT_FRD = (dut_freq, 20 * log10(dut_mag))
+    REF_FRD = (ref_freq, 20 * log10(ref_mag))
+
+    if mic_response and mic_response.any():
         DUT_FRD = mic_corrected_response(DUT_FRD)
 
     # ** END **
@@ -817,7 +853,7 @@ if __name__ == "__main__":
 
     # Checking FREQ DOMAIN SPECTRUM LEVEL
     _, DUT_mag = DUT_FRD
-    maxdB = max( 20 * log10(DUT_mag) )
+    maxdB = max( DUT_mag )
 
     if  maxdB > 0.0:
         print( '****************************************' )
