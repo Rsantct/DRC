@@ -385,8 +385,7 @@ def LS_meas(ch, seq):
     # Order LS to do the measurement
     LS.do_meas()
 
-    f, mag = LS.DUT_FRD
-    magdB = 20 * np.log10( mag )
+    f, magdB = LS.DUT_FRD
 
     # Saving the curve to a sequenced frd filename
     tools.saveFRD(  fname   = f'{folder}/{ch}_{str(seq)}.frd',
@@ -410,10 +409,10 @@ def LS_meas(ch, seq):
 
     LS.plot_FRDs( f, (c,),  title=f'{os.path.basename(folder)} ({ch})',
                             figure=figIdx,
-                             png_fname=f'{folder}/{ch}.png'
+                            png_fname=f'{folder}/{ch}.png'
                 )
 
-    return f, mag  # LS.DUT_FRD is given in lineal magnitude not dB
+    return f, magdB
 
 
 def do_meas_loop(gui_trigger=None, gui_msg=None):
@@ -428,10 +427,10 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
 
     # Alerting the user
     if gui_msg:
-        gui_msg.set(f'GOING TO MEASURE AT  {numMeas}  LOCATIONS ...')
+        gui_msg.set(f'going to measure at  {numMeas} LOCATIONS ...')
         sleep(.5)
     else:
-        print_console_msg(f'GOING TO MEASURE AT  {numMeas}  LOCATIONS ...')
+        print_console_msg(f'going to measure at  {numMeas} LOCATIONS ...')
     if doBeep:
         for i in range(3):
             do_beep('L')
@@ -462,7 +461,7 @@ def do_meas_loop(gui_trigger=None, gui_msg=None):
                 console_prompt(ch, seq)
 
             # DO MEASURE AND STACK RESULTS
-            f, mag = LS_meas(ch, seq)       # (i) mag is given lineal
+            f, mag = LS_meas(ch, seq)
             #
             curves['freq'] = f
             #
@@ -500,27 +499,25 @@ def do_averages():
     figIdx = 0
     for ch in channels:
 
-        avg_mag     = channels_avg[ch]
-        avg_mag_dB  = 20 * np.log10( avg_mag )
+        avg_mag_dB  = channels_avg[ch]
 
-        tools.saveFRD(  fname   = f'{folder}/{ch}_avg.frd',
-                        freq    = f,
-                        mag     = avg_mag_dB,
-                        fs      = LS.fs,
-                        comments= f'roommeasure.py ch:{ch} raw avg' )
+        tools.saveFRD(  fname       = f'{folder}/{ch}_avg.frd',
+                        freq        = f,
+                        mag         = avg_mag_dB,
+                        fs          = LS.fs,
+                        comments    = f'roommeasure.py ch:{ch} raw avg' )
 
         # Also a progressive smoothed version of average
         print( 'Smoothing average 1/' + str(Noct) + ' oct up to ' + \
                 str(Schro) + ' Hz, then changing towards 1/1 oct at Nyq' )
 
-        avg_mag_progSmooth      = smooth(f, avg_mag, Noct, f0=Schro)
-        avg_mag_progSmooth_dB   = 20 * np.log10(avg_mag_progSmooth)
+        avg_mag_progSmooth_dB       = smooth(f, avg_mag_dB, Noct, f0=Schro)
 
-        tools.saveFRD(  fname   = f'{folder}/{ch}_avg_smoothed.frd',
-                        freq    = f,
-                        mag     = avg_mag_progSmooth_dB,
-                        fs      = LS.fs,
-                        comments= f'roommeasure.py ch:{ch} smoothed avg' )
+        tools.saveFRD(  fname       = f'{folder}/{ch}_avg_smoothed.frd',
+                        freq        = f,
+                        mag         = avg_mag_progSmooth_dB,
+                        fs          = LS.fs,
+                        comments    = f'roommeasure.py ch:{ch} smoothed avg' )
 
         # Prepare the average curve ...
         c1 = {  'magdB': avg_mag_dB,
