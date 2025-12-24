@@ -94,6 +94,8 @@ class RoommeasureGUI(Tk):
                                                     command=self.enable_Go)
         lbl_cap          = ttk.Label(content, text='IN')
         self.cmb_cap     = ttk.Combobox(content, values=cap_devs, width=15)
+        lbl_sweep        = ttk.Label(content, text='sweep length')
+        self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
         lbl_pbk          = ttk.Label(content, text='OUT')
         self.cmb_pbk     = ttk.Combobox(content, values=pbk_devs, width=15)
         lbl_fs           = ttk.Label(content, text='sample rate')
@@ -120,9 +122,7 @@ class RoommeasureGUI(Tk):
         lbl_ch           = ttk.Label(content, text='channels')
         self.cmb_ch      = ttk.Combobox(content, values=channels, width=6)
         lbl_locat        = ttk.Label(content, text='mic locations')
-        self.cmb_locat    = ttk.Combobox(content, values=takes,    width=4)
-        lbl_sweep        = ttk.Label(content, text='sweep length')
-        self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
+        self.cmb_locat   = ttk.Combobox(content, values=takes,    width=4)
 
         # - PLOT SECTION
         lbl_plot         = ttk.Label(content, text='PLOT:',
@@ -824,7 +824,7 @@ class RoommeasureGUI(Tk):
 
         # display temporary messages
         msgs = (f'running roomEQ ...',
-                f'impulse files saved: {self.ent_folder.get().split("/")[-1]}'
+                f'DRC FIRs at: {self.ent_folder.get().split("/")[-1]}'
                 f'/{self.cmb_drcfs.get()}'
                 f'_{int(taps/1024)}Ktaps'
                 )
