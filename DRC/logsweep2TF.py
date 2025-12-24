@@ -181,7 +181,7 @@ def mic_corrected_response(x_frd):
     # Then correct the given frd with the mic_frd
     x_dBs -= mic_dBs
 
-    print(f'{Fmt.GREEN}MIC correction was applied.{Fmt.END}')
+    print(f'{Fmt.BOLD}*FAKE*{Fmt.END} {Fmt.GREEN}MIC correction was applied.{Fmt.END}')
 
     return x_freqs, x_dBs
 
