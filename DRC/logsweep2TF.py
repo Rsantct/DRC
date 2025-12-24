@@ -84,6 +84,7 @@ import  os
 import  sys
 from    time import time
 import  sounddevice as sd
+from    fmt import Fmt
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
 import  matplotlib
@@ -104,7 +105,6 @@ UHOME = os.path.expanduser("~")
 sys.path.append(UHOME + "/audiotools")
 from    smoothSpectrum import smoothSpectrum as smooth
 import  tools
-import  common as cm
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT OPTIONS: --------------------------------
@@ -117,6 +117,7 @@ printInfo           = True
 
 do_plot             = True      # recorded, time clearance, freq response plots
 aux_plot            = False     # currently only for the prepared sweep plot
+mic_response        = None      # optional mic response tuple (freqs, dBs)
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT PARAMETERS: -----------------------------
@@ -158,25 +159,31 @@ S_adc = 1.0
 ## S_adc=+1.49;         % USB Dual Pre JV pot minimum (gain=3, Windows 7)
 
 
-class Fmt:
-    RED     = '\033[31m'
-    BLUE    = '\033[34m'
-    MAGENTA = '\033[35m'
-    CYAN    = '\033[36m'
-    GRAY    = '\033[90m'
-    BOLD    = '\033[1m'
-    END     = '\033[0m'
-
-
-def get_mic_cal(fpath)
+def get_mic_response(fpath):
 
     if os.path.isfile(fpath):
-        res, _ = tools.readFRD()
+        # readFRD returns a tuple (frd, fs)
+        res, _ = tools.readFRD(fpath)
 
     else:
-        res = None
+        return array([[0], [0]])
 
     return res
+
+
+def mic_corrected_response(x_frd):
+
+    x_freqs, x_dBs = x_frd
+
+    # We must map the mic_response freq points to ours
+    mic_dBs = zeros_like(x_dBs)
+
+    # Then correct the given frd with the mic_frd
+    x_dBs -= mic_dBs
+
+    print(f'{Fmt.GREEN}MIC correction was applied.{Fmt.END}')
+
+    return x_freqs, x_dBs
 
 
 def get_avail_input_channels():
@@ -705,8 +712,11 @@ def do_meas():
     DUT_FRD = fft_to_FRD(DUT_TF, smooth_Noct=Noct)
     REF_FRD = fft_to_FRD(REF_TF, smooth_Noct=Noct)
 
-    # END
-    # (i)   The results are the above referenced global scoped variables.
+    if mic_response.any():
+        DUT_FRD = mic_corrected_response(DUT_FRD)
+
+    # ** END **
+    # (i) The results are available in the global scope variables referenced above.
 
 
 #-------------------------------------------------------------------------------
@@ -715,7 +725,9 @@ def do_meas():
 if __name__ == "__main__":
 
     # Reading command line options
-    opcsOK = True
+    opcs_OK = True
+    bad_options = ''
+
     for opc in sys.argv[1:]:
 
         if "-h" in opc.lower():
@@ -750,14 +762,20 @@ if __name__ == "__main__":
         elif "-e" in opc:
             N = 2**int(opc[2:])
 
+        elif "-mic=" in opc:
+            mic_response_path = opc.split("=")[1]
+            mic_response = get_mic_response(mic_response_path)
+
         elif "-aux" in opc.lower():
             aux_plot = True
 
         else:
-            opcsOK = False
+            bad_options += opc + ' '
+            opcs_OK = False
 
-    if not opcsOK:
+    if not opcs_OK:
         print( __doc__ )
+        print(f'{Fmt.RED}Unknown command line options:{Fmt.END} {bad_options}')
         sys.exit()
 
     sd.default.channels     = 2
