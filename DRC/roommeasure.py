@@ -59,7 +59,7 @@
                             (Choose the right ones by checking logsweep2TF.py -h)
 
          -folder=path       A folder to store the measured FRD files,
-                            relative to your $HOME (default: roommeas/meas)
+                            relative to your $HOME (default: ~/DRC/roommeas/meas)
 
 
                             USER INTERACTION:
@@ -174,7 +174,7 @@ timer               = 0         # A timer to countdown between measurements,
 channels            = ['C']     # Channels to interleaving measurements.
 
 # Results:
-folder              = f'{UHOME}/roommeas/meas'
+folder              = ''
                                 # Smoothing the resulting response:
 Schro               = 200       # Schroeder freq (Hz)
 Noct                = 24        # Initial 1/Noct smoothing below Schro,
@@ -247,7 +247,7 @@ def read_command_line():
             jackUser = opc[7:]
 
         elif '-f' in opc:
-            folder = f'{UHOME}/{opc.split("=")[-1]}'
+            folder = opc.split("=")[-1]
 
         else:
             opcsOK = False
@@ -559,9 +559,12 @@ def prepare_frd_folder():
 
     global folder
 
+    if not folder:
+        folder = f'{UHOME}/DRC/roommeasure/meas'
+
     if not os.path.exists(folder):
         os.makedirs(folder)
-        print_console_msg(f'output to \'~{folder.replace(UHOME, "")}\'' )
+        print_console_msg(f'output to \'{folder}\'')
 
     else:
         i=1
@@ -569,11 +572,11 @@ def prepare_frd_folder():
             if not os.path.exists(f'{folder}_{i}'):
                 os.makedirs(f'{folder}_{i}')
                 folder = f'{folder}_{i}'
-                print_console_msg(f'output to \'~{folder.replace(UHOME, "")}\'' )
+                print_console_msg(f'output to \'{folder}\'' )
                 break
             i += 1
             if i >= 100:
-                print_console_msg(f'too much \'~{folder.replace(UHOME, "")}_xx\' folders :-/' )
+                print_console_msg(f'too much \'{folder}_xx\' folders :-/' )
                 return False
 
     return True
