@@ -8,5 +8,4 @@ if [[ ! $VIRTUAL_ENV ]]; then
 fi
 
 # Run the GUI
-python3 ~/DRC/DRC-GUI.py
-
+python3 ~/DRC/DRC-GUI.py $@
