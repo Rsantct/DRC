@@ -117,6 +117,7 @@ printInfo           = True
 
 do_plot             = True      # recorded, time clearance, freq response plots
 aux_plot            = False     # currently only for the prepared sweep plot
+mic_response_path   = ''
 mic_response        = None      # optional mic response tuple (freqs, dBs)
 
 #-------------------------------------------------------------------------------
@@ -161,14 +162,23 @@ S_adc = 1.0
 
 def get_mic_response(fpath):
 
+    # A flat MIC FRD tuple (freq, magdB)
+    res = array([[2, 200, 2000, 20000], [1e-6, 1e-6, 1e-6, 1e-6]])
+    using_flat_mic_response = True
+
     if os.path.isfile(fpath):
-        # readFRD returns a tuple (frd, fs)
-        res, _ = tools.readFRD(fpath)
+
+        try:
+            # readFRD returns a tuple (freq, magdB)
+            res, _ = tools.readFRD(fpath)
+            using_flat_mic_response = False
+        except:
+            print(f'{Fmt.RED}** BAD ** MIC calibration file, using a flat response.{Fmt.RED}')
 
     else:
-        return array([[0], [0]])
+        print(f'{Fmt.RED}MIC file NOT FOUND: {fpath}{Fmt.END}')
 
-    return res
+    return res, using_flat_mic_response
 
 
 def mic_corrected_response(raw_frd):
@@ -179,7 +189,7 @@ def mic_corrected_response(raw_frd):
 
         #plt.semilogx(mic_freq, mic_db, label='MIC response TXT', linestyle='--', color='red')
 
-        plt.semilogx(raw_freq, mic_db_interp, label='MIC response', linestyle='--', color='red')
+        plt.semilogx(raw_freq, mic_db_interp, label='MIC response', linestyle='--', color='brown')
 
         plt.semilogx(raw_freq, raw_db, label='Raw measurement', alpha=0.6, color='gray')
 
@@ -193,6 +203,7 @@ def mic_corrected_response(raw_frd):
         plt.xlim(20, 20000)
         plt.ylim(-60,10)
         plt.tight_layout()
+        print(f'{Fmt.GRAY}going to plot MIC correction ...{Fmt.END}')
         # Not plt.show() because more figures are to be plotted
 
 
@@ -213,7 +224,7 @@ def mic_corrected_response(raw_frd):
 
     plot_mic_compensation()
 
-    return raw_freq, raw_db
+    return raw_freq, corrected_db
 
 
 def get_avail_input_channels():
@@ -380,8 +391,10 @@ def plot_system_response(png_folder=f'{UHOME}'):
     axREF.plot(vTimes, ref, 'grey', linewidth=0.5, label='REF')
 
     axDUT.grid()
-    axREF.set_ylim(-1.5, 3.5)               # Sliding the dut and ref Y scales
     axDUT.set_ylim(-3.5, 1.5)
+    axDUT.set_yticks([-1, 0 , 1])
+    axREF.set_ylim(-1.5, 3.5)               # Sliding the dut and ref Y scales
+    axREF.set_yticks([-1, 0 , 1])
     axDUT.legend(loc='upper left')
     axREF.legend(loc='lower left')
     axDUT.set_xlabel('time [s]')
@@ -415,19 +428,19 @@ def plot_system_response(png_folder=f'{UHOME}'):
                  msg,
                  bbox=props)
 
+    #--- Freq Response graph
+    F, dut_mag = DUT_FRD
+    _, ref_mag = REF_FRD
 
-    #--- Freq Response
-    F, DUT_mag = DUT_FRD
-    _, REF_mag = REF_FRD
     # plot warning level lines
     axFRE.plot(F, full(F.shape, clipWarning), label='',
-                linestyle='--', linewidth=0.5,  color='purple')
+                linestyle=':', linewidth=1.5,  color='purple')
     axFRE.plot(F, full(F.shape, 0.0),         label='',
-                linestyle='--',       linewidth=0.75, color='purple')
+                linestyle=':', linewidth=2.0,  color='purple')
 
     # plot curves
-    axFRE.semilogx( F, DUT_mag, color='blue', label='DUT' )
-    axFRE.semilogx( F, REF_mag, color='gray', label='REF' )
+    axFRE.semilogx( F, dut_mag, color='blue', label='DUT' )
+    axFRE.semilogx( F, ref_mag, color='gray', label='REF' )
 
     # formatting
     axFRE.set_title('Freq. response')
@@ -619,7 +632,7 @@ def do_meas():
 
     """
 
-    global dut,    ref
+    global dut, ref, mic_response
     global DUT_TF, REF_TF
     global DUT_FRD, REF_FRD
     global TimeClearanceOK
@@ -676,7 +689,7 @@ def do_meas():
     #N = len(dut)   # This seems to be redundant ¿?
     print( 'Finished recording.' )
 
-    #-------------  Checking time domain RECORDING LEVELS ----------------------
+    #-------------  Checking time domain SAMPLES RECORDING LEVELS -------------
     print( "--- Checking levels:" )
     maxdBFS_dut = 20 * log10( max( abs( dut ) ) )
     maxdBFS_ref = 20 * log10( max( abs( ref ) ) )
@@ -684,19 +697,15 @@ def do_meas():
     dut_RMS_LSBs = round(sqrt( 2**30 * sum(dut**2) / N ), 2)
     ref_RMS_LSBs = round(sqrt( 2**30 * sum(ref**2) / N ), 2)
 
+    alert_dut = '           '
     if maxdBFS_dut >= clipWarning:
-        print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS  WARNING (!)', \
-              'RMS_LSBs:',  dut_RMS_LSBs )
-    else:
-        print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS             ', \
-              'RMS_LSBs:',  dut_RMS_LSBs )
-
+        alert_dut = 'WARNING (!)'
+    alert_ref = '           '
     if maxdBFS_ref >= clipWarning:
-        print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS  WARNING (!)', \
-              'RMS_LSBs:',  ref_RMS_LSBs )
-    else:
-        print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS             ', \
-              'RMS_LSBs:',  ref_RMS_LSBs )
+        alert_ref = 'WARNING (!)'
+
+    print( f'DUT channel max level: {round(maxdBFS_dut, 1):6} dBFS {alert_dut} RMS_LSBs: {dut_RMS_LSBs}')
+    print( f'REF channel max level: {round(maxdBFS_ref, 1):6} dBFS {alert_ref} RMS_LSBs: {dut_RMS_LSBs}')
 
     #---------------------------------------------------------------------------
     #------------- 3. Determine if time clearance: -----------------------------
@@ -738,21 +747,28 @@ def do_meas():
     # Here we don't need that, because we use the stationary in-room
     # loudspeaker response.
 
-    # ADD ON: getting a smoothed FRD (freq response data) from the measured TFs (fft)
+    # Getting a smoothed FRD (freq response data) from the measured TFs (fft)
     DUT_FRD = fft_to_FRD(DUT_TF, smooth_Noct=Noct)
     REF_FRD = fft_to_FRD(REF_TF, smooth_Noct=Noct)
 
-    # converting magnitudes to dB
+    # Converting magnitudes to dB
     dut_freq, dut_mag = DUT_FRD
-    ref_freq, ref_mag = DUT_FRD
+    ref_freq, ref_mag = REF_FRD
     DUT_FRD = (dut_freq, 20 * log10(dut_mag))
     REF_FRD = (ref_freq, 20 * log10(ref_mag))
 
-    if mic_response and mic_response.any():
-        DUT_FRD = mic_corrected_response(DUT_FRD)
+    if os.path.isfile(mic_response_path):
+        mic_response, using_flat_mic_response = get_mic_response(mic_response_path)
+        if mic_response.any():
+            DUT_FRD = mic_corrected_response(DUT_FRD)
+    else:
+        print(f'{Fmt.RED}MIC file NOT FOUND: {mic_response_path}{Fmt.END}')
 
     # ** END **
     # (i) The results are available in the global scope variables referenced above.
+
+    # Warnings about the work done
+    return {'using_flat_mic_response': using_flat_mic_response}
 
 
 #-------------------------------------------------------------------------------
@@ -800,7 +816,6 @@ if __name__ == "__main__":
 
         elif "-mic=" in opc:
             mic_response_path = opc.split("=")[1]
-            mic_response = get_mic_response(mic_response_path)
 
         elif "-aux" in opc.lower():
             aux_plot = True
@@ -852,8 +867,8 @@ if __name__ == "__main__":
         print( '****************************************' )
 
     # Checking FREQ DOMAIN SPECTRUM LEVEL
-    _, DUT_mag = DUT_FRD
-    maxdB = max( DUT_mag )
+    _, dut_mag = DUT_FRD
+    maxdB = max( dut_mag )
 
     if  maxdB > 0.0:
         print( '****************************************' )
