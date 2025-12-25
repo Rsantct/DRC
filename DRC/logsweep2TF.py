@@ -162,6 +162,23 @@ S_adc = 1.0
 
 def get_mic_response(fpath):
 
+
+    def get_avg_flat_region(frd, fmin=300, fmax=3000):
+
+        # Create 500 log points from  `fmin` to `fmax`
+        hz_interp = geomspace(fmin, fmax, 100)
+
+        # Interpolate the dB values ​​for those new points
+        hz = frd[:,0]
+        db = frd[:,1]
+        db_interp = interp(hz_interp, hz, db)
+
+        # Average the interpolated values
+        avg = mean(db_interp)
+        print(f'{Fmt.BLUE}{Fmt.BOLD}Average MIC {avg:.2f} dB from {fmin} Hz to {fmax} Hz{Fmt.END}')
+
+        return avg
+
     # A flat MIC FRD tuple (freq, magdB)
     res = array([[2, 200, 2000, 20000], [1e-6, 1e-6, 1e-6, 1e-6]])
     using_flat_mic_response = True
@@ -172,8 +189,13 @@ def get_mic_response(fpath):
             # readFRD returns a tuple (freq, magdB)
             res, _ = tools.readFRD(fpath)
             using_flat_mic_response = False
-        except:
+
+            # shifting the flat region curve 200 Hz ~ 4000 Hz to 0 dB
+            res[:, 1] -= get_avg_flat_region(res, 200, 4000)
+
+        except Exception as e:
             print(f'{Fmt.RED}** BAD ** MIC calibration file, using a flat response.{Fmt.RED}')
+            print(f'{Fmt.RED}{str(e)}{Fmt.END}')
 
     else:
         print(f'{Fmt.RED}MIC file NOT FOUND: {fpath}{Fmt.END}')
