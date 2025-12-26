@@ -190,7 +190,7 @@ def get_mic_response(fpath):
             response, _ = tools.readFRD(fpath)
             using_flat_mic_response = False
 
-            # shifting the flat region curve 200 Hz ~ 4000 Hz to 0 dB
+            # shifting the usual flat region curve 200 Hz ~ 4000 Hz to 0 dB
             response[:, 1] -= get_avg_flat_region(response, 200, 4000)
 
         except Exception as e:
