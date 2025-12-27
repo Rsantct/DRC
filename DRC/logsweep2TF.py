@@ -228,7 +228,9 @@ def get_mic_corrected_response(raw_frd, doplot=False):
     mic_freq = mic_response[:, 0]
     mic_db   = mic_response[:, 1]
 
-    # Interpolate mic response to the given raw_freq points
+    # Interpolate mic response to the given raw_freq points.
+    # As log spaced audio freq points can be widely separated, it is
+    # preferred to interpolate over the logarithm of the frequency.
     mic_db_interp = interp(log10(raw_freq), log10(mic_freq), mic_db)
 
     # Finally, correct the given frd with the mic_frd
