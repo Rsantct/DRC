@@ -418,7 +418,7 @@ class RoommeasureGUI(Tk):
                 self.var_msg.set(f'CLIPPING DETECTED: +{round(maxdB,1)} dB')
 
             elif maxdB > -3.0:
-                self.var_msg.set(f'CLOSE TO CLIPPING: {round(maxdB,1)} dB')
+                self.var_msg.set(f'close to CLIPPING {round(maxdB,1)} dB lower the volume')
 
             elif maxdB < -20.0:
                 self.var_msg.set(f'TOO LOW: {round(maxdB,1)} dB')
