@@ -104,7 +104,7 @@ import  warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 UHOME = os.path.expanduser("~")
-sys.path.append(UHOME + "/audiotools")
+sys.path.append(f'{UHOME}/audiotools')
 from    smoothSpectrum import smoothSpectrum as smooth
 import  tools
 
