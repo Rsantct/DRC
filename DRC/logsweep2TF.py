@@ -174,8 +174,8 @@ def plot_mic_compensation(hz, mic_db, raw_db, corrected_db):
     plt.figure('MIC correction', figsize=(6, 3))
 
     plt.semilogx(hz, mic_db,       label='MIC response',       linestyle='--', color='brown')
-    plt.semilogx(hz, raw_db,       label='Raw response',       alpha=0.6, color='gray')
-    plt.semilogx(hz, corrected_db, label='Corrected response', linewidth=2, color='blue')
+    plt.semilogx(hz, corrected_db, label='Corrected response', linestyle='-', linewidth=2, color='blue')
+    plt.semilogx(hz, raw_db,       label='Raw response',       linestyle='-', alpha=0.6, color='gray')
 
     plt.title(f'MIC corrected response \n{os.path.basename(mic_response_path)}', fontsize=10)
     plt.xlabel('Freq (Hz)')
@@ -398,9 +398,12 @@ def plot_system_response():
 
     # Safe amplitudes
     for axtmp in (axDUT, axREF):
-        for a in (.5, -.5):
+        for a in (-0.5, +0.5):
             axtmp.plot(vTimes, full(vTimes.shape,  a), label='',
-                       linestyle='dashed', linewidth=0.5, color='purple')
+                       linestyle='dashed', linewidth=0.5, color='gray')
+        for a in (-1.0, +1.0):
+            axtmp.plot(vTimes, full(vTimes.shape,  a), label='',
+                       linestyle='dashed', linewidth=0.5, color='maroon')
 
     # DUT waveform
     axDUT.plot(vTimes, dut, 'blue', linewidth=0.5, label='DUT')
@@ -410,9 +413,9 @@ def plot_system_response():
 
     axDUT.grid()
     axDUT.set_ylim(-3.5, 1.5)
-    axDUT.set_yticks([-1, 0 , 1])
+    axDUT.set_yticks([-1, -.5, 0 , .5, 1])
     axREF.set_ylim(-1.5, 3.5)               # Sliding the dut and ref Y scales
-    axREF.set_yticks([-1, 0 , 1])
+    axREF.set_yticks([-1, -.5, 0 , .5, 1])
     axDUT.legend(loc='upper left')
     axREF.legend(loc='lower left')
     axDUT.set_xlabel('time [s]')
@@ -709,7 +712,7 @@ def do_meas(plot_mic=False):
     print( 'Finished recording.' )
 
     #-------------  Checking time domain SAMPLES RECORDING LEVELS -------------
-    print( "--- Checking levels:" )
+    print( "--- Checking time domain SAMPLES RECORDING LEVELS:" )
     maxdBFS_dut = 20 * log10( max( abs( dut ) ) )
     maxdBFS_ref = 20 * log10( max( abs( ref ) ) )
     # LSB: Less Significant Bit
@@ -724,7 +727,7 @@ def do_meas(plot_mic=False):
         alert_ref = 'WARNING (!)'
 
     print( f'DUT channel max level: {round(maxdBFS_dut, 1):6} dBFS {alert_dut} RMS_LSBs: {dut_RMS_LSBs}')
-    print( f'REF channel max level: {round(maxdBFS_ref, 1):6} dBFS {alert_ref} RMS_LSBs: {dut_RMS_LSBs}')
+    print( f'REF channel max level: {round(maxdBFS_ref, 1):6} dBFS {alert_ref} RMS_LSBs: {ref_RMS_LSBs}')
 
     #---------------------------------------------------------------------------
     #------------- 3. Determine if time clearance: -----------------------------
