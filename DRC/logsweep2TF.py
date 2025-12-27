@@ -88,9 +88,11 @@ from    fmt         import Fmt
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
 import  matplotlib
+
 # Later we will be able to call matplotlib.use('Agg') to replace the regular
 # display backend (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid
 # incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
+
 import  matplotlib.pyplot as plt
 
 from    matplotlib.ticker   import EngFormatter
@@ -117,8 +119,12 @@ printInfo           = True
 
 do_plot             = True      # recorded, time clearance, freq response plots
 aux_plot            = False     # currently only for the prepared sweep plot
+png_folder          = f'{UHOME}/DRC'
+
+# Prepare a flat MIC response
 mic_response_path   = ''
-mic_response        = None      # optional mic response tuple (freqs, dBs)
+mic_response        = array([[2, 200, 2000, 20000], [0, 0, 0, 0]]).transpose()
+using_mic_response  = False
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT PARAMETERS: -----------------------------
@@ -160,74 +166,60 @@ S_adc = 1.0
 ## S_adc=+1.49;         % USB Dual Pre JV pot minimum (gain=3, Windows 7)
 
 
-def get_mic_response(fpath):
+def plot_mic_compensation(hz, mic_db, raw_db, corrected_db):
+    """
+        <doplot> controls plt.show() if no more figures are to be plotted
+    """
 
-    def get_avg_flat_region(frd, fmin=300, fmax=3000):
+    plt.figure('MIC correction', figsize=(6, 3))
 
-        # Create 500 log points from  `fmin` to `fmax`
-        hz_interp = geomspace(fmin, fmax, 100)
+    plt.semilogx(hz, mic_db,       label='MIC response',       linestyle='--', color='brown')
+    plt.semilogx(hz, raw_db,       label='Raw response',       alpha=0.6, color='gray')
+    plt.semilogx(hz, corrected_db, label='Corrected response', linewidth=2, color='blue')
 
-        # Interpolate the dB values ​​for those new points
-        hz = frd[:,0]
-        db = frd[:,1]
-        db_interp = interp(hz_interp, hz, db)
+    plt.title(f'MIC corrected response \n{os.path.basename(mic_response_path)}', fontsize=10)
+    plt.xlabel('Freq (Hz)')
+    plt.ylabel('Amplitude (dB)')
+    plt.grid(True, which="both", ls="-", alpha=0.5)
+    plt.legend()
+    plt.xlim(20, 20000)
+    plt.ylim(-60,10)
+    plt.tight_layout()
+    plt.savefig(f'{png_folder}/mic_correction.png')
 
-        # Average the interpolated values
-        avg = mean(db_interp)
-        print(f'{Fmt.BLUE}{Fmt.BOLD}Average MIC {avg:.2f} dB from {fmin} Hz to {fmax} Hz{Fmt.END}')
 
-        return avg
+def set_mic_response():
 
+    global mic_response, using_mic_response
 
-    # Prepare a flat MIC response
-    response = array([[2, 200, 2000, 20000], [1e-6, 1e-6, 1e-6, 1e-6]])
-    using_flat_mic_response = True
+    if os.path.isfile(mic_response_path):
 
-    if os.path.isfile(fpath):
+        using_mic_response = False
 
         try:
             # readFRD returns a tuple (frd, fs) where frd is an array of Hz:dB
-            response, _ = tools.readFRD(fpath)
-            using_flat_mic_response = False
+            mic_response_candidate, _ = tools.readFRD(mic_response_path)
 
-            # shifting the usual flat region curve 200 Hz ~ 4000 Hz to 0 dB
-            response[:, 1] -= get_avg_flat_region(response, 200, 4000)
+            if mic_response_candidate.shape[0] > 1:
+
+                mic_response = mic_response_candidate
+                using_mic_response = True
+                print(f'{Fmt.BLUE}MIC response was loaded{Fmt.END}')
+
+                # shifting the usual flat region curve 200 Hz ~ 4000 Hz to 0 dB
+                flat_offset_dB = tools.get_avg_flat_region(mic_response, 200, 4000)
+                mic_response[:, 1] -= flat_offset_dB
+                print(f'{Fmt.BLUE}{Fmt.BOLD}MIC response was shifted {flat_offset_dB:.2f} dB so that the flat region is 0 dB{Fmt.END}')
 
         except Exception as e:
             print(f'{Fmt.RED}** BAD ** MIC calibration file, using a flat response.{Fmt.RED}')
-            print(f'{Fmt.RED}{str(e)}{Fmt.END}')
+            print(f'{Fmt.GRAY}{str(e)}{Fmt.END}')
 
     else:
-        print(f'{Fmt.RED}MIC file NOT FOUND: {fpath}{Fmt.END}')
-
-    return response, using_flat_mic_response
+        print(f'{Fmt.RED}MIC file NOT FOUND: {mic_response_path}{Fmt.END}')
 
 
-def mic_corrected_response(raw_frd):
-
-    def plot_mic_compensation():
-
-        plt.figure('MIC correction', figsize=(6, 3))
-
-        #plt.semilogx(mic_freq, mic_db, label='MIC response TXT', linestyle='--', color='red')
-
-        plt.semilogx(raw_freq, mic_db_interp, label='MIC response', linestyle='--', color='brown')
-
-        plt.semilogx(raw_freq, raw_db, label='Raw measurement', alpha=0.6, color='gray')
-
-        plt.semilogx(raw_freq, corrected_db, label='Corrected measurement', linewidth=2, color='blue')
-
-        plt.title('MIC compensated response', fontsize=14)
-        plt.xlabel('Freq (Hz)')
-        plt.ylabel('Amplitude (dB)')
-        plt.grid(True, which="both", ls="-", alpha=0.5)
-        plt.legend()
-        plt.xlim(20, 20000)
-        plt.ylim(-60,10)
-        plt.tight_layout()
-        print(f'{Fmt.GRAY}going to plot MIC correction ...{Fmt.END}')
-        # Not plt.show() because more figures are to be plotted
-
+def get_mic_corrected_response(raw_frd, doplot=False):
 
     # extract freq and mag arrays from the given `xfrd` tuple
     raw_freq, raw_db = raw_frd
@@ -244,7 +236,8 @@ def mic_corrected_response(raw_frd):
 
     print(f'{Fmt.GREEN}MIC correction was applied.{Fmt.END}')
 
-    plot_mic_compensation()
+    if doplot:
+        plot_mic_compensation(raw_freq, mic_db_interp, raw_db, corrected_db)
 
     return raw_freq, corrected_db
 
@@ -342,8 +335,8 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
 
     # If this is a new figure, lets create it with a new axes:
     if figure not in plt.get_fignums():
-        fig = plt.figure(figure)
-        ax = fig.add_subplot()
+        fig_frds = plt.figure(figure)
+        ax = fig_frds.add_subplot()
 
         # plot warning level lines
         ax.plot(freq, full(freq.shape, clipWarning), label='',
@@ -364,7 +357,7 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
 
     # If the figure already exists, simply select it and select the existing axes:
     else:
-        fig = plt.figure(figure)
+        fig_frds = plt.figure(figure)
         ax = plt.gca()
 
     # plot curves
@@ -379,7 +372,7 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
         plt.savefig(png_fname)
 
 
-def plot_system_response(png_folder=f'{UHOME}'):
+def plot_system_response():
     """ plot layout:
 
                 [recorded_waveforms]  [time_clearance]  1/3 height
@@ -387,11 +380,14 @@ def plot_system_response(png_folder=f'{UHOME}'):
                 [        frequency____response       ]  2/3
     """
 
-    fig = plt.figure('system response', figsize=(9.0, 9.0))  # in inches
+    fig_system_response = plt.figure('system response', figsize=(9.0, 9.0))  # in inches
 
-    axDUT = plt.subplot2grid(shape=(3, 2), loc=(0, 0))
-    axTCL = plt.subplot2grid(shape=(3, 2), loc=(0, 1))
-    axFRE = plt.subplot2grid(shape=(3, 2), loc=(1, 0), colspan=2, rowspan=2)
+    #axDUT = plt.subplot2grid(shape=(3, 2), loc=(0, 0))
+    #axTCL = plt.subplot2grid(shape=(3, 2), loc=(0, 1))
+    #axFRE = plt.subplot2grid(shape=(3, 2), loc=(1, 0), colspan=2, rowspan=2)
+    axDUT = plt.subplot2grid(shape=(2, 2), loc=(0, 0))
+    axTCL = plt.subplot2grid(shape=(2, 2), loc=(0, 1))
+    axFRE = plt.subplot2grid(shape=(2, 2), loc=(1, 0), colspan=2)
 
     #--- time domain vectors
     vSamples = arange(0,N)                  # samples vector
@@ -465,7 +461,8 @@ def plot_system_response(png_folder=f'{UHOME}'):
     axFRE.semilogx( F, ref_mag, color='gray', label='REF' )
 
     # formatting
-    axFRE.set_title('Freq. response')
+    tmp = '' if not using_mic_response else ' (mic corrected)'
+    axFRE.set_title(f'Freq. response{tmp}')
     axFRE.set_xlim(20, 20000)
     axFRE.set_ylim( yplotmax - yplotspan, yplotmax )
     # Y ticks in 6 dB steps
@@ -488,7 +485,7 @@ def plot_system_response(png_folder=f'{UHOME}'):
     print( "--- Plotting sweep system response graphs..." )
 
 
-def plot_aux_graphs(png_folder=f'{UHOME}'):
+def plot_aux_graphs():
     """ Aux graphs (currently only for the prepared sweep plot)
     """
 
@@ -496,7 +493,7 @@ def plot_aux_graphs(png_folder=f'{UHOME}'):
     vTimes   = vSamples / float(fs)         # samples to time conversion
 
     # ---- Sweep
-    fig, axSWE = plt.subplots(figsize=(4.5, 2.6))  # in inches
+    fig_aux, axSWE = plt.subplots(figsize=(4.5, 2.6))  # in inches
     axSWE.plot(vTimes, sweep, '--', color='black', linewidth=2,  label='raw sweep')
     axSWE.grid()
     axSWE.plot(vTimes, tapsweep, color='blue', linewidth=1, label='tapered sweep')
@@ -638,7 +635,7 @@ def get_offset_xcorr(sweep, dut, ref):
     return offset, TimeClearanceOK
 
 
-def do_meas():
+def do_meas(plot_mic=False):
     """
     Compute globals about DUT Device-Under-Test and REFerence measurements.
 
@@ -779,18 +776,14 @@ def do_meas():
     DUT_FRD = (dut_freq, 20 * log10(dut_mag))
     REF_FRD = (ref_freq, 20 * log10(ref_mag))
 
-    if os.path.isfile(mic_response_path):
-        mic_response, using_flat_mic_response = get_mic_response(mic_response_path)
-        if mic_response.any():
-            DUT_FRD = mic_corrected_response(DUT_FRD)
+    # Our default flat mic response has 0.0 dB values
+    if using_mic_response:
+        DUT_FRD = get_mic_corrected_response(DUT_FRD, plot_mic)
     else:
-        print(f'{Fmt.RED}MIC file NOT FOUND: {mic_response_path}{Fmt.END}')
+        print(f'{Fmt.GRAY}(do_meas) * NO * MIC correction{Fmt.END}')
 
     # ** END **
     # (i) The results are available in the global scope variables referenced above.
-
-    # Warnings about the work done
-    return {'using_flat_mic_response': using_flat_mic_response}
 
 
 #-------------------------------------------------------------------------------
@@ -878,8 +871,12 @@ if __name__ == "__main__":
     # Do create the needed raw and tapered sweeps
     prepare_sweep()
 
+    # Prepare MIC response if a given mic response file
+    if mic_response_path:
+        set_mic_response()
+
     # MEASURE
-    do_meas()
+    do_meas(plot_mic=True)
 
     # Checking TIME CLEARANCE
     if not TimeClearanceOK:
@@ -910,7 +907,14 @@ if __name__ == "__main__":
         print( '****************************************' )
 
     if do_plot:
+
         plot_system_response()
+
         if aux_plot:
             plot_aux_graphs()
+
+        # makes the figure active (raised to foreground)
+        if using_mic_response:
+            plt.figure('MIC correction')
+
         plt.show()
