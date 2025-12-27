@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """ This is a Tkinter based GUI to running Rsantct/DRC scripts
 """
-from tkinter import *
-from tkinter import ttk, filedialog, messagebox, font
+from tkinter        import *
+from tkinter        import ttk, filedialog, messagebox, font
 # https://tkdocs.com/tutorial/fonts.html#images
-from PIL import ImageTk, Image
+from    PIL         import ImageTk, Image
 
-from subprocess import Popen
-import threading
-from time import sleep
-import glob
-import os
-import sys
-import platform
+from    subprocess  import Popen
+import  threading
+from    time        import sleep
+import  glob
+import  os
+import  sys
+import  platform
 
 UHOME = os.path.expanduser("~")
-sys.path.append(f'{UHOME}/DRC')
+#sys.path.append(f'{UHOME}/DRC')
 
 import roommeasure as rm
 
@@ -23,9 +23,11 @@ import roommeasure as rm
 # We need to call matplotlib.use('Agg') to replace the regular display backend
 # (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid incompatibility
 # when threading the matplotlib from the imported rm.LS on this GUI.
-# Notice below that we dont order plt.show() but plt.close('all').
 rm.LS.matplotlib.use('Agg')
-
+#
+# (!) Notice: We do not order plt.show() but plt.close('all'),
+#             then we wil display PNG images instead of call plt.show()
+#
 
 class RoommeasureGUI(Tk):
 
@@ -288,6 +290,7 @@ class RoommeasureGUI(Tk):
         tmp = filedialog.askopenfilename( initialdir=f'{UHOME}/DRC' ) #, filetypes=filetypes )
         if tmp:
             rm.LS.mic_response_path = tmp
+            rm.LS.set_mic_response()
             ## updates the GUI
             self.mic_path.config(state='enabled')
             self.mic_path.delete(0, END)
@@ -395,13 +398,13 @@ class RoommeasureGUI(Tk):
 
     def test_logsweep(self):
 
-        def do_test(png_folder):
+        def do_test():
 
             self.var_msg.set('TESTING SWEEP RECORDING ... (please wait)')
             self.btn_go['state'] = 'disabled'
             self.btn_close['state'] = 'disabled'
 
-            meas_info = rm.LS.do_meas()
+            rm.LS.do_meas(plot_mic=True)
 
             # Checking TIME CLEARANCE:
             if not rm.LS.TimeClearanceOK:
@@ -413,24 +416,40 @@ class RoommeasureGUI(Tk):
 
             if  maxdB > 0.0:
                 self.var_msg.set(f'CLIPPING DETECTED: +{round(maxdB,1)} dB')
+
             elif maxdB > -3.0:
                 self.var_msg.set(f'CLOSE TO CLIPPING: {round(maxdB,1)} dB')
+
             elif maxdB < -20.0:
                 self.var_msg.set(f'TOO LOW: {round(maxdB,1)} dB')
+
             else:
-                self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
+                tmp = ''
+                if rm.LS.using_mic_response:
+                    tmp = ' (with mic correction)'
+                else:
+                    if self.mic_path.get():
+                        tmp = ' (BAD mic calibration file)'
+                    else:
+                        tmp = ' (no mic correction)'
+
+                self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB{tmp}')
 
             # Plotting test signals to png
-            rm.LS.plot_system_response( png_folder=png_folder )
+            rm.LS.plot_system_response()
             rm.LS.plt.close('all')
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            self.do_show_image_at( imagePath=f'{png_folder}/sweep_response.png',
+
+            self.do_show_image_at( imagePath=f'{rm.LS.png_folder}/sweep_response.png',
                                     resize=False )
 
-            if meas_info.get('using_flat_mic_response', True):
-                self.var_msg.set('BAD MIC calibration file, using a flat response')
+            if rm.LS.using_mic_response:
+                self.do_show_image_at( imagePath=f'{rm.LS.png_folder}/mic_correction.png',
+                                        resize=False )
+
+
 
         def configure_LS():
 
@@ -454,6 +473,9 @@ class RoommeasureGUI(Tk):
             # - Includes time clearance test
             rm.LS.checkClearence = True
 
+            # png folder
+            rm.LS.png_folder = folder
+
             return True
 
 
@@ -475,7 +497,6 @@ class RoommeasureGUI(Tk):
         # Do test
         # (i) threading avoids blocking the Tk event-listen mainloop
         job_test = threading.Thread( target = do_test,
-                                     args   = (folder,),
                                      daemon = True )
         job_test.start()
 
@@ -889,6 +910,7 @@ if __name__ == '__main__':
         if '-mic=' in opc:
             cmd_line_mic_response_path  = opc.split('-mic=')[-1]
             rm.LS.mic_response_path     = cmd_line_mic_response_path
+            rm.LS.set_mic_response()
 
     app = RoommeasureGUI()
 
