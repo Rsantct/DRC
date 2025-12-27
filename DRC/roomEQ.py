@@ -93,7 +93,6 @@ import os
 import sys
 import numpy as np
 from scipy import signal
-from scipy.interpolate import interp1d
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
 import matplotlib
