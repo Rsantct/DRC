@@ -12,9 +12,11 @@
 
     Usage:
 
-        filter2peq.py  --fir=path/to/FIRfile --fs=FS [--plot]
+        filter2peq.py  --fir=path/to/FIRfile --fs=FS [--numpeq=N] [--plot]
 
-        filter2peq.py  --frd=path/to/FRDfile --fs=FS [--plot]
+        filter2peq.py  --frd=path/to/FRDfile --fs=FS [--numpeq=N] [--plot]
+
+        N (number of PEQ sections) default to 6
 
     Output:
 
@@ -31,7 +33,7 @@ import  sys
 import  json
 import  numpy as np
 import  scipy.signal    as      signal
-from    scipy.optimize  import  minimize     # Woooooow!
+from    scipy.optimize  import  minimize     # woooooow!
 import  matplotlib.pyplot as    plt
 
 
@@ -344,6 +346,9 @@ if __name__ == "__main__":
     doplot   = False
 
     for opc in sys.argv[1:]:
+
+        if '-n=' in opc:
+            num_peqs = int( opc.split('=')[-1] )
 
         if '-frd=' in opc:
             frd_path = opc.split('frd=')[-1]
