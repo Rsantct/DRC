@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+
+# Copyright (c) Rafael Sánchez
+# This file is part of 'Rsantct.DRC', yet another DRC FIR toolkit.
+
 """
     Generates a set of optimized Parametric EQ from a given filter.
 
