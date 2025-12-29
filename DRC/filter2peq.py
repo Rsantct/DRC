@@ -7,8 +7,10 @@
     Generates a set of optimized Parametric EQ from a given filter.
 
     The filter can be given in two flawors:
+
         - FRD (freq response data)
-        - FIR (impulse response, raw pcm float32 or wav file)
+
+        - FIR (impulse response PCM: raw float32 or wav file)
 
     Usage:
 
@@ -18,9 +20,9 @@
 
             more options are:
 
-                FS          default 44100 (be CAREFUL for raw FIR files)
+                FS          default 44100 (mandatory option for PCM files .bin .pcm .f32)
 
-                --ch=C      L,R,0,1 needed if a .wav FIR was given
+                --ch=C      L,R,0,1 needed if a .wav FIR is given
 
                 --numpeq=N  number of PEQ sections, default to 6
 
@@ -46,6 +48,8 @@ import  scipy.signal    as      signal
 from    scipy.optimize  import  minimize     # woooooow!
 from    scipy.io        import  wavfile
 import  matplotlib.pyplot as    plt
+
+VALID_FS = (44100, 88200, 48000, 96000, 192000)
 
 
 def detect_channel_from_filter_filename():
@@ -363,7 +367,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
 
         CamillaDSP['yaml_block'] = yaml.dump(tmp, sort_keys=False, default_flow_style=False)
         # debug
-        print(CamillaDSP['yaml_block'])
+        #print(CamillaDSP['yaml_block'])
 
         eq_config['CamillaDSP'] = CamillaDSP
 
@@ -523,6 +527,12 @@ def load_fir_file(fir_path, ch):
         h, fs = load_wav(fir_path, ch)
 
     else:
+        # for PCM raw FIRs, fs must be explicited at command line
+        if not fs in VALID_FS:
+            print(f'FS must be in {VALID_FS}')
+            print(__doc__)
+            sys.exit()
+
         with open(fir_path, 'rb') as f:
             h = np.fromfile(f, dtype=np.float32)
 
@@ -550,7 +560,7 @@ def fir2frd(h, fs, freq=None):
 if __name__ == "__main__":
 
     # Read commmand line options
-    num_peqs  = 6                   # Número de bandas Peaking EQ
+    num_peqs  = 6                   # number of Peaking EQ bands
     fs        = 0
     frd_path  = ''
     fir_path  = ''
@@ -591,21 +601,15 @@ if __name__ == "__main__":
                 sys.exit()
 
 
-    # Check FS
-    if not fs:
-        fs = 44100
-
-    fs_options = (44100, 88200, 48000, 96000, 192000)
-    if not fs in fs_options:
-        print(f'FS must be in {fs_options}')
-        sys.exit()
-
     # Check file path
     if frd_path:
 
         if os.path.isfile( frd_path ):
 
             frd = np.loadtxt(frd_path)
+
+            if not fs:
+                fs = 48000
 
             json_dir  = os.path.dirname(frd_path)
             set_name  = os.path.splitext( os.path.basename(frd_path) )[0]
@@ -639,6 +643,12 @@ if __name__ == "__main__":
         print(__doc__)
         sys.exit()
 
+
+    # Check FS
+    if not fs in VALID_FS:
+        print(f'FS must be in {VALID_FS}')
+        sys.exit()
+
     # Check channel
     if not ch:
         ch = detect_channel_from_filter_filename()
@@ -651,8 +661,11 @@ if __name__ == "__main__":
         sys.exit()
 
 
+    ########################
     # Solve the optimization
     peq_config = get_optimized_peqs_from_frd(frd, fs, num_peqs)
+    ########################
+
 
     # Terminal printout
     if not silent:
