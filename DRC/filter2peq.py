@@ -7,14 +7,14 @@
     Generates a set of optimized Parametric EQ from a given filter.
 
     The filter can be given in two flawors:
-        - FIR (impulse response, raw pcm float32 or wav file)
         - FRD (freq response data)
+        - FIR (impulse response, raw pcm float32 or wav file)
 
     Usage:
 
-        filter2peq.py  --fir=path/to/FIRfile  [more options]
-
         filter2peq.py  --frd=path/to/FRDfile  [more options]
+
+        filter2peq.py  --fir=path/to/FIRfile  [more options]
 
             more options are:
 
