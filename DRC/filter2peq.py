@@ -473,9 +473,12 @@ def visualize_eq_results(frd, peq_set):
 
 def load_fir_file(fir_path):
 
+    global fs
+
     fname, fext = os.path.splitext( os.path.basename(fir_path) )
 
     if fext != '.wav':
+
         with open(fir_path, 'rb') as f:
             h = np.fromfile(f, dtype=np.float32)
 
