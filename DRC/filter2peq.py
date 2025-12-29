@@ -7,34 +7,71 @@
     Generates a set of optimized Parametric EQ from a given filter.
 
     The filter can be given in two flawors:
-        - FIR (impulse response)
+        - FIR (impulse response, raw pcm float32 or wav file)
         - FRD (freq response data)
 
     Usage:
 
-        filter2peq.py  --fir=path/to/FIRfile --fs=FS [--numpeq=N] [--plot]
+        filter2peq.py  --fir=path/to/FIRfile  [more options]
 
-        filter2peq.py  --frd=path/to/FRDfile --fs=FS [--numpeq=N] [--plot]
+        filter2peq.py  --frd=path/to/FRDfile  [more options]
 
-        N (number of PEQ sections) default to 6
+            more options are:
+
+                FS          default 44100 (be CAREFUL for raw FIR files)
+
+                --ch=C      L,R,0,1 needed if a .wav FIR was given
+
+                --numpeq=N  number of PEQ sections, default to 6
+
+                --plot      do plot and save figure to disk
+
+                --silent    omit terminal json printout
 
     Output:
 
-        A JSON with the PEQ set placed in the same directory
-        as the given filepath.
+        All output files are placed in the same directory as the given filter file path.
 
-        (stdout will also receive the json string)
-
-        A plot of results.
+        - PEQ set file .json
+        - plot of results and its .png figure file
+        - stdout will also printout the json result
 """
 
 import  os
 import  sys
 import  json
+import  yaml
 import  numpy as np
 import  scipy.signal    as      signal
 from    scipy.optimize  import  minimize     # woooooow!
 import  matplotlib.pyplot as    plt
+
+
+def detect_channel_from_filter_filename():
+    """ returns 'L', 'R' or 'chX'
+    """
+
+    ch = ''
+
+    tmp = set_name.split('.')
+
+    if 'L' in tmp:
+        ch = 'L'
+    elif 'R' in tmp:
+        ch = 'R'
+
+    if not ch:
+
+        tmp = set_name.split('_')
+
+        if 'L' in tmp:
+            ch = 'L'
+        elif 'R' in tmp:
+            ch = 'R'
+        else:
+            ch = 'chX'
+
+    return ch
 
 
 def get_PEQ_mag(freq, fc, Q, gain_db, fs):
@@ -163,7 +200,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
         return eq_config
 
 
-    def eq_config_advanced(eq_config, freq, target):
+    def add_eq_config_advanced(eq_config, freq, target):
 
         comments = """
             rmse_bass_db: if very low (e.g., < 0.2 dB), it means the bass emulation is almost perfect. rmse_treble_db: if higher, it reflects the 'permission' you gave the algorithm to be less accurate in the high frequencies.
@@ -189,7 +226,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
 
 
         mag_calc  = get_PEQs_mag(freq, eq_config['filters'], fs)
-        pha_calc = get_PEQs_pha(freq, eq_config['filters'], fs)
+        # pha_calc = get_PEQs_pha(freq, eq_config['filters'], fs)  # unused
 
         metrics = calculate_metrics(freq, target, mag_calc)
 
@@ -200,6 +237,124 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
         }
 
         return eq_config
+
+
+    def add_pAudio_format(eq_config, ch):
+        """ pAudio lspk.yml block, example:
+
+                drc:
+
+                    mesa-SoundID:
+
+                        type:       fir
+                        flat_gain:  -5.5
+                        posit_gain:  0.0
+
+
+                    mesa-IIR:
+
+                        L:
+                            0:
+                                type: Biquad
+                                parameters:
+                                    type:   Peaking
+                                    freq:   40
+                                    gain:   3.0
+                                    q:      1.0
+                            1:
+                                ...
+                            ...
+                        R:
+                            ...
+
+        """
+
+        pAudio = {  'info':         'pAudio YAML filters',
+                    'drc_name':     set_name,
+                    'yaml_block':   ''
+                 }
+
+        if ch != 'chX':
+            pAudio['comments'] = f'channel \'{ch}\' detected from filter filename'
+        else:
+            pAudio['comments'] = 'channel not detected from filter filename'
+
+        # tmp is a dict to be converted in a yaml_block
+        tmp = { 'drc': {set_name: { ch: {} } } }
+
+        for i, peq in enumerate(eq_config['filters']):
+
+            fc, Q, gain = peq['fc'], peq['q'], peq['gain']
+
+            tmp['drc'][set_name][ch][i] = {
+                'type': 'Biquad',
+                'parameters': {
+                    'type':   'Peaking',
+                    'freq':   fc,
+                    'gain':   gain,
+                    'q':      Q
+                }
+            }
+
+        pAudio['yaml_block'] = yaml.dump(tmp, sort_keys=False, default_flow_style=False)
+        # debug
+        #print(pAudio['yaml_block'])
+
+        eq_config['pAudio'] = pAudio
+
+
+    def add_CamillaDSP_format(eq_config, ch):
+        """ pAudio lspk.yml block, example:
+
+                filters:
+                  drc_mesa-IIR_L_0:
+                    description: null
+                    parameters:
+                      freq: 40.0
+                      gain: 3.0
+                      q: 1.0
+                      type: Peaking
+                    type: Biquad
+                  drc_mesa-IIR_L_1:
+                    ..
+                  drc_mesa-IIR_L_2:
+                    ..
+                  ..
+        """
+
+        CamillaDSP = { 'info':      'CamillaDSP YAML filters',
+                    'drc_name':     set_name,
+                    'yaml_block':   ''
+                    }
+
+        if ch != 'chX':
+            CamillaDSP['comments'] = f'channel \'{ch}\' detected from filter filename'
+        else:
+            CamillaDSP['comments'] = 'channel not detected from filter filename'
+
+
+        # tmp is a dict to be converted in a yaml_block
+        tmp = { 'filters': {} }
+
+        for i, peq in enumerate(eq_config['filters']):
+
+            fc, Q, gain = peq['fc'], peq['q'], peq['gain']
+
+            tmp['filters'][f'{set_name}_{i}'] = {
+                'type': 'Biquad',
+                'parameters': {
+                    'type':   'Peaking',
+                    'freq':   fc,
+                    'gain':   gain,
+                    'q':      Q
+                }
+            }
+
+        CamillaDSP['yaml_block'] = yaml.dump(tmp, sort_keys=False, default_flow_style=False)
+        # debug
+        #print(CamillaDSP['yaml_block'])
+
+        eq_config['CamillaDSP'] = CamillaDSP
 
 
     # <frd> is a 2 columns np.array [Hz : dB]
@@ -245,7 +400,11 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
     res_params = res.x.reshape(num_peqs, 3)
     eq_config  = params_to_json( res_params )
 
-    eq_config_advanced(eq_config, f_target, m_target)
+    add_eq_config_advanced(eq_config, f_target, m_target)
+
+    add_pAudio_format(eq_config, ch)
+
+    add_CamillaDSP_format(eq_config, ch)
 
     return eq_config
 
@@ -312,9 +471,24 @@ def visualize_eq_results(frd, peq_set):
     plt.show()
 
 
-def load_pcm_fir_file(fir_path):
-    with open(fir_path, 'rb') as f:
-        h = np.fromfile(f, dtype=np.float32)
+def load_fir_file(fir_path):
+
+    fname, fext = os.path.splitext( os.path.basename(fir_path) )
+
+    if fext != '.wav':
+        with open(fir_path, 'rb') as f:
+            h = np.fromfile(f, dtype=np.float32)
+
+    else:
+
+        if not ch in ('L', 'R', '0', '1'):
+            print(__doc__)
+            print('\nA channel is needed for .wav FIR\n')
+            sys.exit()
+
+        print('WAV is pending')
+        sys.exit()
+
     return h
 
 
@@ -339,42 +513,66 @@ def fir2frd(h, fs, freq=None):
 if __name__ == "__main__":
 
     # Read commmand line options
-    num_peqs = 6                    # Número de bandas Peaking EQ
-    fs       = 0
-    frd_path = ''
-    fir_path = ''
-    doplot   = False
+    num_peqs  = 6                   # Número de bandas Peaking EQ
+    fs        = 0
+    frd_path  = ''
+    fir_path  = ''
+    do_plot   = False
+    silent    = False
+    ch        = ''                  # needed for .wav FIR files
 
     for opc in sys.argv[1:]:
 
-        if '-n=' in opc:
+        if '-s' in opc:
+            silent = True
+
+        elif '-ch=' in opc:
+            ch = opc.split('=')[-1]
+
+        elif '-n=' in opc:
             num_peqs = int( opc.split('=')[-1] )
 
-        if '-frd=' in opc:
+        elif '-frd=' in opc:
             frd_path = opc.split('frd=')[-1]
 
-        if '-fir=' in opc:
+        elif '-fir=' in opc:
             fir_path = opc.split('fir=')[-1]
 
-        if '-fs=' in opc:
+        elif '-fs=' in opc:
             fs = int( opc.split('fs=')[-1] )
 
         elif '-p' in opc:
-            doplot = True
+            do_plot = True
+
+        else:
+
+            if opc.isdigit():
+                fs = int( opc )
+
+            else:
+                print(f'BAD option: {opc}')
+                sys.exit()
 
 
+    # Check FS
     if not fs:
         fs = 44100
 
+    fs_options = (44100, 88200, 48000, 96000, 192000)
+    if not fs in fs_options:
+        print(f'FS must be in {fs_options}')
+        sys.exit()
+
+    # Check file path
     if frd_path:
 
         if os.path.isfile( frd_path ):
 
             frd = np.loadtxt(frd_path)
 
-            json_dir = os.path.dirname(frd_path)
-            json_name = os.path.splitext( os.path.basename(frd_path) )[0]
-            json_path = f'{json_dir}/{json_name}.json'
+            json_dir  = os.path.dirname(frd_path)
+            set_name  = os.path.splitext( os.path.basename(frd_path) )[0]
+            json_path = f'{json_dir}/{set_name}.json'
 
         else:
             print('Needs a FRD file')
@@ -385,15 +583,15 @@ if __name__ == "__main__":
 
         if os.path.isfile( fir_path ):
 
-            fir = load_pcm_fir_file( fir_path )
+            fir = load_fir_file( fir_path )
 
             fir_freq, fir_mag, _ = fir2frd(fir, fs)
 
             frd = np.column_stack((fir_freq, fir_mag))
 
-            json_dir = os.path.dirname(fir_path)
-            json_name = os.path.splitext( os.path.basename(fir_path) )[0]
-            json_path = f'{json_dir}/{json_name}.json'
+            json_dir  = os.path.dirname(fir_path)
+            set_name  = os.path.splitext( os.path.basename(fir_path) )[0]
+            json_path = f'{json_dir}/{set_name}.json'
 
         else:
             print('Needs a pcm FIR file')
@@ -404,14 +602,19 @@ if __name__ == "__main__":
         print(__doc__)
         sys.exit()
 
+    # Check channel
+    if not ch:
+        ch = detect_channel_from_filter_filename()
 
     # Solve the optimization
     peq_config = get_optimized_peqs_from_frd(frd, fs, num_peqs)
 
-    print(json.dumps(peq_config, indent=4))
+    # Terminal printout
+    if not silent:
+        print(json.dumps(peq_config, indent=4))
 
     # Plot results vs original curve
-    if doplot:
+    if do_plot:
         visualize_eq_results(frd, peq_config)
 
     # Save to JSON file
