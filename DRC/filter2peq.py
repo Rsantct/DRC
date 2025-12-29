@@ -44,6 +44,7 @@ import  yaml
 import  numpy as np
 import  scipy.signal    as      signal
 from    scipy.optimize  import  minimize     # woooooow!
+from    scipy.io        import  wavfile
 import  matplotlib.pyplot as    plt
 
 
@@ -269,8 +270,13 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
 
         """
 
+        drc_name = set_name
+
+        if drc_name.lower() == 'drc':
+            drc_name += '_NO_NAME'
+
         pAudio = {  'info':         'pAudio YAML filters',
-                    'drc_name':     set_name,
+                    'drc_name':     drc_name,
                     'yaml_block':   ''
                  }
 
@@ -280,13 +286,13 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
             pAudio['comments'] = 'channel not detected from filter filename'
 
         # tmp is a dict to be converted in a yaml_block
-        tmp = { 'drc': {set_name: { ch: {} } } }
+        tmp = { 'drc': {drc_name: { ch: {} } } }
 
         for i, peq in enumerate(eq_config['filters']):
 
             fc, Q, gain = peq['fc'], peq['q'], peq['gain']
 
-            tmp['drc'][set_name][ch][i] = {
+            tmp['drc'][drc_name][ch][i] = {
                 'type': 'Biquad',
                 'parameters': {
                     'type':   'Peaking',
@@ -322,8 +328,13 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
                   ..
         """
 
+        drc_name = set_name
+
+        if drc_name.lower() == 'drc':
+            drc_name += '_NO_NAME'
+
         CamillaDSP = { 'info':      'CamillaDSP YAML filters',
-                    'drc_name':     set_name,
+                    'drc_name':     drc_name,
                     'yaml_block':   ''
                     }
 
@@ -340,7 +351,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
 
             fc, Q, gain = peq['fc'], peq['q'], peq['gain']
 
-            tmp['filters'][f'{set_name}_{i}'] = {
+            tmp['filters'][f'{drc_name}_{i}'] = {
                 'type': 'Biquad',
                 'parameters': {
                     'type':   'Peaking',
@@ -352,7 +363,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
 
         CamillaDSP['yaml_block'] = yaml.dump(tmp, sort_keys=False, default_flow_style=False)
         # debug
-        #print(CamillaDSP['yaml_block'])
+        print(CamillaDSP['yaml_block'])
 
         eq_config['CamillaDSP'] = CamillaDSP
 
@@ -471,26 +482,49 @@ def visualize_eq_results(frd, peq_set):
     plt.show()
 
 
-def load_fir_file(fir_path):
+def load_wav(filepath, ch, normalize = True):
 
+    if ch == 'L':
+        ch = 0
+    elif ch == 'R':
+        ch = 1
+    else:
+        ch = int(ch)
+
+    fs, data = wavfile.read(filepath)
+
+    if len(data.shape) == 1:
+        fir_coeffs = data
+    else:
+        fir_coeffs = data[:, ch]
+
+    if normalize:
+
+        if data.dtype == np.int16:
+            fir_coeffs = fir_coeffs / 32768.0
+
+        elif data.dtype == np.int32:
+            fir_coeffs = fir_coeffs / 2147483648.0
+
+    return fir_coeffs, fs
+
+
+def load_fir_file(fir_path, ch):
+    """ 'ch' only used for wav channel selection
+    """
+
+    # fs will be set from the wav file if so
     global fs
 
     fname, fext = os.path.splitext( os.path.basename(fir_path) )
 
-    if fext != '.wav':
+    if fext == '.wav':
 
-        with open(fir_path, 'rb') as f:
-            h = np.fromfile(f, dtype=np.float32)
+        h, fs = load_wav(fir_path, ch)
 
     else:
-
-        if not ch in ('L', 'R', '0', '1'):
-            print(__doc__)
-            print('\nA channel is needed for .wav FIR\n')
-            sys.exit()
-
-        print('WAV is pending')
-        sys.exit()
+        with open(fir_path, 'rb') as f:
+            h = np.fromfile(f, dtype=np.float32)
 
     return h
 
@@ -586,7 +620,7 @@ if __name__ == "__main__":
 
         if os.path.isfile( fir_path ):
 
-            fir = load_fir_file( fir_path )
+            fir = load_fir_file( fir_path, ch )
 
             fir_freq, fir_mag, _ = fir2frd(fir, fs)
 
@@ -608,6 +642,14 @@ if __name__ == "__main__":
     # Check channel
     if not ch:
         ch = detect_channel_from_filter_filename()
+
+    valid_channels = ('L', 'R')
+
+    if not ch in valid_channels:
+        print(__doc__)
+        print(f'\nA valid channel {valid_channels} is needed for .wav FIR\n')
+        sys.exit()
+
 
     # Solve the optimization
     peq_config = get_optimized_peqs_from_frd(frd, fs, num_peqs)
