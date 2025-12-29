@@ -4,13 +4,16 @@
 # This file is part of 'Rsantct.DRC', yet another DRC FIR toolkit.
 
 """
-    Generates a set of optimized Parametric EQ from a given filter.
+    Generates a set of optimized Parametric EQ from a given target filter.
 
-    The filter can be given in two flawors:
+    The target filter can be given in 3 flavours:
 
-        - FRD (freq response data)
+        - FRD: freq response data (mag vs freq text file)
 
-        - FIR (impulse response PCM: raw float32 or wav file)
+        - FIR: a pcm impulse response previously windowed
+
+                - a raw float32 file (for example .bin .pcm .f32)
+                - a wav file (.wav)
 
     Usage:
 
@@ -20,15 +23,19 @@
 
             more options are:
 
-                FS          default 44100 (mandatory option for PCM files .bin .pcm .f32)
+                --fs=FS
+                     FS     default 44100 (mandatory option for raw PCM files)
 
                 --ch=C      L,R,0,1 needed if a .wav FIR is given
 
-                --numpeq=N  number of PEQ sections, default to 6
+                --numpeq=N
+                      -n=N  number of PEQ sections, default to 6
 
-                --plot      do plot and save figure to disk
+                --plot
+                 -p         do plot and save figure to disk
 
-                --silent    omit terminal json printout
+                --silent
+                 -s         omit terminal json printout
 
     Output:
 
@@ -529,8 +536,8 @@ def load_fir_file(fir_path, ch):
     else:
         # for PCM raw FIRs, fs must be explicited at command line
         if not fs in VALID_FS:
-            print(f'FS must be in {VALID_FS}')
             print(__doc__)
+            print(f'FS must be in {VALID_FS}')
             sys.exit()
 
         with open(fir_path, 'rb') as f:
@@ -616,8 +623,8 @@ if __name__ == "__main__":
             json_path = f'{json_dir}/{set_name}.json'
 
         else:
-            print('Needs a FRD file')
             print(__doc__)
+            print('Needs a FRD file')
             sys.exit()
 
     elif fir_path:
@@ -635,8 +642,8 @@ if __name__ == "__main__":
             json_path = f'{json_dir}/{set_name}.json'
 
         else:
-            print('Needs a pcm FIR file')
             print(__doc__)
+            print('Needs a pcm FIR file')
             sys.exit()
 
     else:
