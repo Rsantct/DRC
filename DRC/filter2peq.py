@@ -31,6 +31,8 @@
                 --numpeq=N
                       -n=N  number of PEQ sections, default to 6
 
+                --mg=G      minimum gain to discard a PEQ filter from the set
+
                 --plot
                  -p         do plot and save figure to disk
 
@@ -181,10 +183,12 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
         num_peqs:   desired number of peqs tu emulate the frd
     """
 
-    def params_to_json(params):
+    def params_to_json(params, min_gain=min_gain):
         """ Convert the parameters into an organized JSON.
 
             params: Array shaped (num_peqs, 3), each row having [Fc, Q, Gain]
+
+            gain_
         """
 
         eq_config = {
@@ -197,17 +201,20 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
             "filters": []
         }
 
-        for i, p in enumerate(params):
+        i = 1
+        for p in params:
 
             filter_data = {
-                "id": i + 1,
                 "type": "peaking",
                 "fc":   round(float(p[0]), 2),
                 "q":    round(float(p[1]), 3),
                 "gain": round(float(p[2]), 2)
             }
 
-            eq_config["filters"].append(filter_data)
+            if abs( filter_data['gain'] ) > min_gain:
+                filter_data["id"] = i
+                eq_config["filters"].append(filter_data)
+                i += 1
 
         return eq_config
 
@@ -472,7 +479,7 @@ def visualize_eq_results(frd, peq_set):
     ax1.set_ylim(-36, 12)
     ax1.set_xlabel('Freq (Hz)')
     ax1.set_ylabel('Gain (dB)')
-    ax1.set_title('Response curve emulation with PEQ and low freq accuracy')
+    ax1.set_title(f'Response curve emulation with PEQ and low freq accuracy (ch: {ch})')
     ax1.grid(True, which="both", linestyle="-", alpha=0.3)
     ax1.legend()
 
@@ -488,9 +495,13 @@ def visualize_eq_results(frd, peq_set):
 
     plt.tight_layout()
 
+    # will be dumped after closing plots
     plt.savefig(f'{json_path}.png')
 
-    plt.show()
+    if do_plot:
+        plt.show()
+    else:
+        plt.close('all')
 
 
 def load_wav(filepath, ch, normalize = True):
@@ -567,45 +578,54 @@ def fir2frd(h, fs, freq=None):
 if __name__ == "__main__":
 
     # Read commmand line options
-    num_peqs  = 6                   # number of Peaking EQ bands
+    num_peqs  = 6                   # Number of Peaking EQ bands
+    min_gain  = 0.0                 # Gain threshold to discard a PEQ
     fs        = 0
     frd_path  = ''
     fir_path  = ''
+    ch        = ''                  # Needed for .wav FIR files
     do_plot   = False
     silent    = False
-    ch        = ''                  # needed for .wav FIR files
 
-    for opc in sys.argv[1:]:
+    try:
+        for opc in sys.argv[1:]:
 
-        if '-s' in opc:
-            silent = True
+            if '-s' in opc:
+                silent = True
 
-        elif '-ch=' in opc:
-            ch = opc.split('=')[-1]
+            elif '-mg=' in opc:
+                min_gain = float(opc.split('=')[-1])
 
-        elif '-n=' in opc:
-            num_peqs = int( opc.split('=')[-1] )
+            elif '-ch=' in opc:
+                ch = opc.split('=')[-1]
 
-        elif '-frd=' in opc:
-            frd_path = opc.split('frd=')[-1]
+            elif '-n=' in opc:
+                num_peqs = int( opc.split('=')[-1] )
 
-        elif '-fir=' in opc:
-            fir_path = opc.split('fir=')[-1]
+            elif '-frd=' in opc:
+                frd_path = opc.split('frd=')[-1]
 
-        elif '-fs=' in opc:
-            fs = int( opc.split('fs=')[-1] )
+            elif '-fir=' in opc:
+                fir_path = opc.split('fir=')[-1]
 
-        elif '-p' in opc:
-            do_plot = True
+            elif '-fs=' in opc:
+                fs = int( opc.split('fs=')[-1] )
 
-        else:
-
-            if opc.isdigit():
-                fs = int( opc )
+            elif '-p' in opc:
+                do_plot = True
 
             else:
-                print(f'BAD option: {opc}')
-                sys.exit()
+
+                if opc.isdigit():
+                    fs = int( opc )
+
+                else:
+                    print(f'BAD option: {opc}')
+                    sys.exit()
+
+    except Exception as e:
+        print(f'BAD option \'{opc}\': {str(e)}')
+        sys.exit()
 
 
     # Check file path
@@ -678,9 +698,8 @@ if __name__ == "__main__":
     if not silent:
         print(json.dumps(peq_config, indent=4))
 
-    # Plot results vs original curve
-    if do_plot:
-        visualize_eq_results(frd, peq_config)
+    # Graph results vs original curve
+    visualize_eq_results(frd, peq_config)
 
     # Save to JSON file
     with open(json_path, 'w', encoding='utf-8') as f:
