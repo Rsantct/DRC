@@ -34,7 +34,7 @@
                 --mg=G      minimum gain to discard a PEQ filter from the set
 
                 --plot
-                 -p         do plot and save figure to disk
+                 -p         show plot (always will save plot .png to disk)
 
                 --silent
                  -s         omit terminal json printout
