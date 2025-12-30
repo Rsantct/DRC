@@ -28,6 +28,9 @@
 
                 --ch=C      L,R,0,1 needed if a .wav FIR is given
 
+                --offset=N  force N dB to move the magnitude curve to set its
+                            flat region at 0 dB, instead of automatic detection.
+
                 --numpeq=N
                       -n=N  number of PEQ sections, default to 6
 
@@ -58,6 +61,7 @@ import  scipy.signal    as      signal
 from    scipy.optimize  import  minimize     # woooooow!
 from    scipy.io        import  wavfile
 import  matplotlib.pyplot as    plt
+from    fmt import Fmt
 
 VALID_FS = (44100, 88200, 48000, 96000, 192000)
 
@@ -197,7 +201,9 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
             "metadata": {
                 "description": "Peaking EQ filters",
                 "fs": fs,
-                "minimum PEQ gain": min_gain
+                "max num of PEQ sections": num_peqs,
+                "mini PEQ gain": min_gain,
+                "comments": f'Magnitude curve has been moved {moved_dB} dB to set the flat region at 0 dB'
             },
 
             "filters": []
@@ -217,6 +223,8 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
                 filter_data["id"] = i
                 eq_config["filters"].append(filter_data)
                 i += 1
+
+        eq_config["metadata"]["final num of PEQ sections"] = i
 
         return eq_config
 
@@ -407,9 +415,9 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
     # 3. Restricciones (Bounds) para mantener los filtros "musicales"
     bounds = []
     for _ in range(num_peqs):
-        bounds.append((20, 20000))  # fc: 20Hz a 20kHz
-        bounds.append((0.1, 10.0))  # Q: De muy ancho a muy estrecho
-        bounds.append((-24, 24))    # Ganancia: +/- 24 dB
+        bounds.append((   20,  20000))  # fc
+        bounds.append((  0.1,  7.2  ))  # Q 7.2 ~ BW_oct 0.2 enough for room modes correction
+        bounds.append((-18.0,  3.0  ))  # Gain: -18 dB to +3 dB
 
     # 4. Optimización
     #    The optimization result is represented as a OptimizeResult object.
@@ -483,7 +491,8 @@ def visualize_eq_results(frd, peq_set):
     ax1.set_ylim(-36, 12)
     ax1.set_xlabel('Freq (Hz)')
     ax1.set_ylabel('Gain (dB)')
-    ax1.set_title(f'Response curve emulation with PEQ and low freq accuracy (ch: {ch})')
+    tmp = ' auto' if not mag_offset else ''
+    ax1.set_title(f'Emulation with PEQ and low freq accuracy (ch: {ch}, offset {moved_dB} dB{tmp})')
     ax1.grid(True, which="both", linestyle="-", alpha=0.3)
     ax1.legend()
 
@@ -579,23 +588,59 @@ def fir2frd(h, fs, freq=None):
     return freq, mag_db, pha_deg
 
 
+def get_avg_flat_region(frd, hz_ini=300, hz_end=3000):
+    """
+        <frd>   a 2D columns array  [ Hz : dB ]
+
+        returns the avg flat region value in dB into the given freq range
+    """
+
+    # Create 500 log points from  `hz_ini` to `hz_end`
+    hz_interp = np.geomspace(hz_ini, hz_end, 100)
+
+    # Interpolate the dB values ​​for those new points
+    hz = frd[:,0]
+    db = frd[:,1]
+
+    # As log spaced audio freq points can be widely separated, it is
+    # preferred to interpolate over the logarithm of the frequency.
+    db_interp = np.interp(np.log10(hz_interp), np.log10(hz), db)
+
+    # Average the interpolated values
+    avg = np.mean(db_interp)
+
+    return avg
+
+
+def move_flat_region(frd):
+
+    flat_offset_dB = get_avg_flat_region(frd, 200, 4000)
+    frd[:, 1] -= flat_offset_dB
+
+    return frd, round(-flat_offset_dB, 2)
+
+
 if __name__ == "__main__":
 
     # Read commmand line options
-    num_peqs  = 6                   # Number of Peaking EQ bands
-    min_gain  = 0.0                 # Gain threshold to discard a PEQ
-    fs        = 0
-    frd_path  = ''
-    fir_path  = ''
-    ch        = ''                  # Needed for .wav FIR files
-    do_plot   = False
-    silent    = False
+    mag_offset  = 0.0
+    num_peqs    = 6                 # Number of Peaking EQ bands
+    min_gain    = 0.0               # Gain threshold to discard a PEQ
+    fs          = 0
+    frd_path    = ''
+    fir_path    = ''
+    ch          = ''                # Needed for .wav FIR files
+    do_plot     = False
+    silent      = False
 
     try:
         for opc in sys.argv[1:]:
 
             if '-s' in opc:
                 silent = True
+
+            elif '-offset=' in opc:
+                mag_offset = float(opc.split('=')[-1])
 
             elif '-mg=' in opc:
                 min_gain = float(opc.split('=')[-1])
@@ -690,6 +735,13 @@ if __name__ == "__main__":
         print(__doc__)
         print(f'\nA valid channel {valid_channels} is needed for .wav FIR\n')
         sys.exit()
+
+
+    if mag_offset:
+        frd[:, 1] += mag_offset
+        moved_dB = mag_offset
+    else:
+        frd, moved_dB = move_flat_region(frd)
 
 
     ########################
