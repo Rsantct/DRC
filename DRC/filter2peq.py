@@ -196,7 +196,8 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
 
             "metadata": {
                 "description": "Peaking EQ filters",
-                "fs": fs
+                "fs": fs,
+                "minimum PEQ gain": min_gain
             },
 
             "filters": []
@@ -321,7 +322,8 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
                 }
             }
 
-        pAudio['yaml_block'] = yaml.dump(tmp, sort_keys=False, default_flow_style=False)
+        pAudio['yaml_notice'] = 'Use the parser \'jq -r .pAudio.yaml_block\' to dump the yaml_block'
+        pAudio['yaml_block'] = yaml.dump(tmp, indent=4, sort_keys=False, default_flow_style=False)
         # debug
         #print(pAudio['yaml_block'])
 
@@ -380,7 +382,8 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
                 }
             }
 
-        CamillaDSP['yaml_block'] = yaml.dump(tmp, sort_keys=False, default_flow_style=False)
+        CamillaDSP['yaml_notice'] = 'Use the parser \'jq -r .CamillaDSP.yaml_block\' to dump the yaml_block'
+        CamillaDSP['yaml_block'] = yaml.dump(tmp, indent=2, sort_keys=False, default_flow_style=False)
         # debug
         #print(CamillaDSP['yaml_block'])
 
