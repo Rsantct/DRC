@@ -29,7 +29,7 @@
                 --ch=C      L,R,0,1 needed if a .wav FIR is given
 
                 --offset=N  force N dB to move the magnitude curve to set its
-                            flat region at 0 dB, instead of automatic detection.
+                            flat region at 0 dB. Default is automatic offset.
 
                 --numpeq=N
                       -n=N  number of PEQ sections, default to 6
