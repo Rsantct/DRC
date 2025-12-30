@@ -165,6 +165,7 @@ def get_PEQs_pha(freq, peq_list, fs):
 
 def objective_function(params, f_target, m_target, fs, num_peqs):
 
+    # The magnitude of all PEQ filters combined
     total_mag = np.zeros_like(f_target)
 
     for i in range(num_peqs):
