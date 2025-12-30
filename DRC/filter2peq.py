@@ -31,7 +31,7 @@
                 --numpeq=N
                       -n=N  number of PEQ sections, default to 6
 
-                --mg=G      minimum gain to discard a PEQ filter from the set
+                --mg=G      minimum gain to include a PEQ filter in the set
 
                 --plot
                  -p         show plot (always will save plot .png to disk)
