@@ -486,7 +486,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
     # ** do not use, too slow, pending to review **
     elif optimizer == 'differential_evolution':
 
-        print(f'{Fmt.BOLD}differential_evolution is VERY SLOW, pending to review.{Fmt.END}'))
+        print(f'{Fmt.BOLD}differential_evolution is VERY SLOW, pending to review.{Fmt.END}')
 
         res = differential_evolution(
             objective_function_ultra_bass,
