@@ -34,6 +34,13 @@
                 --numpeq=N
                       -n=N  number of PEQ sections, default to 6
 
+                --opt=OPTIMIZER
+
+                            ls      --> least_squares
+                            ls_bass --> least_squares bass
+                            min     --> minimize
+                            diff    --> differential_evolution (pending too slow)
+
                 --mg=G      minimum gain to include a PEQ filter in the set,
                             default is 0.0
 
