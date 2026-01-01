@@ -229,7 +229,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
                         'yaml_block':   ''
                      }
 
-            if ch != 'chX':
+            if ch in ('L', 'R'):
                 pAudio['comments'] = f'channel \'{ch}\' detected from filter filename'
             else:
                 pAudio['comments'] = 'channel not detected from filter filename'
@@ -288,7 +288,7 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
                         'yaml_block':   ''
                         }
 
-            if ch != 'chX':
+            if ch in ('L', 'R'):
                 CamillaDSP['comments'] = f'channel \'{ch}\' detected from filter filename'
             else:
                 CamillaDSP['comments'] = 'channel not detected from filter filename'
