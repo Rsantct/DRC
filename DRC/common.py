@@ -14,7 +14,7 @@ VALID_FS = (44100, 88200, 48000, 96000, 192000)
 
 
 def detect_channel_from_set_name(set_name):
-    """ returns 'L', 'R' or 'chX'
+    """ returns 'L', 'R' or '-'
     """
 
     ch = ''
@@ -35,7 +35,7 @@ def detect_channel_from_set_name(set_name):
         elif 'R' in tmp:
             ch = 'R'
         else:
-            ch = 'chX'
+            ch = '-'
 
     return ch
 
