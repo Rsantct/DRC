@@ -93,7 +93,6 @@ import os
 import sys
 import numpy as np
 from scipy import signal
-from scipy.interpolate import interp1d
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
 import matplotlib
@@ -240,6 +239,8 @@ def main(FRDname, ax, ref_level=None):
     eq = eqPos + eqNeg
     eq = smooth(freq, eq, Noct=24)
 
+    # Save the eq curve to a FRD text file for auxiliary pursoses
+    tools.saveFRD(f'{FRDs_dirname}/roomEQ_drc.{ch}.frd', freq, eq, comments=f'roomEQ DRC curve ({ch})')
 
     ############################################################################
     # 3. The output FIR to be used in a convolver.

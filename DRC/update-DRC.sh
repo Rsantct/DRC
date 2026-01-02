@@ -48,7 +48,9 @@ unzip -o "$branch".zip
 
 rm -f "$branch".zip 1>/dev/null 2>&1
 
-rm -rf ~/DRC  1>/dev/null 2>&1
+# delete only files, keep user directories under DRC if any
+echo "Removing old files under ~/DRC"
+find ~/DRC -maxdepth 1 -type f -delete
 
 cp -r ./DRC-"$branch"/DRC    ~/
 cp    ./DRC-"$branch"/bin/*  ~/bin/
@@ -59,7 +61,7 @@ chmod +x ~/bin/DRC*
 # Leaving a dummy file with the installes branch name
 touch ~/DRC/"$branch"_FROM_"$gituser"
 echo
-echo installed under:  "$HOME"/DRC
+echo "DRC scripts were installed under:  "$HOME"/DRC"
 echo
 
 cd

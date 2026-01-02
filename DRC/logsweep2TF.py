@@ -80,32 +80,33 @@
 #
 
 #---------------------------- IMPORTING MODULES: -------------------------
-import os
-import sys
-from time import time
+import  os
+import  sys
+from    time        import time
+import  sounddevice as sd
+from    fmt         import Fmt
 
 # https://matplotlib.org/faq/howto_faq.html#working-with-threads
-import matplotlib
+import  matplotlib
+
 # Later we will be able to call matplotlib.use('Agg') to replace the regular
 # display backend (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid
 # incompatibility when threading this module, e.g. when using a Tcl/Tk GUI.
-import matplotlib.pyplot as plt
 
-from matplotlib.ticker import EngFormatter
-from numpy import *
-from scipy.signal import correlate as signal_correlate # to differentiate it from numpy
+import  matplotlib.pyplot as plt
+
+from    matplotlib.ticker   import EngFormatter
+from    numpy               import *                                # for code clarity
+from    scipy.signal        import correlate as signal_correlate    # to differentiate from numpy
 
 # scipy.signal.correlate shows a FutureWarning, we do inhibit it:
-import warnings
+import  warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-# https://python-sounddevice.readthedocs.io
-import sounddevice as sd
-
 UHOME = os.path.expanduser("~")
-sys.path.append(UHOME + "/audiotools")
-from smoothSpectrum import smoothSpectrum as smooth
-import tools
+sys.path.append(f'{UHOME}/audiotools')
+from    smoothSpectrum import smoothSpectrum as smooth
+import  tools
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT OPTIONS: --------------------------------
@@ -118,6 +119,12 @@ printInfo           = True
 
 do_plot             = True      # recorded, time clearance, freq response plots
 aux_plot            = False     # currently only for the prepared sweep plot
+png_folder          = f'{UHOME}/DRC'
+
+# Prepare a flat MIC response
+mic_response_path   = ''
+mic_response        = array([[2, 200, 2000, 20000], [0, 0, 0, 0]]).transpose()
+using_mic_response  = False
 
 #-------------------------------------------------------------------------------
 #----------------------------- DEFAULT PARAMETERS: -----------------------------
@@ -159,14 +166,82 @@ S_adc = 1.0
 ## S_adc=+1.49;         % USB Dual Pre JV pot minimum (gain=3, Windows 7)
 
 
-class Fmt:
-    RED     = '\033[31m'
-    BLUE    = '\033[34m'
-    MAGENTA = '\033[35m'
-    CYAN    = '\033[36m'
-    GRAY    = '\033[90m'
-    BOLD    = '\033[1m'
-    END     = '\033[0m'
+def plot_mic_compensation(hz, mic_db, raw_db, corrected_db):
+    """
+        <doplot> controls plt.show() if no more figures are to be plotted
+    """
+
+    plt.figure('MIC correction', figsize=(6, 3))
+
+    plt.semilogx(hz, mic_db,       label='MIC response',       linestyle='--', color='brown')
+    plt.semilogx(hz, corrected_db, label='Corrected response', linestyle='-', linewidth=2, color='blue')
+    plt.semilogx(hz, raw_db,       label='Raw response',       linestyle='-', alpha=0.6, color='gray')
+
+    plt.title(f'MIC corrected response \n{os.path.basename(mic_response_path)}', fontsize=10)
+    plt.xlabel('Freq (Hz)')
+    plt.ylabel('Amplitude (dB)')
+    plt.grid(True, which="both", ls="-", alpha=0.5)
+    plt.legend()
+    plt.xlim(20, 20000)
+    plt.ylim(-60,10)
+    plt.tight_layout()
+    plt.savefig(f'{png_folder}/mic_correction.png')
+
+
+def set_mic_response():
+
+    global mic_response, using_mic_response
+
+    if os.path.isfile(mic_response_path):
+
+        using_mic_response = False
+
+        try:
+            # readFRD returns a tuple (frd, fs) where frd is an array of Hz:dB
+            mic_response_candidate, _ = tools.readFRD(mic_response_path)
+
+            if mic_response_candidate.shape[0] > 1:
+
+                mic_response = mic_response_candidate
+                using_mic_response = True
+                print(f'{Fmt.BLUE}MIC response was loaded{Fmt.END}')
+
+                # shifting the usual flat region curve 200 Hz ~ 4000 Hz to 0 dB
+                flat_offset_dB = tools.get_avg_flat_region(mic_response, 200, 4000)
+                mic_response[:, 1] -= flat_offset_dB
+                print(f'{Fmt.BLUE}{Fmt.BOLD}MIC response was shifted {flat_offset_dB:.2f} dB so that the flat region is 0 dB{Fmt.END}')
+
+        except Exception as e:
+            print(f'{Fmt.RED}** BAD ** MIC calibration file, using a flat response.{Fmt.RED}')
+            print(f'{Fmt.GRAY}{str(e)}{Fmt.END}')
+
+    else:
+        print(f'{Fmt.RED}MIC file NOT FOUND: {mic_response_path}{Fmt.END}')
+
+
+def get_mic_corrected_response(raw_frd, doplot=False):
+
+    # extract freq and mag arrays from the given `xfrd` tuple
+    raw_freq, raw_db = raw_frd
+
+    # extract freq and mag arrays from the `mic_response` 2D array
+    mic_freq = mic_response[:, 0]
+    mic_db   = mic_response[:, 1]
+
+    # Interpolate mic response to the given raw_freq points.
+    # As log spaced audio freq points can be widely separated, it is
+    # preferred to interpolate over the logarithm of the frequency.
+    mic_db_interp = interp(log10(raw_freq), log10(mic_freq), mic_db)
+
+    # Finally, correct the given frd with the mic_frd
+    corrected_db = raw_db - mic_db_interp
+
+    print(f'{Fmt.GREEN}MIC correction was applied.{Fmt.END}')
+
+    if doplot:
+        plot_mic_compensation(raw_freq, mic_db_interp, raw_db, corrected_db)
+
+    return raw_freq, corrected_db
 
 
 def get_avail_input_channels():
@@ -244,7 +319,7 @@ def do_print_info():
     print( 'Amplitude:      ' + str(sig_frac) + ' (' + str(sig_frac_dBFS) + ' dBFS)' )
     print( 'fs:             ' + str(fs) + ' Hz' )
     print( 'N:              ' + str(N) + ' (test signal total lenght in samples)' )
-    print( 'Duration:       ' + str(round((N/float(fs)), 2)) + ' s (N/fs)' )
+    print( 'Duration:       ' + str( round((N/float(fs)), 2)) + ' s (N/fs)' )
     print( 'Time clearance: ' + str( round(N/(4.0*fs), 2) ) )
     print( 'System_type:    ' + system_type )
     print()
@@ -262,8 +337,8 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
 
     # If this is a new figure, lets create it with a new axes:
     if figure not in plt.get_fignums():
-        fig = plt.figure(figure)
-        ax = fig.add_subplot()
+        fig_frds = plt.figure(figure)
+        ax = fig_frds.add_subplot()
 
         # plot warning level lines
         ax.plot(freq, full(freq.shape, clipWarning), label='',
@@ -284,7 +359,7 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
 
     # If the figure already exists, simply select it and select the existing axes:
     else:
-        fig = plt.figure(figure)
+        fig_frds = plt.figure(figure)
         ax = plt.gca()
 
     # plot curves
@@ -299,7 +374,7 @@ def plot_FRDs( freq, curves, title='Freq. response', png_fname='', figure=100 ):
         plt.savefig(png_fname)
 
 
-def plot_system_response(png_folder=f'{UHOME}'):
+def plot_system_response():
     """ plot layout:
 
                 [recorded_waveforms]  [time_clearance]  1/3 height
@@ -307,11 +382,14 @@ def plot_system_response(png_folder=f'{UHOME}'):
                 [        frequency____response       ]  2/3
     """
 
-    fig = plt.figure(figsize=(9.0, 9.0))  # in inches
+    fig_system_response = plt.figure('system response', figsize=(9.0, 9.0))  # in inches
 
-    axDUT = plt.subplot2grid(shape=(3, 2), loc=(0, 0))
-    axTCL = plt.subplot2grid(shape=(3, 2), loc=(0, 1))
-    axFRE = plt.subplot2grid(shape=(3, 2), loc=(1, 0), colspan=2, rowspan=2)
+    #axDUT = plt.subplot2grid(shape=(3, 2), loc=(0, 0))
+    #axTCL = plt.subplot2grid(shape=(3, 2), loc=(0, 1))
+    #axFRE = plt.subplot2grid(shape=(3, 2), loc=(1, 0), colspan=2, rowspan=2)
+    axDUT = plt.subplot2grid(shape=(2, 2), loc=(0, 0))
+    axTCL = plt.subplot2grid(shape=(2, 2), loc=(0, 1))
+    axFRE = plt.subplot2grid(shape=(2, 2), loc=(1, 0), colspan=2)
 
     #--- time domain vectors
     vSamples = arange(0,N)                  # samples vector
@@ -322,9 +400,12 @@ def plot_system_response(png_folder=f'{UHOME}'):
 
     # Safe amplitudes
     for axtmp in (axDUT, axREF):
-        for a in (.5, -.5):
+        for a in (-0.5, +0.5):
             axtmp.plot(vTimes, full(vTimes.shape,  a), label='',
-                       linestyle='dashed', linewidth=0.5, color='purple')
+                       linestyle='dashed', linewidth=0.5, color='gray')
+        for a in (-1.0, +1.0):
+            axtmp.plot(vTimes, full(vTimes.shape,  a), label='',
+                       linestyle='dashed', linewidth=0.5, color='maroon')
 
     # DUT waveform
     axDUT.plot(vTimes, dut, 'blue', linewidth=0.5, label='DUT')
@@ -333,8 +414,10 @@ def plot_system_response(png_folder=f'{UHOME}'):
     axREF.plot(vTimes, ref, 'grey', linewidth=0.5, label='REF')
 
     axDUT.grid()
-    axREF.set_ylim(-1.5, 3.5)               # Sliding the dut and ref Y scales
     axDUT.set_ylim(-3.5, 1.5)
+    axDUT.set_yticks([-1, -.5, 0 , .5, 1])
+    axREF.set_ylim(-1.5, 3.5)               # Sliding the dut and ref Y scales
+    axREF.set_yticks([-1, -.5, 0 , .5, 1])
     axDUT.legend(loc='upper left')
     axREF.legend(loc='lower left')
     axDUT.set_xlabel('time [s]')
@@ -368,22 +451,23 @@ def plot_system_response(png_folder=f'{UHOME}'):
                  msg,
                  bbox=props)
 
+    #--- Freq Response graph
+    F, dut_mag = DUT_FRD
+    _, ref_mag = REF_FRD
 
-    #--- Freq Response
-    F, DUT_mag = DUT_FRD
-    _, REF_mag = REF_FRD
     # plot warning level lines
     axFRE.plot(F, full(F.shape, clipWarning), label='',
-                linestyle='--', linewidth=0.5,  color='purple')
+                linestyle=':', linewidth=1.5,  color='purple')
     axFRE.plot(F, full(F.shape, 0.0),         label='',
-                linestyle='--',       linewidth=0.75, color='purple')
+                linestyle=':', linewidth=2.0,  color='purple')
 
     # plot curves
-    axFRE.semilogx( F, 20 * log10(DUT_mag), color='blue', label='DUT' )
-    axFRE.semilogx( F, 20 * log10(REF_mag), color='gray', label='REF' )
+    axFRE.semilogx( F, dut_mag, color='blue', label='DUT' )
+    axFRE.semilogx( F, ref_mag, color='gray', label='REF' )
 
     # formatting
-    axFRE.set_title('Freq. response')
+    tmp = '' if not using_mic_response else ' (mic corrected)'
+    axFRE.set_title(f'Freq. response{tmp}')
     axFRE.set_xlim(20, 20000)
     axFRE.set_ylim( yplotmax - yplotspan, yplotmax )
     # Y ticks in 6 dB steps
@@ -406,7 +490,7 @@ def plot_system_response(png_folder=f'{UHOME}'):
     print( "--- Plotting sweep system response graphs..." )
 
 
-def plot_aux_graphs(png_folder=f'{UHOME}'):
+def plot_aux_graphs():
     """ Aux graphs (currently only for the prepared sweep plot)
     """
 
@@ -414,7 +498,7 @@ def plot_aux_graphs(png_folder=f'{UHOME}'):
     vTimes   = vSamples / float(fs)         # samples to time conversion
 
     # ---- Sweep
-    fig, axSWE = plt.subplots(figsize=(4.5, 2.6))  # in inches
+    fig_aux, axSWE = plt.subplots(figsize=(4.5, 2.6))  # in inches
     axSWE.plot(vTimes, sweep, '--', color='black', linewidth=2,  label='raw sweep')
     axSWE.grid()
     axSWE.plot(vTimes, tapsweep, color='blue', linewidth=1, label='tapered sweep')
@@ -456,25 +540,25 @@ def prepare_sweep():
     # The played tapsweep (len=N) will be compund of
     # a logsweep (len=N-Npad) plus a zeros tail (len=Npad).
     Npad = int(N/4.0)
-    Ns   = N - Npad                         # most of array is used for sweep ;-)
+    Ns   = N - Npad                             # most of array is used for sweep ;-)
 
-    ts   = linspace(0, Ns/float(fs), Ns)    # sweep's time points array
+    ts   = linspace(0, Ns/float(fs), Ns)        # sweep's time points array
 
     #--- tapered sweep window:
     # Parameters to define a window to make a tapered sweep version,
     # fade in until f1 then fade out from f2 on:
-    f_start     = 5.0                       # beginning of turnon half-Hann
-    f1          = 10.0                      # end of turnon half-Hann
-    f2          = 0.91 * fs / 2             # beginning of turnoff half-Hann
-    f_stop      = fs/2.0                    # end of turnoff half-Hann
-    Ts          = Ns/float(fs)              # sweep duration. Lenght N-Npad samples.
-    Ls          = Ts / log(f_stop/f_start)  # time for frequency to increase by factor e
+    f_start     = 5.0                           # beginning of turnon half-Hann
+    f1          = 10.0                          # end of turnon half-Hann
+    f2          = 0.91 * fs / 2                 # beginning of turnoff half-Hann
+    f_stop      = fs/2.0                        # end of turnoff half-Hann
+    Ts          = Ns/float(fs)                  # sweep duration. Lenght N-Npad samples.
+    Ls          = Ts / log(f_stop/f_start)      # time for frequency to increase by factor e
 
     indexf1 = int(round(fs * Ls * log(f1/f_start) ) + 1) # end of starting taper
     indexf2 = int(round(fs * Ls * log(f2/f_start) ) + 1) # beginning of ending taper
 
     print( "--- Calculating logsweep from ", int(f_start), "to", int(f_stop), "Hz" )
-    sweep       = zeros(N)                  # initialize
+    sweep       = zeros(N)                      # initialize
     sweep[0:Ns] = sin( 2*pi * f_start * Ls * (exp(ts/Ls) - 1) )
     #
     #  /\/\/\/\/\/\/\/\----  this is the LOGSWEEP + Npad, with total lenght N.
@@ -556,7 +640,7 @@ def get_offset_xcorr(sweep, dut, ref):
     return offset, TimeClearanceOK
 
 
-def do_meas():
+def do_meas(plot_mic=False):
     """
     Compute globals about DUT Device-Under-Test and REFerence measurements.
 
@@ -572,7 +656,7 @@ def do_meas():
 
     """
 
-    global dut,    ref
+    global dut, ref, mic_response
     global DUT_TF, REF_TF
     global DUT_FRD, REF_FRD
     global TimeClearanceOK
@@ -629,27 +713,23 @@ def do_meas():
     #N = len(dut)   # This seems to be redundant ¿?
     print( 'Finished recording.' )
 
-    #-------------  Checking time domain RECORDING LEVELS ----------------------
-    print( "--- Checking levels:" )
+    #-------------  Checking time domain SAMPLES RECORDING LEVELS -------------
+    print( "--- Checking time domain SAMPLES RECORDING LEVELS:" )
     maxdBFS_dut = 20 * log10( max( abs( dut ) ) )
     maxdBFS_ref = 20 * log10( max( abs( ref ) ) )
     # LSB: Less Significant Bit
     dut_RMS_LSBs = round(sqrt( 2**30 * sum(dut**2) / N ), 2)
     ref_RMS_LSBs = round(sqrt( 2**30 * sum(ref**2) / N ), 2)
 
+    alert_dut = '           '
     if maxdBFS_dut >= clipWarning:
-        print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS  WARNING (!)', \
-              'RMS_LSBs:',  dut_RMS_LSBs )
-    else:
-        print( 'DUT channel max level:', round(maxdBFS_dut, 1), 'dBFS             ', \
-              'RMS_LSBs:',  dut_RMS_LSBs )
-
+        alert_dut = 'WARNING (!)'
+    alert_ref = '           '
     if maxdBFS_ref >= clipWarning:
-        print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS  WARNING (!)', \
-              'RMS_LSBs:',  ref_RMS_LSBs )
-    else:
-        print( 'REF channel max level:', round(maxdBFS_ref, 1), 'dBFS             ', \
-              'RMS_LSBs:',  ref_RMS_LSBs )
+        alert_ref = 'WARNING (!)'
+
+    print( f'DUT channel max level: {round(maxdBFS_dut, 1):6} dBFS {alert_dut} RMS_LSBs: {dut_RMS_LSBs}')
+    print( f'REF channel max level: {round(maxdBFS_ref, 1):6} dBFS {alert_ref} RMS_LSBs: {ref_RMS_LSBs}')
 
     #---------------------------------------------------------------------------
     #------------- 3. Determine if time clearance: -----------------------------
@@ -691,12 +771,24 @@ def do_meas():
     # Here we don't need that, because we use the stationary in-room
     # loudspeaker response.
 
-    # ADD ON: getting a smoothed FRD (freq response data) from the measured TFs (fft)
+    # Getting a smoothed FRD (freq response data) from the measured TFs (fft)
     DUT_FRD = fft_to_FRD(DUT_TF, smooth_Noct=Noct)
     REF_FRD = fft_to_FRD(REF_TF, smooth_Noct=Noct)
 
-    # END
-    # (i)   The results are the above referenced global scoped variables.
+    # Converting magnitudes to dB
+    dut_freq, dut_mag = DUT_FRD
+    ref_freq, ref_mag = REF_FRD
+    DUT_FRD = (dut_freq, 20 * log10(dut_mag))
+    REF_FRD = (ref_freq, 20 * log10(ref_mag))
+
+    # Our default flat mic response has 0.0 dB values
+    if using_mic_response:
+        DUT_FRD = get_mic_corrected_response(DUT_FRD, plot_mic)
+    else:
+        print(f'{Fmt.GRAY}(do_meas) * NO * MIC correction{Fmt.END}')
+
+    # ** END **
+    # (i) The results are available in the global scope variables referenced above.
 
 
 #-------------------------------------------------------------------------------
@@ -705,7 +797,9 @@ def do_meas():
 if __name__ == "__main__":
 
     # Reading command line options
-    opcsOK = True
+    opcs_OK = True
+    bad_options = ''
+
     for opc in sys.argv[1:]:
 
         if "-h" in opc.lower():
@@ -740,14 +834,19 @@ if __name__ == "__main__":
         elif "-e" in opc:
             N = 2**int(opc[2:])
 
+        elif "-mic=" in opc:
+            mic_response_path = opc.split("=")[1]
+
         elif "-aux" in opc.lower():
             aux_plot = True
 
         else:
-            opcsOK = False
+            bad_options += opc + ' '
+            opcs_OK = False
 
-    if not opcsOK:
+    if not opcs_OK:
         print( __doc__ )
+        print(f'{Fmt.RED}Unknown command line options:{Fmt.END} {bad_options}')
         sys.exit()
 
     sd.default.channels     = 2
@@ -777,8 +876,12 @@ if __name__ == "__main__":
     # Do create the needed raw and tapered sweeps
     prepare_sweep()
 
+    # Prepare MIC response if a given mic response file
+    if mic_response_path:
+        set_mic_response()
+
     # MEASURE
-    do_meas()
+    do_meas(plot_mic=True)
 
     # Checking TIME CLEARANCE
     if not TimeClearanceOK:
@@ -788,8 +891,8 @@ if __name__ == "__main__":
         print( '****************************************' )
 
     # Checking FREQ DOMAIN SPECTRUM LEVEL
-    _, DUT_mag = DUT_FRD
-    maxdB = max( 20 * log10(DUT_mag) )
+    _, dut_mag = DUT_FRD
+    maxdB = max( dut_mag )
 
     if  maxdB > 0.0:
         print( '****************************************' )
@@ -809,7 +912,14 @@ if __name__ == "__main__":
         print( '****************************************' )
 
     if do_plot:
+
         plot_system_response()
+
         if aux_plot:
             plot_aux_graphs()
+
+        # makes the figure active (raised to foreground)
+        if using_mic_response:
+            plt.figure('MIC correction')
+
         plt.show()

@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 """ This is a Tkinter based GUI to running Rsantct/DRC scripts
 """
-from tkinter import *
-from tkinter import ttk, filedialog, messagebox, font
+from tkinter        import *
+from tkinter        import ttk, filedialog, messagebox, font
 # https://tkdocs.com/tutorial/fonts.html#images
-from PIL import ImageTk, Image
+from    PIL         import ImageTk, Image
 
-from subprocess import Popen
-import threading
-from time import sleep
-import glob
-import os
-import sys
-import platform
+from    subprocess  import Popen
+import  threading
+from    time        import sleep
+import  glob
+import  os
+import  sys
+import  platform
 
 UHOME = os.path.expanduser("~")
-sys.path.append(f'{UHOME}/DRC')
+#sys.path.append(f'{UHOME}/DRC')
 
 import roommeasure as rm
 
@@ -23,9 +23,11 @@ import roommeasure as rm
 # We need to call matplotlib.use('Agg') to replace the regular display backend
 # (e.g. 'Mac OSX') by the dummy one 'Agg' in order to avoid incompatibility
 # when threading the matplotlib from the imported rm.LS on this GUI.
-# Notice below that we dont order plt.show() but plt.close('all').
 rm.LS.matplotlib.use('Agg')
-
+#
+# (!) Notice: We do not order plt.show() but plt.close('all'),
+#             then we wil display PNG images instead of call plt.show()
+#
 
 class RoommeasureGUI(Tk):
 
@@ -94,12 +96,21 @@ class RoommeasureGUI(Tk):
                                                     command=self.enable_Go)
         lbl_cap          = ttk.Label(content, text='IN')
         self.cmb_cap     = ttk.Combobox(content, values=cap_devs, width=15)
+        lbl_sweep        = ttk.Label(content, text='sweep length')
+        self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
         lbl_pbk          = ttk.Label(content, text='OUT')
         self.cmb_pbk     = ttk.Combobox(content, values=pbk_devs, width=15)
         lbl_fs           = ttk.Label(content, text='sample rate')
         self.cmb_fs      = ttk.Combobox(content, values=srates, width=8)
         btn_tsweep       = ttk.Button(content, text='test sweep',
                                                command=self.test_logsweep)
+        btn_mic_cal      = ttk.Button(content, text='MIC calibration:',
+                                               command=self.selectMicPath,
+                                               style='bbPatch.TButton' )
+        self.mic_path    = ttk.Entry(content,                     width=18)
+        # `cmd_line_mic_response_path` is only provided when testing via the command line
+        self.mic_path.insert(0, os.path.basename(cmd_line_mic_response_path))
+        self.mic_path.config(state='readonly')
 
         # - REMOTE JACK SECTION
         lbl_rjack        = ttk.Label(content, text='MANAGE JACK LOUDSPEAKER:',
@@ -120,9 +131,7 @@ class RoommeasureGUI(Tk):
         lbl_ch           = ttk.Label(content, text='channels')
         self.cmb_ch      = ttk.Combobox(content, values=channels, width=6)
         lbl_locat        = ttk.Label(content, text='mic locations')
-        self.cmb_locat    = ttk.Combobox(content, values=takes,    width=4)
-        lbl_sweep        = ttk.Label(content, text='sweep length')
-        self.cmb_sweep   = ttk.Combobox(content, values=sweeps, width=7)
+        self.cmb_locat   = ttk.Combobox(content, values=takes,    width=4)
 
         # - PLOT SECTION
         lbl_plot         = ttk.Label(content, text='PLOT:',
@@ -134,9 +143,12 @@ class RoommeasureGUI(Tk):
 
         # - RUN SECTION
         btn_selfol       = ttk.Button(content, text='RESULTS FOLDER:',
-                                               command=self.selectfolder,
+                                               command=self.selectFolder,
                                                style='bbPatch.TButton' )
         self.ent_folder  = ttk.Entry(content,                     width=18)
+        # `cmd_line_results_folder` is only provided when testing via the command line
+        self.ent_folder.insert(0, cmd_line_results_folder.replace(UHOME, '')[1:])
+
         lbl_timer        = ttk.Label(content, text='auto timer (s)')
         self.cmb_timer   = ttk.Combobox(content, values=timers, width=6)
         self.chk_beep    = ttk.Checkbutton(content, text='beep',
@@ -144,7 +156,7 @@ class RoommeasureGUI(Tk):
         self.btn_help    = ttk.Button(content, text='help', command=self.help_meas)
         self.btn_close   = ttk.Button(content, text='close', command=self.destroy)
         self.btn_go      = ttk.Button(content, text='Go!', command=self.go)
-        # needs to check [ ]validate
+        # needs to check the [ ]validate box
         self.btn_go['state'] = 'disabled'
 
         #### MESSAGES SECTION
@@ -187,6 +199,8 @@ class RoommeasureGUI(Tk):
         self.cmb_fs.grid(       row=1,  column=5, sticky=W)
         lbl_sweep.grid(         row=2,  column=4, sticky=E )
         self.cmb_sweep.grid(    row=2,  column=5, sticky=W )
+        btn_mic_cal.grid(       row=2,  column=0, sticky=E, pady=6 )
+        self.mic_path.grid(     row=2,  column=1, sticky=W )
 
         # manage jack
         lbl_rjack.grid(         row=3,  column=0, sticky=W, columnspan=2, pady=6 )
@@ -270,13 +284,27 @@ class RoommeasureGUI(Tk):
                 self.var_msg.set('')
 
 
-    def selectfolder(self):
-        tmp = filedialog.askdirectory(initialdir=f'{UHOME}')
+    def selectMicPath(self):
+        # Mac OS el filtro filetypes no funciona bien
+        #filetypes = [('Text', 'txt'), ('CAL', 'cal'), ('FRD', 'frd'), ('All', '*')]
+        tmp = filedialog.askopenfilename( initialdir=f'{UHOME}/DRC' ) #, filetypes=filetypes )
+        if tmp:
+            rm.LS.mic_response_path = tmp
+            rm.LS.set_mic_response()
+            ## updates the GUI
+            self.mic_path.config(state='enabled')
+            self.mic_path.delete(0, END)
+            self.mic_path.insert(0, os.path.basename(tmp))
+            self.mic_path.config(state='readonly')
+
+
+    def selectFolder(self):
+        tmp = filedialog.askdirectory( initialdir=f'{UHOME}' )
         if tmp:
             rm.folder = tmp
             # updates the GUI
             self.ent_folder.delete(0, END)
-            self.ent_folder.insert(0, rm.folder.replace(UHOME, '')[1:])
+            self.ent_folder.insert(0, rm.folder.replace(UHOME, '~'))
             self.var_msg.set('')
 
 
@@ -370,13 +398,13 @@ class RoommeasureGUI(Tk):
 
     def test_logsweep(self):
 
-        def do_test(png_folder):
+        def do_test():
 
             self.var_msg.set('TESTING SWEEP RECORDING ... (please wait)')
             self.btn_go['state'] = 'disabled'
             self.btn_close['state'] = 'disabled'
 
-            rm.LS.do_meas()
+            rm.LS.do_meas(plot_mic=True)
 
             # Checking TIME CLEARANCE:
             if not rm.LS.TimeClearanceOK:
@@ -384,25 +412,43 @@ class RoommeasureGUI(Tk):
 
             # Checking SPECTRUM LEVEL
             _, mag = rm.LS.DUT_FRD
-            maxdB = max( 20 * rm.np.log10( mag ) )
+            maxdB = max( mag )
 
             if  maxdB > 0.0:
                 self.var_msg.set(f'CLIPPING DETECTED: +{round(maxdB,1)} dB')
+
             elif maxdB > -3.0:
-                self.var_msg.set(f'CLOSE TO CLIPPING: {round(maxdB,1)} dB')
+                self.var_msg.set(f'close to CLIPPING {round(maxdB,1)} dB lower the volume')
+
             elif maxdB < -20.0:
                 self.var_msg.set(f'TOO LOW: {round(maxdB,1)} dB')
+
             else:
-                self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB')
+                tmp = ''
+                if rm.LS.using_mic_response:
+                    tmp = ' (with mic correction)'
+                else:
+                    if self.mic_path.get():
+                        tmp = ' (BAD mic calibration file)'
+                    else:
+                        tmp = ' (no mic correction)'
+
+                self.var_msg.set(f'LEVEL OK: {round(maxdB,1)} dB{tmp}')
 
             # Plotting test signals to png
-            rm.LS.plot_system_response( png_folder=png_folder )
+            rm.LS.plot_system_response()
             rm.LS.plt.close('all')
 
             self.btn_close['state'] = 'normal'
             #self.var_msg.set('')
-            self.do_show_image_at( imagePath=f'{png_folder}/sweep_response.png',
+
+            self.do_show_image_at( imagePath=f'{rm.LS.png_folder}/sweep_response.png',
                                     resize=False )
+
+            if rm.LS.using_mic_response:
+                self.do_show_image_at( imagePath=f'{rm.LS.png_folder}/mic_correction.png',
+                                        resize=False )
+
 
 
         def configure_LS():
@@ -427,6 +473,9 @@ class RoommeasureGUI(Tk):
             # - Includes time clearance test
             rm.LS.checkClearence = True
 
+            # png folder
+            rm.LS.png_folder = folder
+
             return True
 
 
@@ -434,7 +483,7 @@ class RoommeasureGUI(Tk):
         folder = self.ent_folder.get()
 
         if not folder:
-            self.var_msg.set('Please set  [ RESULTS FOLDER: ]')
+            self.var_msg.set('Please select   RESULTS FOLDER')
             return
 
         folder = f'{UHOME}/{folder}'
@@ -448,7 +497,6 @@ class RoommeasureGUI(Tk):
         # Do test
         # (i) threading avoids blocking the Tk event-listen mainloop
         job_test = threading.Thread( target = do_test,
-                                     args   = (folder,),
                                      daemon = True )
         job_test.start()
 
@@ -596,7 +644,6 @@ class RoommeasureGUI(Tk):
             takes       =   int(self.cmb_locat.get())
             sweeplength =   int(self.cmb_sweep.get())
             Schro       =   float(self.ent_schro.get())
-            folder      =   self.ent_folder.get()
 
             rjaddr      =   self.ent_rjaddr.get()
             rjuser      =   self.ent_rjuser.get()
@@ -623,8 +670,7 @@ class RoommeasureGUI(Tk):
             rm.Schro         = Schro
 
             # - output folder
-            if folder:
-                rm.folder   = f'{UHOME}/{folder}'
+            if rm.folder:
                 # - alerting on existing .frd files under <folder>
                 if os.path.exists(rm.folder):
                     if glob.glob(f'{rm.folder}/*.frd'):
@@ -637,7 +683,7 @@ class RoommeasureGUI(Tk):
                 else:
                     rm.prepare_frd_folder()
             else:
-                self.var_msg.set('Please set  [ RESULTS FOLDER: ]')
+                self.var_msg.set('Please select   RESULTS FOLDER')
                 return False
 
 
@@ -824,7 +870,7 @@ class RoommeasureGUI(Tk):
 
         # display temporary messages
         msgs = (f'running roomEQ ...',
-                f'impulse files saved: {self.ent_folder.get().split("/")[-1]}'
+                f'DRC FIRs at: {self.ent_folder.get().split("/")[-1]}'
                 f'/{self.cmb_drcfs.get()}'
                 f'_{int(taps/1024)}Ktaps'
                 )
@@ -851,8 +897,22 @@ def macOS_launcher_patch():
 
 if __name__ == '__main__':
 
-    app = RoommeasureGUI()
+    # a helper for testing purposes
+    cmd_line_results_folder    = ''
+    cmd_line_mic_response_path = ''
 
+    for opc in sys.argv[1:]:
+
+        if '-folder=' in opc:
+            cmd_line_results_folder     = opc.split('-folder=')[-1]
+            rm.folder                   = cmd_line_results_folder
+
+        if '-mic=' in opc:
+            cmd_line_mic_response_path  = opc.split('-mic=')[-1]
+            rm.LS.mic_response_path     = cmd_line_mic_response_path
+            rm.LS.set_mic_response()
+
+    app = RoommeasureGUI()
 
     ### DEFAULT GUI PARAMETERS
 
