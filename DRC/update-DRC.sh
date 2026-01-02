@@ -61,7 +61,7 @@ chmod +x ~/bin/DRC*
 # Leaving a dummy file with the installes branch name
 touch ~/DRC/"$branch"_FROM_"$gituser"
 echo
-echo installed under:  "$HOME"/DRC
+echo "DRC scripts were installed under:  "$HOME"/DRC"
 echo
 
 cd
