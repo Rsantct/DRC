@@ -4,13 +4,17 @@
 # This file is part of 'Rsantct.DRC', yet another DRC FIR toolkit.
 
 import  os
+import  sys
+import  json
+import  yaml
 import  numpy               as      np
 import  scipy.signal        as      signal
 from    scipy.io            import  wavfile
 import  matplotlib.pyplot   as      plt
 from    fmt                 import  Fmt
 
-VALID_FS = (44100, 88200, 48000, 96000, 192000)
+VALID_FS        = (44100, 88200, 48000, 96000, 192000)
+VALID_CHANNELS  = ('L', 'R')
 
 
 def detect_channel_from_set_name(set_name):
@@ -188,6 +192,12 @@ def load_wav(filepath, ch, normalize = True):
     return fir_coeffs, fs
 
 
+def load_frd(frd_path):
+    """ direct load a np colum stack of frequencies and magnitudes
+    """
+    return np.loadtxt(frd_path)
+
+
 def load_fir_file(fir_path, ch, fs):
     """ 'ch' only used for wav channel selection
     """
@@ -211,18 +221,29 @@ def load_fir_file(fir_path, ch, fs):
     return h, fs
 
 
-def plot_frd_vs_peqs(frd, moved_dB, peqs, fs, ch='-', emulation_method='', png_path='', do_plot=True):
+def load_peq_file(peq_path):
+
+    with open(peq_path, 'r') as f:
+        d = json.loads( f.read() )
+
+    return d
+
+
+def plot_peqs_vs_frd(frd, moved_dB, peqs, fs, ch='-', emulation_method='', png_path='',
+                     do_plot=True, target_name='', peqs_name=''):
     """ Compare and plot both responses:
-            frd:        a magnitude vs freq response curve
+
+            frd:        A magnitude vs freq response curve
 
             moved_db:   dBs the original frd was moved
                         to perform the PEQ emulation
 
-            peqs:       a set o Peaking EQ that emulates the frd (dict)
+            peqs:       A set o Peaking EQ that emulates the frd.
+                        Dict with values {'fc':  , 'q':   , 'gain':   }
 
-            fs:         fs to compute PEQ responses
+            fs:         Fs to compute the PEQ responses
 
-            ch:         channel identifier (optional)
+            ch:         Channel identifier (optional)
     """
 
     def get_points_peq(peqs):
@@ -256,8 +277,11 @@ def plot_frd_vs_peqs(frd, moved_dB, peqs, fs, ch='-', emulation_method='', png_p
     error = mag_peq - mag_interp
 
     # 4. Crear la visualización OJO se comparte el eje X
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), sharex=False,
-                                   gridspec_kw={'height_ratios': [3, 1]})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(7.5, 6),
+        #sharex=False,
+        gridspec_kw={'height_ratios': [3, 1]}
+    )
 
     # Gráfica Principal: Magnitud
     offset_info = f', frd offset {moved_dB} dB' if moved_dB else ''
@@ -269,12 +293,37 @@ def plot_frd_vs_peqs(frd, moved_dB, peqs, fs, ch='-', emulation_method='', png_p
     ax1.set_xlim(20, 20000)
     ax1.set_xticks([20, 50, 100, 500, 1000, 5000, 10000, 20000])
     ax1.set_xticklabels([20, 50, 100, 500, 1000, 5000, 10000, 20000])
-    ax1.tick_params(labelbottom=True)
     ax1.set_ylim(-36, 12)
     ax1.set_xlabel('Freq (Hz)')
     ax1.set_ylabel('Gain (dB)')
     ax1.set_title(f'PEQ emulation{emulation_method} (ch: {ch}{offset_info})')
     ax1.grid(True, which="both", linestyle="-", alpha=0.3)
+
+    if target_name:
+        ax1.text(
+            0.95, 0.13,                 # Coordenadas (x, y) de 0 a 1
+            target_name,                # El contenido
+            transform=ax1.transAxes,    # Clave: usa coordenadas del subplot, no de los datos
+            ha='right',                 # Alineación horizontal a la derecha
+            va='bottom',                # Alineación vertical inferior
+            fontsize=10,                # Tamaño de fuente
+            color='gray',               # Color
+            bbox=dict(facecolor='white', alpha=0.5, edgecolor='none')   # Opcional: fondo
+        )
+    if peqs_name:
+        ax1.text(
+            0.95, 0.08,                 # Coordenadas (x, y) de 0 a 1
+            peqs_name,                  # El contenido
+            transform=ax1.transAxes,    # Clave: usa coordenadas del subplot, no de los datos
+            ha='right',                 # Alineación horizontal a la derecha
+            va='bottom',                # Alineación vertical inferior
+            fontsize=10,                # Tamaño de fuente
+            color='royalblue',          # Color
+            bbox=dict(facecolor='white', alpha=0.5, edgecolor='none')   # Opcional: fondo
+        )
+
+    # ax1 barra estado recuperar las coordenadas x que se han perdido por los xticks
+    ax1.fmt_xdata = lambda x: f"{x:g}"
     ax1.legend()
 
     # Gráfica de Error (Residuo)
@@ -297,3 +346,170 @@ def plot_frd_vs_peqs(frd, moved_dB, peqs, fs, ch='-', emulation_method='', png_p
         plt.show()
     else:
         plt.close('all')
+
+
+def sort_peqs_list(list_of_peqs):
+
+    # Sorted by Fc
+    list_of_peqs.sort(key=lambda d: d["fc"])
+
+    # Sequential id
+    for i, _ in enumerate(list_of_peqs):
+        list_of_peqs[i]["id"] = i
+
+    return list_of_peqs
+
+
+def add_pAudio_format(eq_config, drc_name, ch):
+    """ pAudio lspk.yml block, example:
+
+            drc:
+
+                mesa-SoundID:
+
+                    type:       fir
+                    flat_gain:  -5.5
+                    posit_gain:  0.0
+
+
+                mesa-IIR:
+
+                    L:
+                        1:
+                            type: Biquad
+                            parameters:
+                                type:   Peaking
+                                freq:   40
+                                gain:   3.0
+                                q:      1.0
+                        2:
+                            ...
+                        ...
+                    R:
+                        ...
+
+    """
+
+    pAudio = {  'info':         'pAudio YAML filters',
+                'drc_name':     drc_name,
+                'yaml_block':   ''
+             }
+
+    if ch in ('L', 'R'):
+        pAudio['comments'] = f'channel \'{ch}\' detected from filter filename'
+    else:
+        pAudio['comments'] = 'channel not detected from filter filename'
+
+    # tmp is a dict to be converted in a yaml_block
+    tmp = { 'drc': {drc_name: { ch: {} } } }
+
+    for i, peq in enumerate(eq_config['filters']):
+
+        fc, Q, gain = peq['fc'], peq['q'], peq['gain']
+
+        tmp['drc'][drc_name][ch][i + 1] = {
+            'type': 'Biquad',
+            'parameters': {
+                'type':   'Peaking',
+                'freq':   fc,
+                'gain':   gain,
+                'q':      Q
+            }
+        }
+
+    pAudio['yaml_notice'] = 'Use the parser \'jq -r .pAudio.yaml_block\' to extract the yaml_block'
+    pAudio['yaml_block'] = yaml.dump(tmp, indent=4, sort_keys=False, default_flow_style=False)
+    # debug
+    #print(pAudio['yaml_block'])
+
+    eq_config['pAudio'] = pAudio
+
+
+def add_CamillaDSP_format(eq_config, drc_name, ch):
+    """ pAudio lspk.yml block, example:
+
+            filters:
+              drc_mesa-IIR_L_0:
+                description: null
+                parameters:
+                  freq: 40.0
+                  gain: 3.0
+                  q: 1.0
+                  type: Peaking
+                type: Biquad
+              drc_mesa-IIR_L_1:
+                ..
+              drc_mesa-IIR_L_2:
+                ..
+              ..
+    """
+
+    CamillaDSP = { 'info':      'CamillaDSP YAML filters',
+                'drc_name':     drc_name,
+                'yaml_block':   ''
+                }
+
+    if ch in ('L', 'R'):
+        CamillaDSP['comments'] = f'channel \'{ch}\' detected from filter filename'
+    else:
+        CamillaDSP['comments'] = 'channel not detected from filter filename'
+
+
+    # tmp is a dict to be converted in a yaml_block
+    tmp = { 'filters': {} }
+
+    for i, peq in enumerate(eq_config['filters']):
+
+        fc, Q, gain = peq['fc'], peq['q'], peq['gain']
+
+        tmp['filters'][f'drc_{drc_name}_{i + 1}'] = {
+            'type': 'Biquad',
+            'parameters': {
+                'type':   'Peaking',
+                'freq':   fc,
+                'gain':   gain,
+                'q':      Q
+            }
+        }
+
+    CamillaDSP['yaml_notice'] = 'Use the parser \'jq -r .CamillaDSP.yaml_block\' to extract the yaml_block'
+    CamillaDSP['yaml_block'] = yaml.dump(tmp, indent=2, sort_keys=False, default_flow_style=False)
+    # debug
+    #print(CamillaDSP['yaml_block'])
+
+    eq_config['CamillaDSP'] = CamillaDSP
+
+
+def make_eq_config_dict(filters_list, fs, moved_dB=0.0, ch='-', set_name='no_set_name'):
+
+    if moved_dB:
+        comments = f'Magnitude curve has been moved {moved_dB} dB to set the flat region at 0 dB'
+    else:
+        comments = ''
+
+    # For pAudio and CamillaDSP yaml fields
+    drc_name = set_name
+    if len(drc_name) > 6:
+        if drc_name[:4] == 'drc.' and drc_name[4:6] in ('L.', 'R.'):
+            drc_name = drc_name[6:]
+
+    eq_config = {
+
+        "metadata": {
+            "description": "Peaking EQ filters",
+            "fs": fs,
+            "num of PEQ sections": len(filters_list),
+            "set_name": set_name,
+            "comments": comments
+        },
+
+        "filters": filters_list
+    }
+
+    add_pAudio_format(eq_config, drc_name, ch)
+
+    add_CamillaDSP_format(eq_config, drc_name, ch)
+
+    return eq_config
+
+
