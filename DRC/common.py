@@ -14,7 +14,7 @@ import  matplotlib.pyplot   as      plt
 from    fmt                 import  Fmt
 
 VALID_FS        = (44100, 88200, 48000, 96000, 192000)
-VALID_CHANNELS  = ('L', 'R')
+VALID_CHANNELS  = ('L', 'R', '-')
 
 
 def detect_channel_from_set_name(set_name):
