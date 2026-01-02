@@ -58,9 +58,9 @@
         filter2peq.py  --frd=path/to/FRDfile --peq=path/to/JSONfile  [more options]
 
             more options are the same as above except:
-                --numpeq
-                --opt       (not needed)
-                --mg
+                --numpeq    )
+                --opt       ) not needed
+                --mg        )
 
 
     Output:
@@ -472,7 +472,16 @@ if __name__ == "__main__":
 
             peqs_name = os.path.basename(peq_path)
 
-            peq_config = cm.load_peq_file(peq_path)
+            tmp = cm.load_peq_file(peq_path)
+
+            if 'filters' in tmp:
+                peq_config = tmp
+
+            # It accepts a json with only a list of peq,
+            # but it creates a 'filters' json section for them.
+            else:
+                peq_config = {}
+                peq_config["filters"] = tmp
 
         else:
             print(__doc__)
