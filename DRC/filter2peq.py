@@ -4,7 +4,9 @@
 # This file is part of 'Rsantct.DRC', yet another DRC FIR toolkit.
 
 """
-    Generates a set of optimized Parametric EQ from a given target filter.
+    Generate a set of optimized Parametric EQ from a given target filter.
+     - OR -
+    Compare a PEQ set vs a given target filter.
 
     The target filter can be given in 3 flavours:
 
@@ -15,7 +17,7 @@
                 - a raw float32 file (for example .bin .pcm .f32)
                 - a wav file (.wav)
 
-    Usage:
+    A) Usage for automatic optimization:
 
         filter2peq.py  --frd=path/to/FRDfile  [more options]
 
@@ -50,6 +52,17 @@
                 --silent
                  -s         omit terminal json printout
 
+
+    A) Usage for manual compare a PEQ set vs a filter curve:
+
+        filter2peq.py  --frd=path/to/FRDfile --peq=path/to/JSONfile  [more options]
+
+            more options are the same as above except:
+                --numpeq
+                --opt       (not needed)
+                --mg
+
+
     Output:
 
         All output files are placed in the same directory as the given filter file path.
@@ -62,7 +75,6 @@
 import  os
 import  sys
 import  json
-import  yaml
 import  numpy as np
 from    scipy.optimize  import  minimize, least_squares, differential_evolution
 from    fmt import Fmt
@@ -126,222 +138,61 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
         num_peqs:   desired number of peqs tu emulate the frd
     """
 
-    def make_eq_config_dict(params_list):
+    def optimized_params_as_dict(params):
 
-        def optimized_params_as_dict(params):
+        list_of_peqs = []
 
-            d = []
+        for p in params:
 
-            i = 1
-            for p in params:
-
-                filter_data = {
-                    "type": "peaking",
-                    "fc":   round(float(p[0]), 2),
-                    "q":    round(float(p[1]), 3),
-                    "gain": round(float(p[2]), 2)
-                }
-
-                if abs( filter_data['gain'] ) > min_gain:
-                    filter_data["id"] = i
-                    d.append(filter_data)
-                    i += 1
-
-            return d
-
-
-        def add_eq_config_advanced(eq_config, freq, target):
-
-            comments = """
-                rmse_bass_db: if very low (e.g., < 0.2 dB), it means the bass emulation is almost perfect. rmse_treble_db: if higher, it reflects the 'permission' you gave the algorithm to be less accurate in the high frequencies.
-            """
-
-            def calculate_metrics(freq, target, calc):
-                """Calcula el error cuadrático medio por bandas."""
-                error = target - calc
-
-                # Máscaras para graves y agudos
-                mask_low   = freq < 200
-                mask_high  = freq >= 200
-
-                rmse_total = np.sqrt(np.mean(error**2))
-                rmse_low   = np.sqrt(np.mean(error[mask_low]**2))
-                rmse_high  = np.sqrt(np.mean(error[mask_high]**2))
-
-                return {
-                    "rmse_total_db":  round(float(rmse_total), 4),
-                    "rmse_bass_db":   round(float(rmse_low),   4),      # < 200Hz
-                    "rmse_treble_db": round(float(rmse_high),  4)       # > 200Hz
-                }
-
-
-            mag_calc  = cm.get_PEQs_mag(freq, eq_config['filters'], fs)
-            # pha_calc = cm.get_PEQs_pha(freq, eq_config['filters'], fs)  # unused
-
-            metrics = calculate_metrics(freq, target, mag_calc)
-
-            eq_config['analysis'] = {
-                'residual_error':    metrics,
-                'units':            'decibels (dB)',
-                'comments':         comments.strip()
+            filter_data = {
+                "type": "peaking",
+                "fc":   round(float(p[0]), 2),
+                "q":    round(float(p[1]), 3),
+                "gain": round(float(p[2]), 2)
             }
 
-            return eq_config
+            if abs( filter_data['gain'] ) > min_gain:
+                list_of_peqs.append(filter_data)
+
+        return cm.sort_peqs_list( list_of_peqs )
 
 
-        def add_pAudio_format(eq_config, ch):
-            """ pAudio lspk.yml block, example:
+    def add_eq_config_analysis(eq_config, freq, target):
 
-                    drc:
+        comments = """
+            rmse_bass_db: if very low (e.g., < 0.2 dB), it means the bass emulation is almost perfect. rmse_treble_db: if higher, it reflects the 'permission' you gave the algorithm to be less accurate in the high frequencies.
+        """
 
-                        mesa-SoundID:
+        def calculate_metrics(freq, target, calc):
+            """Calcula el error cuadrático medio por bandas."""
 
-                            type:       fir
-                            flat_gain:  -5.5
-                            posit_gain:  0.0
+            error = target - calc
 
+            # Máscaras para graves y agudos
+            mask_low   = freq < 200
+            mask_high  = freq >= 200
 
-                        mesa-IIR:
+            rmse_total = np.sqrt(np.mean(error**2))
+            rmse_low   = np.sqrt(np.mean(error[mask_low]**2))
+            rmse_high  = np.sqrt(np.mean(error[mask_high]**2))
 
-                            L:
-                                1:
-                                    type: Biquad
-                                    parameters:
-                                        type:   Peaking
-                                        freq:   40
-                                        gain:   3.0
-                                        q:      1.0
-                                2:
-                                    ...
-                                ...
-                            R:
-                                ...
-
-            """
-
-            drc_name = set_name
-
-            if drc_name.lower() == 'drc':
-                drc_name += '_NO_NAME'
-
-            pAudio = {  'info':         'pAudio YAML filters',
-                        'drc_name':     drc_name,
-                        'yaml_block':   ''
-                     }
-
-            if ch in ('L', 'R'):
-                pAudio['comments'] = f'channel \'{ch}\' detected from filter filename'
-            else:
-                pAudio['comments'] = 'channel not detected from filter filename'
-
-            # tmp is a dict to be converted in a yaml_block
-            tmp = { 'drc': {drc_name: { ch: {} } } }
-
-            for i, peq in enumerate(eq_config['filters']):
-
-                fc, Q, gain = peq['fc'], peq['q'], peq['gain']
-
-                tmp['drc'][drc_name][ch][i + 1] = {
-                    'type': 'Biquad',
-                    'parameters': {
-                        'type':   'Peaking',
-                        'freq':   fc,
-                        'gain':   gain,
-                        'q':      Q
-                    }
-                }
-
-            pAudio['yaml_notice'] = 'Use the parser \'jq -r .pAudio.yaml_block\' to extract the yaml_block'
-            pAudio['yaml_block'] = yaml.dump(tmp, indent=4, sort_keys=False, default_flow_style=False)
-            # debug
-            #print(pAudio['yaml_block'])
-
-            eq_config['pAudio'] = pAudio
+            return {
+                "rmse_total_db":  round(float(rmse_total), 4),
+                "rmse_bass_db":   round(float(rmse_low),   4),      # < 200Hz
+                "rmse_treble_db": round(float(rmse_high),  4)       # > 200Hz
+            }
 
 
-        def add_CamillaDSP_format(eq_config, ch):
-            """ pAudio lspk.yml block, example:
+        mag_peqs  = cm.get_PEQs_mag(freq, eq_config['filters'], fs)
+        # pha_peqs = cm.get_PEQs_pha(freq, eq_config['filters'], fs)  # unused
 
-                    filters:
-                      drc_mesa-IIR_L_0:
-                        description: null
-                        parameters:
-                          freq: 40.0
-                          gain: 3.0
-                          q: 1.0
-                          type: Peaking
-                        type: Biquad
-                      drc_mesa-IIR_L_1:
-                        ..
-                      drc_mesa-IIR_L_2:
-                        ..
-                      ..
-            """
+        metrics = calculate_metrics(freq, target, mag_peqs)
 
-            drc_name = set_name
-
-            if drc_name.lower() == 'drc':
-                drc_name += '_NO_NAME'
-
-            CamillaDSP = { 'info':      'CamillaDSP YAML filters',
-                        'drc_name':     drc_name,
-                        'yaml_block':   ''
-                        }
-
-            if ch in ('L', 'R'):
-                CamillaDSP['comments'] = f'channel \'{ch}\' detected from filter filename'
-            else:
-                CamillaDSP['comments'] = 'channel not detected from filter filename'
-
-
-            # tmp is a dict to be converted in a yaml_block
-            tmp = { 'filters': {} }
-
-            for i, peq in enumerate(eq_config['filters']):
-
-                fc, Q, gain = peq['fc'], peq['q'], peq['gain']
-
-                tmp['filters'][f'{drc_name}_{i + 1}'] = {
-                    'type': 'Biquad',
-                    'parameters': {
-                        'type':   'Peaking',
-                        'freq':   fc,
-                        'gain':   gain,
-                        'q':      Q
-                    }
-                }
-
-            CamillaDSP['yaml_notice'] = 'Use the parser \'jq -r .CamillaDSP.yaml_block\' to extract the yaml_block'
-            CamillaDSP['yaml_block'] = yaml.dump(tmp, indent=2, sort_keys=False, default_flow_style=False)
-            # debug
-            #print(CamillaDSP['yaml_block'])
-
-            eq_config['CamillaDSP'] = CamillaDSP
-
-
-        filters_list = optimized_params_as_dict(params_list)
-
-        eq_config = {
-
-            "metadata": {
-                "description": "Peaking EQ filters",
-                "fs": fs,
-                "max num of PEQ sections":   num_peqs,
-                "mini PEQ gain":             min_gain,
-                "final num of PEQ sections": len(filters_list),
-                "comments": f'Magnitude curve has been moved {moved_dB} dB to set the flat region at 0 dB'
-            },
-
-            "filters": filters_list
+        eq_config['analysis'] = {
+            'residual_error':    metrics,
+            'units':            'decibels (dB)',
+            'comments':         comments.strip()
         }
-
-        add_eq_config_advanced(eq_config, f_target, m_target)
-
-        add_pAudio_format(eq_config, ch)
-
-        add_CamillaDSP_format(eq_config, ch)
-
-        return eq_config
 
 
     # <frd> is a 2 columns np.array [Hz : dB]
@@ -411,10 +262,15 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
         for fc in np.geomspace(30, 400, num_peqs):
             init_bass.extend([fc, 1.0, 0.0])
 
+        # OPTIMIZACIÓN
+        Fmin, Fmax =  20  ,  15e3
+        Gmin, Gmax = -18.0, +6.0
+        Qmin, Qmax =   0.1,  9
+
         res_bass = least_squares(
             residuals, init_bass,
             args=(f_bass, m_bass, fs, num_peqs, w_bass),
-            bounds=([20, 0.1, -20] * num_peqs, [20000, 15, 20] * num_peqs),
+            bounds=([Fmin, Qmin, Gmin] * num_peqs, [Fmax, Qmax, Gmax] * num_peqs),
             method='trf', ftol=1e-4
         )
 
@@ -472,7 +328,12 @@ def get_optimized_peqs_from_frd(frd, fs, num_peqs):
     # para tener las tuplas (Fc ,Q , Gain) de cada filtro
     res_params = res.x.reshape(num_peqs, 3)
 
-    eq_config  = make_eq_config_dict( res_params )
+    # Format each peq into a to dictionary
+    filters_list = optimized_params_as_dict( res_params )
+
+    eq_config  = cm.make_eq_config_dict(filters_list, fs, moved_dB=moved_dB, ch=ch, set_name=set_name)
+
+    add_eq_config_analysis(eq_config, f_target, m_target)
 
     return eq_config
 
@@ -486,11 +347,16 @@ if __name__ == "__main__":
     num_peqs    = 6                 # Number of Peaking EQ bands
     min_gain    = 0.0               # Gain threshold to discard a PEQ
     fs          = 0
+
     frd_path    = ''
     fir_path    = ''
+    peq_path    = ''
+
     ch          = ''                # Needed for .wav FIR files
     do_plot     = False
     silent      = False
+    target_name = ''
+    peqs_name   = ''
 
     try:
         for opt in sys.argv[1:]:
@@ -521,6 +387,9 @@ if __name__ == "__main__":
             elif '-n=' in opt:
                 num_peqs = int( opt.split('=')[-1] )
 
+            elif '-peq=' in opt:
+                peq_path = opt.split('peq=')[-1]
+
             elif '-frd=' in opt:
                 frd_path = opt.split('frd=')[-1]
 
@@ -547,12 +416,12 @@ if __name__ == "__main__":
         sys.exit()
 
 
-    # Check file path
+    # Get frd from the given filter file
     if frd_path:
 
         if os.path.isfile( frd_path ):
 
-            frd = np.loadtxt(frd_path)
+            frd = cm.load_fdr(frd_pat)
 
             if not fs:
                 fs = 48000
@@ -560,6 +429,8 @@ if __name__ == "__main__":
             json_dir  = os.path.dirname(frd_path)
             set_name  = os.path.splitext( os.path.basename(frd_path) )[0]
             json_path = f'{json_dir}/{set_name}.json'
+
+            target_name = os.path.basename(frd_path)
 
         else:
             print(__doc__)
@@ -578,6 +449,8 @@ if __name__ == "__main__":
             set_name  = os.path.splitext( os.path.basename(fir_path) )[0]
             json_path = f'{json_dir}/{set_name}.json'
 
+            target_name = os.path.basename(fir_path)
+
         else:
             print(__doc__)
             print('Needs a pcm FIR file')
@@ -586,6 +459,28 @@ if __name__ == "__main__":
     else:
         print(__doc__)
         sys.exit()
+
+
+    # Get PEQ set from a file (trial with peq values)
+    if peq_path:
+
+        if os.path.isfile( peq_path ):
+
+            json_dir  = os.path.dirname(peq_path)
+            set_name  = os.path.splitext( os.path.basename(peq_path) )[0]
+            json_path = f'{json_dir}/{set_name}.json'
+
+            peqs_name = os.path.basename(peq_path)
+
+            peq_config = cm.load_peq_file(peq_path)
+
+        else:
+            print(__doc__)
+            print(f'Not found: {peq_path}')
+            sys.exit()
+
+    else:
+        peq_config = {}
 
 
     # Check FS
@@ -597,14 +492,12 @@ if __name__ == "__main__":
     if not ch:
         ch = cm.detect_channel_from_set_name(set_name)
 
-    valid_channels = ('L', 'R')
-
-    if not ch in valid_channels:
+    if not ch in cm.VALID_CHANNELS:
         print(__doc__)
-        print(f'\nA valid channel {valid_channels} is needed for .wav FIR\n')
+        print(f'\nA valid channel {cm.VALID_CHANNELS} is needed for .wav FIR\n')
         sys.exit()
 
-
+    # Flat response region offset
     if mag_offset:
         frd[:, 1] += mag_offset
         moved_dB = mag_offset
@@ -612,22 +505,44 @@ if __name__ == "__main__":
         # auto detect flat region
         frd, moved_dB = cm.move_flat_region(frd)
 
+    # Calculate PEQ
+    if not peq_config:
+        ########################
+        # Solve the optimization
+        peq_config = get_optimized_peqs_from_frd(frd, fs, num_peqs)
+        ########################
 
-    ########################
-    # Solve the optimization
-    peq_config = get_optimized_peqs_from_frd(frd, fs, num_peqs)
-    ########################
+        peqs_name = os.path.basename(json_path)
+
+        # Terminal printout
+        if not silent:
+            print(json.dumps(peq_config, indent=4))
 
 
-    # Terminal printout
-    if not silent:
-        print(json.dumps(peq_config, indent=4))
+    # Already have a PEQ set from the command line
+    else:
+        # May have edited PEQ parameters in the command line json file,
+        # so let's update pAudio and CamillaDSP fields
+        drc_name = set_name
+        if len(drc_name) > 6:
+            if drc_name[:4] == 'drc.' and drc_name[4:6] in ('L.', 'R.'):
+                drc_name = drc_name[6:]
+        cm.add_pAudio_format    (peq_config, drc_name, ch)
+        cm.add_CamillaDSP_format(peq_config, drc_name, ch)
+        # Reorder sections by frequency
+        peq_config["filters"] = cm.sort_peqs_list( peq_config["filters"] )
+
 
     # Save to JSON file
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(peq_config, f, indent=4, ensure_ascii=False)
 
-    # Graph results vs original curve
-    cm.plot_frd_vs_peqs(frd, moved_dB, peq_config['filters'],
-                        fs, ch=ch, emulation_method=optimizer,
-                        png_path=json_path, do_plot=do_plot)
+
+    # Graph PEQs vs original FRD curve
+    cm.plot_peqs_vs_frd(
+        frd, moved_dB, peq_config['filters'],
+        fs, ch=ch, emulation_method=optimizer,
+        png_path=json_path, do_plot=do_plot,
+        target_name=target_name,
+        peqs_name=peqs_name,
+    )
