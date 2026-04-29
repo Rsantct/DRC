@@ -361,7 +361,11 @@ if __name__ == "__main__":
     try:
         for opt in sys.argv[1:]:
 
-            if '-s' in opt:
+            if opt.startswith('-h') or opt.startswith('--h'):
+                print(__doc__)
+                sys.exit()
+
+            elif '-s' in opt:
                 silent = True
 
             elif '-op=' in opt:
@@ -426,6 +430,7 @@ if __name__ == "__main__":
             if not fs:
                 fs = 48000
 
+            frd_path  = os.path.abspath(frd_path)
             json_dir  = os.path.dirname(frd_path)
             set_name  = os.path.splitext( os.path.basename(frd_path) )[0]
             json_path = f'{json_dir}/{set_name}.json'
@@ -445,6 +450,7 @@ if __name__ == "__main__":
 
             frd = cm.fir2frd(fir, fs)
 
+            fir_path  = os.path.abspath(fir_path)
             json_dir  = os.path.dirname(fir_path)
             set_name  = os.path.splitext( os.path.basename(fir_path) )[0]
             json_path = f'{json_dir}/{set_name}.json'
