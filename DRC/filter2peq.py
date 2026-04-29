@@ -368,7 +368,7 @@ if __name__ == "__main__":
             elif '-s' in opt:
                 silent = True
 
-            elif '-op=' in opt:
+            elif '-opt=' in opt:
                 tmp = opt.split('=')[-1]
                 if tmp == 'diff':
                     optimizer = 'differential_evolution'
