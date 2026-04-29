@@ -53,7 +53,7 @@
                  -s         omit terminal json printout
 
 
-    A) Usage for manual compare a PEQ set vs a filter curve:
+    B) Usage for manual compare a PEQ set vs a filter curve:
 
         filter2peq.py  --frd=path/to/FRDfile --peq=path/to/JSONfile  [more options]
 
